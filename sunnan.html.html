@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="السنن المنسية">
+    <title>السنن المنسية</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding-bottom: 20px;
+        }
+
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 15px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 20px;
+            padding-top: 10px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 5px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.95;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            background: rgba(255,255,255,0.1);
+            padding: 8px;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .tab-btn.active {
+            background: white;
+            color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .sunna-card {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: all 0.3s;
+        }
+
+        .sunna-card.completed {
+            background: #f0f9ff;
+            border-left: 4px solid #10b981;
+        }
+
+        .sunna-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+
+        .sunna-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1f2937;
+            flex: 1;
+        }
+
+        .sunna-time {
+            font-size: 12px;
+            background: #f3f4f6;
+            padding: 4px 10px;
+            border-radius: 20px;
+            color: #6b7280;
+            white-space: nowrap;
+            margin-right: 10px;
+        }
+
+        .sunna-description {
+            font-size: 13px;
+            color: #6b7280;
+            margin-bottom: 10px;
+            line-height: 1.5;
+        }
+
+        .hadith {
+            background: #fef3c7;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            font-size: 12px;
+            color: #92400e;
+            border-right: 3px solid #f59e0b;
+        }
+
+        .sunna-footer {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .checkbox-btn {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #e5e7eb;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s;
+            color: #667eea;
+        }
+
+        .checkbox-btn:active {
+            transform: scale(0.95);
+        }
+
+        .checkbox-btn.done {
+            background: #10b981;
+            color: white;
+            border-color: #10b981;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .stat-box {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .stat-number {
+            font-size: 32px;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: #6b7280;
+            font-weight: 500;
+        }
+
+        .progress-bar {
+            background: #e5e7eb;
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.3s;
+        }
+
+        .search-box {
+            background: white;
+            padding: 12px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            border: 2px solid #e5e7eb;
+            font-size: 14px;
+            width: 100%;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: white;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .reminder-time {
+            display: inline-block;
+            background: #dbeafe;
+            color: #1e40af;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            margin-top: 8px;
+            font-weight: 600;
+        }
+
+        .reset-btn {
+            width: 100%;
+            padding: 12px;
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            margin-top: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .reset-btn:active {
+            opacity: 0.8;
+        }
+
+        @supports (padding: max(0px)) {
+            body {
+                padding-bottom: max(20px, env(safe-area-inset-bottom));
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌙 السنن المنسية</h1>
+            <p id="todayDate"></p>
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('today')">اليوم</button>
+            <button class="tab-btn" onclick="switchTab('all')">الكل</button>
+            <button class="tab-btn" onclick="switchTab('stats')">الإحصائيات</button>
+        </div>
+
+        <!-- TAB: TODAY -->
+        <div id="today" class="tab-content active">
+            <div id="todayList"></div>
+        </div>
+
+        <!-- TAB: ALL -->
+        <div id="all" class="tab-content">
+            <input type="text" class="search-box" id="searchBox" placeholder="ابحث عن سنة...">
+            <div id="allList"></div>
+        </div>
+
+        <!-- TAB: STATS -->
+        <div id="stats" class="tab-content">
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <div class="stat-number" id="completedToday">0</div>
+                    <div class="stat-label">تم اليوم</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number" id="totalCompleted">0</div>
+                    <div class="stat-label">إجمالي الإنجاز</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number" id="streak">0</div>
+                    <div class="stat-label">سلسلة الأيام</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number" id="percentage">0%</div>
+                    <div class="stat-label">نسبة الإنجاز</div>
+                </div>
+            </div>
+            <div class="progress-bar" style="margin: 20px 0;">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <button class="reset-btn" onclick="resetData()">إعادة تعيين البيانات</button>
+        </div>
+    </div>
+
+    <script>
+        const sunnanData = [
+            {
+                id: 1,
+                title: "السواك",
+                time: "قبل الصلاة",
+                description: "استخدام السواك لتنظيف الأسنان",
+                hadith: '"السواك مطهرة للفم، مرضاة للرب"',
+                emoji: "🪥"
+            },
+            {
+                id: 2,
+                title: "الرقية الشرعية",
+                time: "عند المرض",
+                description: "قول الآيات على المريض للشفاء",
+                hadith: "قراءة سورة الفاتحة والآيات الشرعية",
+                emoji: "📿"
+            },
+            {
+                id: 3,
+                title: "قيام الليل",
+                time: "آخر الليل",
+                description: "الصلاة في جوف الليل",
+                hadith: '"أفضل الصلاة بعد المكتوبة الصلاة في جوف الليل"',
+                emoji: "🌙"
+            },
+            {
+                id: 4,
+                title: "الاستنجاء بالماء",
+                time: "يومياً",
+                description: "استخدام الماء مع الحجر",
+                hadith: "السنة الفطرية في الطهارة",
+                emoji: "💧"
+            },
+            {
+                id: 5,
+                title: "زيارة المريض",
+                time: "عند الحاجة",
+                description: "عيادة المريض والدعاء له",
+                hadith: '"من عاد مريضاً لم يزل يخوض في الرحمة"',
+                emoji: "🏥"
+            },
+            {
+                id: 6,
+                title: "الدعاء عند الأذان",
+                time: "عند كل أذان",
+                description: "الإجابة للمؤذن والدعاء بعده",
+                hadith: '"إذا سمعتم المؤذن فقولوا مثل ما يقول"',
+                emoji: "📢"
+            },
+            {
+                id: 7,
+                title: "الوضوء عند كل صلاة",
+                time: "قبل الصلاة",
+                description: "تجديد الوضوء لكل صلاة",
+                hadith: "سنة مؤكدة من سنن النبي ﷺ",
+                emoji: "🚿"
+            },
+            {
+                id: 8,
+                title: "التأمين في الصلاة",
+                time: "في الصلاة",
+                description: "قول آمين بعد سورة الفاتحة",
+                hadith: '"إذا قال الإمام فقل آمين"',
+                emoji: "🤲"
+            },
+            {
+                id: 9,
+                title: "قراءة القرآن بتدبر",
+                time: "يومياً",
+                description: "التفكر في معاني القرآن الكريم",
+                hadith: '"أفلا يتدبرون القرآن"',
+                emoji: "📖"
+            },
+            {
+                id: 10,
+                title: "السلام عند الدخول",
+                time: "عند الدخول",
+                description: "تحية أهلك بالسلام",
+                hadith: '"إذا دخل أحدكم على أهله فليسلم"',
+                emoji: "👋"
+            },
+            {
+                id: 11,
+                title: "الدعاء عند النوم",
+                time: "عند النوم",
+                description: "قول أذكار النوم",
+                hadith: '"اللهم باسمك أحيا وأموت"',
+                emoji: "😴"
+            },
+            {
+                id: 12,
+                title: "الحمد على العطس",
+                time: "عند العطس",
+                description: "قول الحمد والرد عليه",
+                hadith: '"إذا عطس أحدكم فليقل الحمد لله"',
+                emoji: "🤧"
+            },
+            {
+                id: 13,
+                title: "الدعاء عند الخروج",
+                time: "عند الخروج",
+                description: "قول دعاء الخروج من البيت",
+                hadith: '"بسم الله، توكلت على الله"',
+                emoji: "🚶"
+            },
+            {
+                id: 14,
+                title: "الذكر في السوق",
+                time: "في السوق",
+                description: "قول التوحيد والذكر في السوق",
+                hadith: "تكفير السيئات والذنوب",
+                emoji: "🛍️"
+            },
+            {
+                id: 15,
+                title: "الاستيقاظ بالحمد",
+                time: "عند الاستيقاظ",
+                description: "قول الحمد عند الاستيقاظ من النوم",
+                hadith: '"الحمد لله الذي أحيانا بعد ما أماتنا"',
+                emoji: "🌅"
+            }
+        ];
+
+        // Initialize app
+        function init() {
+            updateDate();
+            loadData();
+            renderToday();
+            renderAll();
+            updateStats();
+        }
+
+        // Load data from localStorage
+        function loadData() {
+            const stored = localStorage.getItem('sunnanTracking');
+            if (!stored) {
+                window.tracking = {};
+                saveSunnanData();
+            } else {
+                window.tracking = JSON.parse(stored);
+            }
+        }
+
+        // Save data
+        function saveSunnanData() {
+            localStorage.setItem('sunnanTracking', JSON.stringify(window.tracking));
+        }
+
+        // Get today's date
+        function updateDate() {
+            const now = new Date();
+            const options = { year: 'numeric', month: 'long', day: 'numeric' };
+            const dateStr = now.toLocaleDateString('ar-SA', options);
+            document.getElementById('todayDate').textContent = dateStr;
+        }
+
+        // Get today's key
+        function getTodayKey() {
+            const today = new Date().toISOString().split('T')[0];
+            return today;
+        }
+
+        // Get today's completed
+        function getTodayCompleted() {
+            const key = getTodayKey();
+            if (!window.tracking[key]) window.tracking[key] = [];
+            return window.tracking[key];
+        }
+
+        // Toggle sunnah
+        function toggleSunnah(id) {
+            const key = getTodayKey();
+            if (!window.tracking[key]) window.tracking[key] = [];
+            
+            const index = window.tracking[key].indexOf(id);
+            if (index === -1) {
+                window.tracking[key].push(id);
+            } else {
+                window.tracking[key].splice(index, 1);
+            }
+            
+            saveSunnanData();
+            renderToday();
+            updateStats();
+        }
+
+        // Render today
+        function renderToday() {
+            const completed = getTodayCompleted();
+            const html = sunnanData.map(sunnah => {
+                const isCompleted = completed.includes(sunnah.id);
+                return `
+                    <div class="sunna-card ${isCompleted ? 'completed' : ''}">
+                        <div class="sunna-header">
+                            <div>
+                                <div class="sunna-title">${sunnah.emoji} ${sunnah.title}</div>
+                                <div class="sunna-time">${sunnah.time}</div>
+                            </div>
+                        </div>
+                        <div class="sunna-description">${sunnah.description}</div>
+                        <div class="hadith">🕌 ${sunnah.hadith}</div>
+                        <div class="sunna-footer">
+                            <button class="checkbox-btn ${isCompleted ? 'done' : ''}" 
+                                onclick="toggleSunnah(${sunnah.id})">
+                                ${isCompleted ? '✓ تم' : 'تم الآن'}
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            document.getElementById('todayList').innerHTML = html;
+        }
+
+        // Render all
+        function renderAll() {
+            const searchValue = document.getElementById('searchBox')?.value?.toLowerCase() || '';
+            const filtered = sunnanData.filter(s => 
+                s.title.includes(searchValue) || s.description.includes(searchValue)
+            );
+            
+            const completed = getTodayCompleted();
+            const html = filtered.map(sunnah => {
+                const isCompleted = completed.includes(sunnah.id);
+                return `
+                    <div class="sunna-card ${isCompleted ? 'completed' : ''}">
+                        <div class="sunna-header">
+                            <div class="sunna-title">${sunnah.emoji} ${sunnah.title}</div>
+                            <div class="sunna-time">${sunnah.time}</div>
+                        </div>
+                        <div class="sunna-description">${sunnah.description}</div>
+                        <div class="hadith">🕌 ${sunnah.hadith}</div>
+                    </div>
+                `;
+            }).join('');
+            document.getElementById('allList').innerHTML = html || '<div class="empty-state"><p>لا توجد نتائج</p></div>';
+        }
+
+        // Update stats
+        function updateStats() {
+            const completed = getTodayCompleted();
+            const todayCount = completed.length;
+            const percentage = Math.round((todayCount / sunnanData.length) * 100);
+            
+            // Calculate total completed
+            let totalCompleted = 0;
+            let daysWithCompleted = 0;
+            for (const day in window.tracking) {
+                if (window.tracking[day].length > 0) {
+                    totalCompleted += window.tracking[day].length;
+                    daysWithCompleted++;
+                }
+            }
+            
+            document.getElementById('completedToday').textContent = todayCount;
+            document.getElementById('totalCompleted').textContent = totalCompleted;
+            document.getElementById('streak').textContent = daysWithCompleted;
+            document.getElementById('percentage').textContent = percentage + '%';
+            document.getElementById('progressFill').style.width = percentage + '%';
+        }
+
+        // Switch tabs
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById(tab).classList.add('active');
+            event.target.classList.add('active');
+            
+            if (tab === 'all') {
+                renderAll();
+            }
+        }
+
+        // Search
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchBox = document.getElementById('searchBox');
+            if (searchBox) {
+                searchBox.addEventListener('input', renderAll);
+            }
+        });
+
+        // Reset data
+        function resetData() {
+            if (confirm('هل تريد حقاً مسح جميع البيانات؟')) {
+                localStorage.removeItem('sunnanTracking');
+                window.tracking = {};
+                renderToday();
+                renderAll();
+                updateStats();
+            }
+        }
+
+        // Initialize on load
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
