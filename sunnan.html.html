@@ -1,2716 +1,2095 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#B85042">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>رحلة إيطاليا 🇮🇹 | 20-28 مايو 2026</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Cairo:wght@300;400;500;600;700;800;900&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet">
-<style>
-:root {
-  --terracotta: #B85042;
-  --terracotta-dark: #8B3A2E;
-  --terracotta-light: #D17668;
-  --cream: #FAF6F0;
-  --parchment: #F5EBE0;
-  --olive: #6B7C32;
-  --emerald: #2D5016;
-  --gold: #C9A961;
-  --gold-dark: #A8893C;
-  --ink: #2A1A0E;
-  --ink-soft: #4A3528;
-  --ink-light: #6B5847;
-  --sand: #E8D5B7;
-  --sky: #A4C8E1;
-  --venice: #2C5F7F;
-  --florence: #B85042;
-  --milan: #5A4A3A;
-  --alps: #4A6D7C;
-  --pisa: #C9A961;
-  --rest: #6B7C32;
-  --success: #4F7942;
-  --shadow-sm: 0 2px 8px rgba(42, 26, 14, 0.06);
-  --shadow: 0 4px 20px rgba(42, 26, 14, 0.08);
-  --shadow-lg: 0 12px 40px rgba(42, 26, 14, 0.15);
-}
-
-* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-html { scroll-behavior: smooth; }
-
-body {
-  font-family: 'Cairo', sans-serif;
-  background: var(--cream);
-  color: var(--ink);
-  line-height: 1.65;
-  overflow-x: hidden;
-  min-height: 100vh;
-  background-image:
-    radial-gradient(circle at 8% 15%, rgba(184, 80, 66, 0.04) 0%, transparent 45%),
-    radial-gradient(circle at 92% 85%, rgba(201, 169, 97, 0.05) 0%, transparent 45%);
-  background-attachment: fixed;
-  font-feature-settings: "kern" 1, "liga" 1;
-}
-
-/* Italian flag stripe */
-.flag-stripe {
-  height: 3px;
-  background: linear-gradient(to right, #008C45 0% 33.33%, #F4F5F0 33.33% 66.66%, #CD212A 66.66% 100%);
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-}
-
-header {
-  padding: 1.2rem 1rem 0.6rem;
-  text-align: center;
-  background: var(--cream);
-  position: sticky;
-  top: 3px;
-  z-index: 100;
-}
-
-.trip-title {
-  font-family: 'Amiri', serif;
-  font-size: 1.65rem;
-  font-weight: 700;
-  color: var(--ink);
-  letter-spacing: -0.02em;
-  line-height: 1.2;
-}
-
-.trip-subtitle {
-  font-family: 'Cormorant Garamond', serif;
-  font-style: italic;
-  color: var(--ink-light);
-  font-size: 0.85rem;
-  margin-top: 0.15rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-/* Tab navigation */
-.tabs-wrapper {
-  background: var(--cream);
-  border-bottom: 1px solid rgba(42, 26, 14, 0.06);
-  position: sticky;
-  top: 79px;
-  z-index: 99;
-  padding: 0.5rem 0;
-}
-
-.tabs {
-  display: flex;
-  overflow-x: auto;
-  padding: 0 0.8rem;
-  gap: 0.4rem;
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
-}
-.tabs::-webkit-scrollbar { display: none; }
-
-.tab-btn {
-  flex-shrink: 0;
-  padding: 0.55rem 1rem;
-  background: white;
-  border: 1px solid rgba(42, 26, 14, 0.1);
-  border-radius: 100px;
-  color: var(--ink-soft);
-  font-family: 'Cairo', sans-serif;
-  font-weight: 600;
-  font-size: 0.82rem;
-  cursor: pointer;
-  transition: all 0.25s ease;
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-}
-
-.tab-btn:hover { border-color: var(--ink); }
-
-.tab-btn.active {
-  background: var(--ink);
-  color: var(--cream);
-  border-color: var(--ink);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(42, 26, 14, 0.2);
-}
-
-main {
-  padding: 1rem;
-  max-width: 720px;
-  margin: 0 auto;
-  padding-bottom: 7rem;
-}
-
-.tab-content { display: none; animation: fadeIn 0.4s ease; }
-.tab-content.active { display: block; }
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes slideDown {
-  from { opacity: 0; max-height: 0; }
-  to { opacity: 1; max-height: 5000px; }
-}
-
-.section-title {
-  font-family: 'Amiri', serif;
-  font-size: 1.35rem;
-  margin: 1.5rem 0 0.8rem;
-  color: var(--ink);
-  position: relative;
-  padding-right: 0.9rem;
-  font-weight: 700;
-}
-.section-title::before {
-  content: '';
-  position: absolute;
-  right: 0;
-  top: 15%;
-  width: 3px;
-  height: 70%;
-  background: var(--gold);
-  border-radius: 2px;
-}
-
-.section-sub {
-  font-family: 'Cormorant Garamond', serif;
-  font-style: italic;
-  color: var(--ink-light);
-  font-size: 0.95rem;
-  margin-bottom: 1rem;
-}
-
-/* Hero */
-.hero {
-  background: linear-gradient(135deg, var(--terracotta) 0%, var(--terracotta-dark) 100%);
-  color: var(--cream);
-  padding: 1.8rem 1.5rem;
-  border-radius: 24px;
-  margin: 0.5rem 0 1.5rem;
-  position: relative;
-  overflow: hidden;
-  box-shadow: var(--shadow-lg);
-}
-
-.hero::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(circle at 20% 20%, rgba(255,255,255,0.12) 0%, transparent 40%),
-    radial-gradient(circle at 85% 75%, rgba(0,0,0,0.15) 0%, transparent 45%);
-  pointer-events: none;
-}
-
-.hero::after {
-  content: '🇮🇹';
-  position: absolute;
-  top: -10px;
-  left: -10px;
-  font-size: 6rem;
-  opacity: 0.08;
-  transform: rotate(-15deg);
-}
-
-.hero-content { position: relative; z-index: 1; }
-
-.hero-eyebrow {
-  font-family: 'Cormorant Garamond', serif;
-  font-style: italic;
-  font-size: 1rem;
-  opacity: 0.9;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-}
-
-.hero-title {
-  font-family: 'Amiri', serif;
-  font-size: 2rem;
-  margin: 0.4rem 0 0.6rem;
-  font-weight: 700;
-  line-height: 1.15;
-}
-
-.hero-meta {
-  font-family: 'Cairo', sans-serif;
-  font-size: 0.95rem;
-  opacity: 0.92;
-}
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 0.7rem;
-  margin-top: 1.5rem;
-}
-
-.stat-card {
-  background: rgba(255,255,255,0.13);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  padding: 0.9rem 1rem;
-  border-radius: 14px;
-  border: 1px solid rgba(255,255,255,0.18);
-}
-
-.stat-value {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 1.7rem;
-  font-weight: 700;
-  line-height: 1;
-}
-
-.stat-label {
-  font-size: 0.75rem;
-  opacity: 0.92;
-  margin-top: 0.3rem;
-  font-weight: 500;
-}
-
-/* Cards */
-.card {
-  background: white;
-  border-radius: 18px;
-  padding: 1.1rem;
-  margin-bottom: 0.9rem;
-  box-shadow: var(--shadow);
-  border: 1px solid rgba(42, 26, 14, 0.04);
-  transition: all 0.25s ease;
-}
-
-.card:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-lg);
-}
-
-/* Family card */
-.family-card {
-  background: linear-gradient(135deg, var(--parchment) 0%, var(--sand) 100%);
-  padding: 1.4rem;
-  border-radius: 18px;
-  text-align: center;
-  margin-bottom: 1rem;
-  position: relative;
-  overflow: hidden;
-}
-
-.family-card::before {
-  content: '✦';
-  position: absolute;
-  top: 10px;
-  right: 14px;
-  color: var(--gold);
-  font-size: 1.2rem;
-}
-
-.family-card::after {
-  content: '✦';
-  position: absolute;
-  bottom: 10px;
-  left: 14px;
-  color: var(--gold);
-  font-size: 1.2rem;
-}
-
-.family-label {
-  font-family: 'Cormorant Garamond', serif;
-  font-style: italic;
-  color: var(--ink-light);
-  font-size: 0.9rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
-.family-names {
-  font-family: 'Amiri', serif;
-  font-size: 1.3rem;
-  margin-top: 0.4rem;
-  color: var(--ink);
-  font-weight: 700;
-}
-
-.family-extra {
-  font-size: 0.85rem;
-  color: var(--ink-light);
-  margin-top: 0.4rem;
-}
-
-/* Cities route */
-.route {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  margin: 1rem 0;
-}
-
-.route-city {
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
-  padding: 0.7rem 1rem;
-  background: white;
-  border-radius: 12px;
-  border-right: 4px solid;
-  box-shadow: var(--shadow-sm);
-}
-
-.city-emoji {
-  font-size: 1.4rem;
-}
-
-.city-info { flex: 1; }
-
-.city-name {
-  font-weight: 700;
-  font-size: 0.95rem;
-}
-
-.city-meta {
-  font-size: 0.78rem;
-  color: var(--ink-light);
-  font-family: 'Cormorant Garamond', serif;
-  font-style: italic;
-}
-
-.city-days {
-  background: var(--parchment);
-  padding: 0.3rem 0.6rem;
-  border-radius: 8px;
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--ink-soft);
-}
-
-/* Day card */
-.day-card {
-  position: relative;
-  overflow: hidden;
-  padding: 0;
-  cursor: pointer;
-}
-
-.day-banner {
-  height: 90px;
-  position: relative;
-  overflow: hidden;
-}
-
-.day-banner.milan { background: linear-gradient(135deg, #8B7355 0%, #5A4A3A 100%); }
-.day-banner.alps { background: linear-gradient(135deg, #6B8CAE 0%, #2C4A5E 100%); }
-.day-banner.venice { background: linear-gradient(135deg, #4A89B0 0%, #1F4A6B 100%); }
-.day-banner.rest { background: linear-gradient(135deg, #8FA363 0%, #4F6B25 100%); }
-.day-banner.pisa { background: linear-gradient(135deg, #D4B673 0%, #A8893C 100%); }
-.day-banner.florence { background: linear-gradient(135deg, #C97064 0%, #8B3A2E 100%); }
-.day-banner.departure { background: linear-gradient(135deg, #B8A797 0%, #756859 100%); }
-
-.day-banner::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(circle at 30% 40%, rgba(255,255,255,0.15) 0%, transparent 50%),
-    radial-gradient(circle at 70% 80%, rgba(0,0,0,0.2) 0%, transparent 50%);
-}
-
-.day-banner-content {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  padding: 1rem 1.2rem;
-  gap: 1rem;
-  color: white;
-}
-
-.day-num-big {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 3rem;
-  font-weight: 700;
-  line-height: 1;
-  opacity: 0.95;
-}
-
-.day-info { flex: 1; }
-
-.day-date {
-  font-family: 'Cormorant Garamond', serif;
-  font-style: italic;
-  font-size: 0.85rem;
-  opacity: 0.9;
-}
-
-.day-title-text {
-  font-family: 'Amiri', serif;
-  font-size: 1.15rem;
-  font-weight: 700;
-  margin-top: 0.2rem;
-}
-
-.day-icon-big {
-  font-size: 2.2rem;
-  opacity: 0.92;
-}
-
-.day-body {
-  padding: 1.1rem 1.2rem;
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height 0.4s ease, padding 0.4s ease;
-}
-
-.day-card.expanded .day-body {
-  max-height: 5000px;
-  padding: 1.1rem 1.2rem 1.3rem;
-}
-
-.day-summary-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.7rem 1.2rem;
-  background: var(--parchment);
-  font-size: 0.83rem;
-  font-weight: 600;
-  color: var(--ink-soft);
-}
-
-.expand-icon {
-  transition: transform 0.3s ease;
-  font-size: 1.1rem;
-  color: var(--ink-light);
-}
-
-.day-card.expanded .expand-icon {
-  transform: rotate(180deg);
-}
-
-/* Timeline */
-.timeline {
-  position: relative;
-  padding-right: 1.2rem;
-  margin-top: 0.5rem;
-}
-
-.timeline::before {
-  content: '';
-  position: absolute;
-  right: 4px;
-  top: 0.4rem;
-  bottom: 0.4rem;
-  width: 2px;
-  background: linear-gradient(to bottom, var(--gold), var(--terracotta));
-  border-radius: 2px;
-}
-
-.timeline-item {
-  position: relative;
-  padding-bottom: 1rem;
-  display: flex;
-  gap: 0.8rem;
-  align-items: flex-start;
-}
-
-.timeline-item::before {
-  content: '';
-  position: absolute;
-  right: -1.2rem;
-  top: 0.5rem;
-  width: 10px;
-  height: 10px;
-  background: white;
-  border: 2px solid var(--gold);
-  border-radius: 50%;
-  z-index: 1;
-}
-
-.timeline-item:last-child { padding-bottom: 0; }
-
-.time-tag {
-  flex-shrink: 0;
-  font-family: 'Cormorant Garamond', serif;
-  font-weight: 600;
-  color: var(--terracotta);
-  font-size: 0.92rem;
-  min-width: 56px;
-  padding-top: 0.05rem;
-}
-
-.activity {
-  flex: 1;
-  font-size: 0.9rem;
-}
-
-.activity-title {
-  font-weight: 600;
-  color: var(--ink);
-  margin-bottom: 0.1rem;
-}
-
-.activity-desc {
-  font-size: 0.82rem;
-  color: var(--ink-light);
-  line-height: 1.5;
-}
-
-.activity-place {
-  display: inline-block;
-  margin-top: 0.3rem;
-  font-size: 0.78rem;
-  color: var(--terracotta);
-  text-decoration: none;
-  font-weight: 500;
-}
-
-.activity-place::before { content: '📍 '; }
-
-.activity-cost {
-  display: inline-block;
-  background: var(--parchment);
-  padding: 0.15rem 0.5rem;
-  border-radius: 6px;
-  font-size: 0.75rem;
-  margin-top: 0.3rem;
-  margin-right: 0.4rem;
-  color: var(--ink-soft);
-  font-weight: 600;
-}
-
-.tip-box {
-  background: linear-gradient(135deg, #FFF8E1 0%, #FFECB3 100%);
-  border-right: 3px solid var(--gold);
-  padding: 0.8rem 1rem;
-  border-radius: 10px;
-  margin-top: 1rem;
-  font-size: 0.83rem;
-  color: var(--ink-soft);
-  line-height: 1.6;
-}
-
-.tip-box strong { color: var(--ink); }
-
-/* Hotel cards */
-.hotel-section-title {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin: 1.5rem 0 0.5rem;
-}
-
-.hotel-section-title .city-tag {
-  background: var(--ink);
-  color: var(--cream);
-  padding: 0.3rem 0.8rem;
-  border-radius: 100px;
-  font-size: 0.78rem;
-  font-weight: 600;
-}
-
-.hotel-section-title .city-night {
-  font-family: 'Cormorant Garamond', serif;
-  font-style: italic;
-  color: var(--ink-light);
-  font-size: 0.9rem;
-}
-
-.hotel-card {
-  background: white;
-  border-radius: 16px;
-  padding: 1.1rem;
-  margin-bottom: 0.8rem;
-  box-shadow: var(--shadow);
-  border: 1px solid rgba(42, 26, 14, 0.05);
-  position: relative;
-}
-
-.hotel-card.recommended {
-  border: 2px solid var(--gold);
-}
-
-.recommended-tag {
-  position: absolute;
-  top: -10px;
-  right: 14px;
-  background: var(--gold);
-  color: var(--ink);
-  padding: 0.2rem 0.7rem;
-  border-radius: 100px;
-  font-size: 0.7rem;
-  font-weight: 700;
-}
-
-.hotel-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 0.8rem;
-  margin-bottom: 0.6rem;
-}
-
-.hotel-name {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--ink);
-}
-
-.hotel-area {
-  font-size: 0.8rem;
-  color: var(--ink-light);
-  margin-top: 0.15rem;
-}
-
-.hotel-price {
-  background: var(--parchment);
-  padding: 0.5rem 0.7rem;
-  border-radius: 10px;
-  text-align: center;
-  flex-shrink: 0;
-}
-
-.hotel-price-num {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 1.2rem;
-  font-weight: 700;
-  color: var(--terracotta);
-  line-height: 1;
-}
-
-.hotel-price-label {
-  font-size: 0.68rem;
-  color: var(--ink-light);
-  margin-top: 0.1rem;
-}
-
-.hotel-features {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.3rem;
-  margin: 0.5rem 0 0.8rem;
-}
-
-.feature-tag {
-  background: var(--cream);
-  padding: 0.25rem 0.55rem;
-  border-radius: 8px;
-  font-size: 0.72rem;
-  color: var(--ink-soft);
-  border: 1px solid rgba(42, 26, 14, 0.08);
-}
-
-.hotel-actions {
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
-}
-
-.btn {
-  padding: 0.55rem 1rem;
-  border-radius: 100px;
-  font-family: 'Cairo', sans-serif;
-  font-weight: 600;
-  font-size: 0.82rem;
-  cursor: pointer;
-  border: none;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  transition: all 0.2s ease;
-}
-
-.btn-primary {
-  background: var(--ink);
-  color: var(--cream);
-}
-
-.btn-primary:hover {
-  background: var(--terracotta);
-}
-
-.btn-outline {
-  background: transparent;
-  color: var(--ink);
-  border: 1px solid rgba(42, 26, 14, 0.2);
-}
-
-.btn-outline:hover {
-  background: var(--ink);
-  color: var(--cream);
-}
-
-/* Budget */
-.budget-total {
-  background: linear-gradient(135deg, var(--ink) 0%, var(--ink-soft) 100%);
-  color: var(--cream);
-  padding: 1.5rem;
-  border-radius: 20px;
-  text-align: center;
-  margin-bottom: 1rem;
-  position: relative;
-  overflow: hidden;
-}
-
-.budget-total::before {
-  content: '€';
-  position: absolute;
-  top: -20px;
-  left: -10px;
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 8rem;
-  opacity: 0.06;
-}
-
-.budget-label {
-  font-family: 'Cormorant Garamond', serif;
-  font-style: italic;
-  font-size: 1rem;
-  opacity: 0.85;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
-.budget-amount {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 3rem;
-  font-weight: 700;
-  margin: 0.4rem 0 0.2rem;
-  line-height: 1;
-}
-
-.budget-note {
-  font-size: 0.78rem;
-  opacity: 0.78;
-  font-style: italic;
-}
-
-.budget-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.85rem 1rem;
-  background: white;
-  border-radius: 12px;
-  margin-bottom: 0.5rem;
-  box-shadow: var(--shadow-sm);
-  gap: 0.8rem;
-}
-
-.budget-item.paid {
-  background: linear-gradient(to right, #E8F5E9 0%, white 50%);
-  border-right: 4px solid var(--success);
-}
-
-.budget-cat {
-  display: flex;
-  align-items: center;
-  gap: 0.7rem;
-  flex: 1;
-}
-
-.budget-emoji {
-  font-size: 1.3rem;
-  width: 36px;
-  height: 36px;
-  background: var(--parchment);
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.budget-name {
-  font-size: 0.88rem;
-  font-weight: 600;
-}
-
-.budget-detail {
-  font-size: 0.74rem;
-  color: var(--ink-light);
-  margin-top: 0.1rem;
-}
-
-.budget-price {
-  font-family: 'Cormorant Garamond', serif;
-  font-weight: 700;
-  color: var(--terracotta);
-  font-size: 1.05rem;
-}
-
-.budget-item.paid .budget-price {
-  color: var(--success);
-  text-decoration: line-through;
-}
-
-.paid-stamp {
-  font-size: 0.65rem;
-  font-weight: 700;
-  background: var(--success);
-  color: white;
-  padding: 0.1rem 0.4rem;
-  border-radius: 6px;
-  margin-right: 0.4rem;
-}
-
-/* Booking checklist */
-.booking-item {
-  display: flex;
-  gap: 0.8rem;
-  padding: 1rem;
-  background: white;
-  border-radius: 14px;
-  margin-bottom: 0.7rem;
-  box-shadow: var(--shadow-sm);
-  position: relative;
-  overflow: hidden;
-  border-right: 4px solid var(--terracotta);
-}
-
-.booking-item.urgent { border-right-color: #C62828; }
-.booking-item.soon { border-right-color: var(--gold-dark); }
-.booking-item.normal { border-right-color: var(--olive); }
-.booking-item.done { 
-  background: #F5F9F0;
-  border-right-color: var(--success);
-}
-
-.booking-check {
-  flex-shrink: 0;
-  width: 28px;
-  height: 28px;
-  border: 2px solid rgba(42, 26, 14, 0.2);
-  border-radius: 8px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: white;
-  margin-top: 0.1rem;
-  transition: all 0.2s ease;
-}
-
-.booking-check.checked {
-  background: var(--success);
-  border-color: var(--success);
-}
-
-.booking-check.checked::after {
-  content: '✓';
-  color: white;
-  font-weight: 700;
-  font-size: 1rem;
-}
-
-.booking-content { flex: 1; }
-
-.booking-title {
-  font-weight: 700;
-  font-size: 0.92rem;
-  margin-bottom: 0.2rem;
-}
-
-.booking-item.done .booking-title {
-  text-decoration: line-through;
-  color: var(--ink-light);
-}
-
-.booking-meta {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  margin-top: 0.4rem;
-}
-
-.booking-deadline {
-  font-size: 0.74rem;
-  padding: 0.15rem 0.45rem;
-  border-radius: 6px;
-  font-weight: 600;
-}
-
-.urgent .booking-deadline { background: #FFEBEE; color: #C62828; }
-.soon .booking-deadline { background: #FFF8E1; color: #A8893C; }
-.normal .booking-deadline { background: #F1F8E9; color: var(--olive); }
-
-.booking-price {
-  font-size: 0.76rem;
-  font-family: 'Cormorant Garamond', serif;
-  font-weight: 700;
-  color: var(--ink-soft);
-}
-
-.booking-link {
-  display: inline-block;
-  margin-top: 0.4rem;
-  font-size: 0.78rem;
-  color: var(--terracotta);
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.booking-link::after { content: ' ↗'; }
-
-/* Info cards */
-.info-card {
-  background: white;
-  border-radius: 14px;
-  padding: 1rem 1.1rem;
-  margin-bottom: 0.7rem;
-  box-shadow: var(--shadow-sm);
-  border-right: 3px solid var(--gold);
-}
-
-.info-card-title {
-  font-family: 'Amiri', serif;
-  font-weight: 700;
-  font-size: 1rem;
-  margin-bottom: 0.3rem;
-  color: var(--ink);
-}
-
-.info-card-content {
-  font-size: 0.85rem;
-  color: var(--ink-soft);
-  line-height: 1.65;
-}
-
-.info-card-content strong { color: var(--ink); }
-
-.halal-list, .mosque-list { 
-  list-style: none;
-  padding: 0;
-}
-
-.halal-list li, .mosque-list li {
-  padding: 0.4rem 0;
-  border-bottom: 1px dashed rgba(42, 26, 14, 0.08);
-  font-size: 0.83rem;
-}
-
-.halal-list li:last-child, .mosque-list li:last-child { border-bottom: none; }
-
-.halal-list li::before { content: '🍽️ '; }
-.mosque-list li::before { content: '🕌 '; }
-
-/* Floating share */
-.float-share {
-  position: fixed;
-  bottom: 1.2rem;
-  left: 1.2rem;
-  z-index: 200;
-}
-
-.share-btn {
-  background: #25D366;
-  color: white;
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  border: none;
-  font-size: 1.6rem;
-  cursor: pointer;
-  box-shadow: 0 8px 24px rgba(37, 211, 102, 0.4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.25s ease;
-}
-
-.share-btn:hover {
-  transform: scale(1.08) rotate(-8deg);
-}
-
-.share-menu {
-  position: absolute;
-  bottom: 70px;
-  left: 0;
-  background: white;
-  border-radius: 16px;
-  box-shadow: var(--shadow-lg);
-  padding: 0.5rem;
-  display: none;
-  min-width: 220px;
-  border: 1px solid rgba(42, 26, 14, 0.06);
-}
-
-.share-menu.open { display: block; animation: fadeIn 0.2s ease; }
-
-.share-option {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 0.7rem 0.8rem;
-  border-radius: 10px;
-  cursor: pointer;
-  font-size: 0.88rem;
-  font-weight: 500;
-  color: var(--ink);
-  border: none;
-  background: transparent;
-  width: 100%;
-  text-align: right;
-  font-family: 'Cairo', sans-serif;
-  text-decoration: none;
-}
-
-.share-option:hover { background: var(--parchment); }
-
-/* Footer */
-.footer {
-  text-align: center;
-  padding: 2rem 1rem 1rem;
-  color: var(--ink-light);
-  font-size: 0.8rem;
-  font-family: 'Cormorant Garamond', serif;
-  font-style: italic;
-}
-
-.footer-divider {
-  width: 60px;
-  height: 1px;
-  background: var(--gold);
-  margin: 0 auto 0.8rem;
-}
-
-/* Progress bar */
-.progress-section {
-  background: white;
-  padding: 1rem 1.2rem;
-  border-radius: 14px;
-  margin-bottom: 1rem;
-  box-shadow: var(--shadow-sm);
-}
-
-.progress-title {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.5rem;
-  font-size: 0.85rem;
-  font-weight: 600;
-}
-
-.progress-count {
-  font-family: 'Cormorant Garamond', serif;
-  font-weight: 700;
-  color: var(--terracotta);
-}
-
-.progress-bar {
-  height: 8px;
-  background: var(--parchment);
-  border-radius: 100px;
-  overflow: hidden;
-}
-
-.progress-fill {
-  height: 100%;
-  background: linear-gradient(to right, var(--gold), var(--terracotta));
-  border-radius: 100px;
-  transition: width 0.4s ease;
-}
-
-/* Util */
-.muted { color: var(--ink-light); }
-.text-center { text-align: center; }
-.mt-1 { margin-top: 0.5rem; }
-.mt-2 { margin-top: 1rem; }
-.mb-1 { margin-bottom: 0.5rem; }
-
-@media (min-width: 600px) {
-  .stats-grid { grid-template-columns: repeat(4, 1fr); }
-  .trip-title { font-size: 1.9rem; }
-  .hero-title { font-size: 2.3rem; }
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NutriTrack AI - متتبع التغذية الذكي</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#10b981">
+    <link rel="manifest" href="data:application/json,{&quot;name&quot;:&quot;NutriTrack AI&quot;,&quot;short_name&quot;:&quot;NutriTrack&quot;,&quot;display&quot;:&quot;standalone&quot;,&quot;background_color&quot;:&quot;%2310b981&quot;,&quot;theme_color&quot;:&quot;%2310b981&quot;}">
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Tajawal', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :root {
+            --primary: #10b981;
+            --primary-dark: #059669;
+            --secondary: #3b82f6;
+            --accent: #f59e0b;
+            --danger: #ef4444;
+            --bg-main: #f0fdf4;
+            --bg-card: #ffffff;
+            --text-primary: #1f2937;
+            --text-secondary: #6b7280;
+            --text-light: #9ca3af;
+            --border: #e5e7eb;
+            --shadow: 0 4px 20px rgba(0,0,0,0.08);
+            --shadow-lg: 0 10px 40px rgba(0,0,0,0.12);
+        }
+
+        body {
+            background: var(--bg-main);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            padding-bottom: 90px;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            padding: 50px 20px 30px;
+            border-radius: 0 0 30px 30px;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -30%;
+            width: 200px;
+            height: 200px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+        }
+
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: -30%;
+            left: -20%;
+            width: 150px;
+            height: 150px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 50%;
+        }
+
+        .greeting {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+
+        .date-display {
+            font-size: 13px;
+            opacity: 0.8;
+            margin-top: 8px;
+        }
+
+        .header h1 {
+            font-size: 26px;
+            font-weight: 800;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Fasting Timer */
+        .fasting-section {
+            background: var(--bg-card);
+            margin: -25px 15px 15px;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: var(--shadow-lg);
+            position: relative;
+            z-index: 2;
+        }
+
+        .fasting-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .fasting-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 700;
+            font-size: 16px;
+        }
+
+        .fasting-status {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-fasting {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .status-eating {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+
+        .timer-display {
+            text-align: center;
+            margin: 15px 0;
+        }
+
+        .timer-time {
+            font-size: 42px;
+            font-weight: 800;
+            color: var(--primary);
+            letter-spacing: 2px;
+        }
+
+        .timer-label {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-top: 5px;
+        }
+
+        .fasting-controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .btn-fast {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 12px;
+            font-family: 'Tajawal', sans-serif;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-start {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-stop {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-fast:active {
+            transform: scale(0.95);
+        }
+
+        /* Progress Rings */
+        .macros-overview {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            padding: 15px;
+        }
+
+        .macro-card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 15px 10px;
+            text-align: center;
+            box-shadow: var(--shadow);
+            transition: transform 0.3s ease;
+        }
+
+        .macro-card:active {
+            transform: scale(0.95);
+        }
+
+        .macro-icon {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 10px;
+            font-size: 22px;
+        }
+
+        .icon-calories { background: linear-gradient(135deg, #fef3c7, #fde68a); }
+        .icon-protein { background: linear-gradient(135deg, #dbeafe, #bfdbfe); }
+        .icon-carbs { background: linear-gradient(135deg, #fce7f3, #fbcfe8); }
+        .icon-fat { background: linear-gradient(135deg, #fed7aa, #fdba74); }
+
+        .macro-value {
+            font-size: 18px;
+            font-weight: 800;
+            color: var(--text-primary);
+        }
+
+        .macro-goal {
+            font-size: 11px;
+            color: var(--text-light);
+        }
+
+        .macro-name {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 5px;
+            font-weight: 500;
+        }
+
+        /* Section Title */
+        .section-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 15px 10px;
+        }
+
+        .section-title h2 {
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .see-all {
+            color: var(--primary);
+            font-size: 13px;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        /* Add Food Section */
+        .add-food-section {
+            padding: 0 15px;
+        }
+
+        .add-food-tabs {
+            display: flex;
+            background: var(--bg-card);
+            border-radius: 15px;
+            padding: 5px;
+            margin-bottom: 15px;
+            box-shadow: var(--shadow);
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            background: transparent;
+            border-radius: 12px;
+            font-family: 'Tajawal', sans-serif;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: var(--text-secondary);
+        }
+
+        .tab-btn.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Image Upload */
+        .upload-area {
+            background: var(--bg-card);
+            border: 3px dashed var(--border);
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .upload-area:hover, .upload-area.dragover {
+            border-color: var(--primary);
+            background: rgba(16, 185, 129, 0.05);
+        }
+
+        .upload-icon {
+            font-size: 50px;
+            margin-bottom: 10px;
+        }
+
+        .upload-text {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .upload-hint {
+            color: var(--text-light);
+            font-size: 12px;
+            margin-top: 5px;
+        }
+
+        #imagePreview {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 15px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        /* Text Input */
+        .food-input-area {
+            background: var(--bg-card);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .input-group input,
+        .input-group textarea,
+        .input-group select {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            font-family: 'Tajawal', sans-serif;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            direction: rtl;
+        }
+
+        .input-group input:focus,
+        .input-group textarea:focus,
+        .input-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+        }
+
+        .input-group textarea {
+            resize: none;
+            min-height: 80px;
+        }
+
+        .btn-analyze {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            border: none;
+            border-radius: 14px;
+            font-family: 'Tajawal', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+
+        .btn-analyze:active {
+            transform: scale(0.98);
+        }
+
+        .btn-analyze:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        /* Loading Animation */
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255,255,255,0.95);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .loading-overlay.show {
+            display: flex;
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            margin-top: 20px;
+            font-size: 16px;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        /* Analysis Result */
+        .analysis-result {
+            display: none;
+            background: var(--bg-card);
+            border-radius: 20px;
+            padding: 20px;
+            margin-top: 15px;
+            box-shadow: var(--shadow-lg);
+            animation: slideUp 0.4s ease;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .result-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .result-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .result-title {
+            flex: 1;
+        }
+
+        .result-title h3 {
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .result-title p {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .nutrition-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .nutrition-item {
+            background: var(--bg-main);
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .nutrition-item .value {
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--primary);
+        }
+
+        .nutrition-item .label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 3px;
+        }
+
+        .btn-add-to-log {
+            width: 100%;
+            padding: 14px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-family: 'Tajawal', sans-serif;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        /* Today's Log */
+        .food-log {
+            padding: 0 15px 20px;
+        }
+
+        .log-entry {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 15px;
+            margin-bottom: 12px;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .entry-emoji {
+            width: 50px;
+            height: 50px;
+            background: var(--bg-main);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .entry-info {
+            flex: 1;
+        }
+
+        .entry-name {
+            font-weight: 700;
+            font-size: 15px;
+            margin-bottom: 3px;
+        }
+
+        .entry-macros {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .entry-calories {
+            font-weight: 800;
+            color: var(--primary);
+            font-size: 16px;
+        }
+
+        .delete-btn {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: #fee2e2;
+            color: var(--danger);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Tips Section */
+        .tips-section {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            margin: 15px;
+            border-radius: 20px;
+            padding: 20px;
+        }
+
+        .tips-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .tips-header span {
+            font-size: 24px;
+        }
+
+        .tips-header h3 {
+            font-size: 16px;
+            font-weight: 700;
+            color: #92400e;
+        }
+
+        .tip-item {
+            background: rgba(255,255,255,0.7);
+            padding: 12px 15px;
+            border-radius: 12px;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #78350f;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .tip-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .tip-icon {
+            font-size: 18px;
+        }
+
+        /* Water Tracker */
+        .water-section {
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            margin: 15px;
+            border-radius: 20px;
+            padding: 20px;
+        }
+
+        .water-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .water-header h3 {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1e40af;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .water-count {
+            font-size: 14px;
+            color: #3b82f6;
+            font-weight: 600;
+        }
+
+        .water-glasses {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .glass-btn {
+            width: 45px;
+            height: 55px;
+            border: 2px solid #93c5fd;
+            background: white;
+            border-radius: 0 0 10px 10px;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .glass-btn.filled {
+            background: linear-gradient(180deg, #3b82f6 0%, #60a5fa 100%);
+            border-color: #2563eb;
+        }
+
+        .glass-btn.filled::before {
+            content: '';
+            position: absolute;
+            top: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 20px;
+            height: 8px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 3px;
+        }
+
+        /* Daily Summary Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: flex-end;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--bg-card);
+            border-radius: 25px 25px 0 0;
+            width: 100%;
+            max-height: 85vh;
+            overflow-y: auto;
+            padding: 25px 20px;
+            animation: slideUpModal 0.3s ease;
+        }
+
+        @keyframes slideUpModal {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+
+        .modal-handle {
+            width: 40px;
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            margin: 0 auto 20px;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 800;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .summary-chart-container {
+            margin: 20px 0;
+        }
+
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: var(--bg-main);
+            padding: 15px;
+            border-radius: 14px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 3px;
+        }
+
+        .close-modal {
+            width: 100%;
+            padding: 16px;
+            background: var(--bg-main);
+            border: none;
+            border-radius: 14px;
+            font-family: 'Tajawal', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--bg-card);
+            padding: 10px 20px 25px;
+            display: flex;
+            justify-content: space-around;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
+            z-index: 100;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+            padding: 8px 15px;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-item.active {
+            background: rgba(16, 185, 129, 0.1);
+        }
+
+        .nav-item span:first-child {
+            font-size: 22px;
+        }
+
+        .nav-item span:last-child {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .nav-item.active span:last-child {
+            color: var(--primary);
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-light);
+        }
+
+        .empty-state span {
+            font-size: 60px;
+            display: block;
+            margin-bottom: 15px;
+        }
+
+        .empty-state p {
+            font-size: 14px;
+        }
+
+        /* Settings Panel */
+        .settings-panel {
+            display: none;
+            padding: 20px 15px;
+        }
+
+        .settings-panel.active {
+            display: block;
+        }
+
+        .setting-item {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 18px;
+            margin-bottom: 12px;
+            box-shadow: var(--shadow);
+        }
+
+        .setting-label {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .setting-input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            font-family: 'Tajawal', sans-serif;
+            font-size: 15px;
+        }
+
+        .setting-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .btn-save-settings {
+            width: 100%;
+            padding: 16px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 14px;
+            font-family: 'Tajawal', sans-serif;
+            font-size: 16px;
+            font-weight: 700;
+            margin-top: 15px;
+            cursor: pointer;
+        }
+
+        .btn-clear-data {
+            width: 100%;
+            padding: 14px;
+            background: var(--danger);
+            color: white;
+            border: none;
+            border-radius: 14px;
+            font-family: 'Tajawal', sans-serif;
+            font-size: 15px;
+            font-weight: 700;
+            margin-top: 10px;
+            cursor: pointer;
+        }
+
+        /* Page Container */
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        /* Progress Bar */
+        .progress-bar {
+            height: 8px;
+            background: var(--border);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+
+        .progress-calories { background: linear-gradient(90deg, #fbbf24, #f59e0b); }
+        .progress-protein { background: linear-gradient(90deg, #60a5fa, #3b82f6); }
+        .progress-carbs { background: linear-gradient(90deg, #f472b6, #ec4899); }
+        .progress-fat { background: linear-gradient(90deg, #fb923c, #f97316); }
+
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            background: var(--text-primary);
+            color: white;
+            padding: 14px 25px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            z-index: 2000;
+            transition: transform 0.3s ease;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* Responsive */
+        @media (min-width: 768px) {
+            .container {
+                max-width: 480px;
+                margin: 0 auto;
+            }
+            
+            body {
+                background: #e5e7eb;
+            }
+            
+            .header, .fasting-section, .macros-overview, 
+            .add-food-section, .food-log, .tips-section, 
+            .water-section, .bottom-nav {
+                margin-left: auto;
+                margin-right: auto;
+                max-width: 450px;
+            }
+        }
+    </style>
 </head>
 <body>
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <p class="loading-text">جاري تحليل الطعام... 🤖</p>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <p class="greeting">👋 مرحباً!</p>
+            <h1>NutriTrack AI</h1>
+            <p class="date-display" id="currentDate"></p>
+        </header>
+
+        <!-- Home Page -->
+        <div class="page active" id="homePage">
+            <!-- Fasting Timer -->
+            <section class="fasting-section">
+                <div class="fasting-header">
+                    <div class="fasting-title">
+                        ⏱️ الصيام المتقطع
+                    </div>
+                    <span class="fasting-status status-eating" id="fastingStatus">فترة الأكل</span>
+                </div>
+                <div class="timer-display">
+                    <div class="timer-time" id="timerDisplay">00:00:00</div>
+                    <div class="timer-label" id="timerLabel">ابدأ الصيام الآن</div>
+                </div>
+                <div class="fasting-controls">
+                    <button class="btn-fast btn-start" id="startFastBtn" onclick="startFasting()">▶️ بدء الصيام</button>
+                    <button class="btn-fast btn-stop" id="stopFastBtn" onclick="stopFasting()" style="display:none;">⏹️ إنهاء الصيام</button>
+                </div>
+            </section>
+
+            <!-- Macros Overview -->
+            <div class="macros-overview">
+                <div class="macro-card" onclick="showDailySummary()">
+                    <div class="macro-icon icon-calories">🔥</div>
+                    <div class="macro-value" id="totalCalories">0</div>
+                    <div class="macro-goal">/ <span id="goalCalories">2000</span></div>
+                    <div class="macro-name">سعرات</div>
+                </div>
+                <div class="macro-card" onclick="showDailySummary()">
+                    <div class="macro-icon icon-protein">🥩</div>
+                    <div class="macro-value" id="totalProtein">0</div>
+                    <div class="macro-goal">g / <span id="goalProtein">150</span>g</div>
+                    <div class="macro-name">بروتين</div>
+                </div>
+                <div class="macro-card" onclick="showDailySummary()">
+                    <div class="macro-icon icon-carbs">🍞</div>
+                    <div class="macro-value" id="totalCarbs">0</div>
+                    <div class="macro-goal">g / <span id="goalCarbs">250</span>g</div>
+                    <div class="macro-name">كارب</div>
+                </div>
+                <div class="macro-card" onclick="showDailySummary()">
+                    <div class="macro-icon icon-fat">🥑</div>
+                    <div class="macro-value" id="totalFat">0</div>
+                    <div class="macro-goal">g / <span id="goalFat">65</span>g</div>
+                    <div class="macro-name">دهون</div>
+                </div>
+            </div>
+
+            <!-- Water Tracker -->
+            <section class="water-section">
+                <div class="water-header">
+                    <h3>💧 الماء</h3>
+                    <span class="water-count" id="waterCount">0 / 8 أكواب</span>
+                </div>
+                <div class="water-glasses" id="waterGlasses">
+                    <!-- Generated by JS -->
+                </div>
+            </section>
+
+            <!-- AI Tips -->
+            <section class="tips-section" id="tipsSection">
+                <div class="tips-header">
+                    <span>💡</span>
+                    <h3>نصائح اليوم</h3>
+                </div>
+                <div id="tipsContainer">
+                    <!-- Generated by JS -->
+                </div>
+            </section>
+
+            <!-- Today's Food Log -->
+            <div class="section-title">
+                <h2>📝 سجل اليوم</h2>
+                <a href="#" class="see-all" onclick="showDailySummary(); return false;">عرض الكل</a>
+            </div>
+            <div class="food-log" id="foodLog">
+                <div class="empty-state">
+                    <span>🍽️</span>
+                    <p>لم يتم إضافة أي طعام بعد</p>
+                    <p style="font-size: 12px; margin-top: 5px;">قم بإضافة وجبتك الأولى!</p>
+                </div>
+            </div>
+        </div>
 
-<div class="flag-stripe"></div>
-
-<header>
-  <div class="trip-title">رحلتنا إلى إيطاليا</div>
-  <div class="trip-subtitle">Il Nostro Viaggio · 20-28 Maggio 2026</div>
-</header>
-
-<div class="tabs-wrapper">
-  <div class="tabs">
-    <button class="tab-btn active" data-tab="overview">🏠 نظرة عامة</button>
-    <button class="tab-btn" data-tab="days">📅 الأيام</button>
-    <button class="tab-btn" data-tab="hotels">🏨 الفنادق</button>
-    <button class="tab-btn" data-tab="budget">💰 الميزانية</button>
-    <button class="tab-btn" data-tab="bookings">✅ الحجوزات</button>
-    <button class="tab-btn" data-tab="info">📌 معلومات</button>
-  </div>
-</div>
-
-<main>
-
-<!-- OVERVIEW TAB -->
-<div class="tab-content active" id="overview">
-  <div class="hero">
-    <div class="hero-content">
-      <div class="hero-eyebrow">Buon Viaggio</div>
-      <div class="hero-title">من هامبورغ<br>إلى قلب إيطاليا</div>
-      <div class="hero-meta">رحلة 9 أيام • 5 مدن • قطارات سريعة وجبال الألب</div>
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-value">9</div>
-          <div class="stat-label">أيام كاملة</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value">5</div>
-          <div class="stat-label">مدن مذهلة</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value">8</div>
-          <div class="stat-label">ليالي</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value">~€2,860</div>
-          <div class="stat-label">ميزانية الرحلة</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="family-card">
-    <div class="family-label">العائلة المسافرة</div>
-    <div class="family-names">عبدالله • تالا • إلياس</div>
-    <div class="family-extra">إلياس - 3 سنوات 👶</div>
-  </div>
-
-  <div class="section-title">المسار</div>
-  <div class="section-sub">القاعدة في ميلانو · رحلات يومية بالقطار</div>
-  
-  <div class="route">
-    <div class="route-city" style="border-color: var(--milan);">
-      <div class="city-emoji">🏛️</div>
-      <div class="city-info">
-        <div class="city-name">ميلانو · Milano</div>
-        <div class="city-meta">القاعدة - Airbnb بـ Bullona</div>
-      </div>
-      <div class="city-days">8 ليالي</div>
-    </div>
-    <div class="route-city" style="border-color: var(--alps);">
-      <div class="city-emoji">🏔️</div>
-      <div class="city-info">
-        <div class="city-name">جبال الألب · St. Moritz</div>
-        <div class="city-meta">Bernina Express - يوم كامل</div>
-      </div>
-      <div class="city-days">1 يوم</div>
-    </div>
-    <div class="route-city" style="border-color: var(--venice);">
-      <div class="city-emoji">🛶</div>
-      <div class="city-info">
-        <div class="city-name">البندقية · Venezia</div>
-        <div class="city-meta">ليلة مبيت + جزيرة Burano</div>
-      </div>
-      <div class="city-days">2 أيام</div>
-    </div>
-    <div class="route-city" style="border-color: var(--pisa);">
-      <div class="city-emoji">🗼</div>
-      <div class="city-info">
-        <div class="city-name">بيزا · Pisa</div>
-        <div class="city-meta">البرج المائل وساحة المعجزات</div>
-      </div>
-      <div class="city-days">نصف يوم</div>
-    </div>
-    <div class="route-city" style="border-color: var(--florence);">
-      <div class="city-emoji">🎨</div>
-      <div class="city-info">
-        <div class="city-name">فلورنسا · Firenze</div>
-        <div class="city-meta">عاصمة النهضة + ليلة مبيت</div>
-      </div>
-      <div class="city-days">1.5 يوم</div>
-    </div>
-  </div>
-
-  <div class="tip-box">
-    <strong>📌 ملاحظة مهمة:</strong> الرحلة مصممة بإيقاع متوازن مراعاة لعمر إلياس (3 سنين). يوم مكثف يتبعه يوم هادئ. كل القطارات الطويلة بالصبح المبكر عشان نوصل بكير ونرتاح بكير.
-  </div>
-</div>
-
-<!-- DAYS TAB -->
-<div class="tab-content" id="days">
-  <div class="progress-section">
-    <div class="progress-title">
-      <span>أيام منجزة</span>
-      <span class="progress-count"><span id="daysDone">0</span> / 9</span>
-    </div>
-    <div class="progress-bar">
-      <div class="progress-fill" id="daysProgress" style="width: 0%"></div>
-    </div>
-  </div>
-
-  <!-- DAY 1 -->
-  <div class="card day-card" data-day="1">
-    <div class="day-banner milan">
-      <div class="day-banner-content">
-        <div class="day-num-big">01</div>
-        <div class="day-info">
-          <div class="day-date">Mercoledì · الأربعاء 20 مايو</div>
-          <div class="day-title-text">الوصول إلى ميلانو</div>
-        </div>
-        <div class="day-icon-big">✈️</div>
-      </div>
-    </div>
-    <div class="day-summary-row">
-      <span>الطيران + الاستكشاف الخفيف</span>
-      <span class="expand-icon">▼</span>
-    </div>
-    <div class="day-body">
-      <div class="timeline">
-        <div class="timeline-item">
-          <div class="time-tag">صباحاً</div>
-          <div class="activity">
-            <div class="activity-title">طيران ITA Airways</div>
-            <div class="activity-desc">هامبورغ → ميلانو مالبينسا (HAM → MXP)</div>
-            <span class="activity-cost">مدفوع ✓</span>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="time-tag">~13:00</div>
-          <div class="activity">
-            <div class="activity-title">وصول مطار Malpensa</div>
-            <div class="activity-desc">قطار Malpensa Express لـ Milano Centrale (47 دقيقة، €13/شخص)</div>
-            <span class="activity-cost">€26</span>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="time-tag">15:00</div>
-          <div class="activity">
-            <div class="activity-title">تسجيل دخول Airbnb</div>
-            <div class="activity-desc">شقة "Nuovissimo Design Apartment" - حي Bullona (شمال غرب ميلانو، هادي وعائلي)</div>
-            <a class="activity-place" href="https://www.google.com/maps/search/Bullona+Milan" target="_blank">حي Bullona</a>
-            <br><span class="activity-cost">مدفوع ✓ (€716)</span>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="time-tag">17:00</div>
-          <div class="activity">
-            <div class="activity-title">مشي خفيف بالحي</div>
-            <div class="activity-desc">استكشاف الشوارع القريبة، التعود على المكان، شراء مياه وبعض الأساسيات</div>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="time-tag">19:30</div>
-          <div class="activity">
-            <div class="activity-title">عشاء قريب من الشقة</div>
-            <div class="activity-desc">حي Sarpi (الحي الصيني) قريب وفيه مطاعم حلال كثيرة - تجربة عشاء سهلة بعد رحلة الطيران</div>
-            <span class="activity-cost">~€40</span>
-          </div>
-        </div>
-      </div>
-      <div class="tip-box">
-        <strong>💡 نصيحة:</strong> إلياس راح يكون متعب من الطيران، خلّي اليوم خفيف ونم بكير عشان يوم الغد المهم.
-      </div>
-    </div>
-  </div>
-
-  <!-- DAY 2 -->
-  <div class="card day-card" data-day="2">
-    <div class="day-banner milan">
-      <div class="day-banner-content">
-        <div class="day-num-big">02</div>
-        <div class="day-info">
-          <div class="day-date">Giovedì · الخميس 21 مايو</div>
-          <div class="day-title-text">قلب ميلانو الكلاسيكي</div>
-        </div>
-        <div class="day-icon-big">🏛️</div>
-      </div>
-    </div>
-    <div class="day-summary-row">
-      <span>الدومو · القلعة · بريرا</span>
-      <span class="expand-icon">▼</span>
-    </div>
-    <div class="day-body">
-      <div class="timeline">
-        <div class="timeline-item">
-          <div class="time-tag">9:00</div>
-          <div class="activity">
-            <div class="activity-title">كاتدرائية الدومو + السطح</div>
-            <div class="activity-desc">أيقونة ميلانو. اصعدوا للسطح (مصعد) للمنظر البانورامي - إلياس راح يحب "القلعة العالية"</div>
-            <a class="activity-place" href="https://www.google.com/maps/search/Duomo+di+Milano" target="_blank">Duomo di Milano</a>
-            <span class="activity-cost">€30 (الكبار فقط)</span>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="time-tag">11:00</div>
-          <div class="activity">
-            <div class="activity-title">Galleria Vittorio Emanuele II</div>
-            <div class="activity-desc">أقدم مول مغطى بالعالم - أرضيات فسيفساء جميلة وقباب زجاجية. اطلبوا من إلياس يلف على الثور للحظ (تقليد محلي)</div>
-            <a class="activity-place" href="https://www.google.com/maps/search/Galleria+Vittorio+Emanuele" target="_blank">Galleria · Piazza del Duomo</a>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="time-tag">13:00</div>
-          <div class="activity">
-            <div class="activity-title">غداء بمنطقة الدومو</div>
-            <div class="activity-desc">جربوا بيتزا أو بانيني سريع، إلياس يقدر يستريح</div>
-            <span class="activity-cost">~€45</span>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="time-tag">15:00</div>
-          <div class="activity">
-            <div class="activity-title">قلعة Sforzesco + حديقة Sempione</div>
-            <div class="activity-desc">قلعة من القرن 15 + أكبر حديقة بميلانو، إلياس يقدر يركض ويفش طاقته. مجاناً.</div>
-            <a class="activity-place" href="https://www.google.com/maps/search/Castello+Sforzesco" target="_blank">Castello Sforzesco</a>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="time-tag">18:00</div>
-          <div class="activity">
-            <div class="activity-title">حي Brera</div>
-            <div class="activity-desc">حي بوهيمي بشوارع حجرية ومحلات فنية وكافيهات. الجو راقي ورومانسي عند الغروب</div>
-            <a class="activity-place" href="https://www.google.com/maps/search/Brera+Milan" target="_blank">Quartiere Brera</a>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="time-tag">20:00</div>
-          <div class="activity">
-            <div class="activity-title">عشاء ببريرا أو العودة</div>
-            <div class="activity-desc">عشاء إيطالي تقليدي - باستا أو ريزوتو الميلاني (بدون كحول)</div>
-            <span class="activity-cost">~€65</span>
-          </div>
-        </div>
-      </div>
-      <div class="tip-box">
-        <strong>🎫 احجز الدومو مسبقاً:</strong> تذاكر سطح الدومو من <strong>duomomilano.it</strong> - وفّر الوقت بدل الطوابير الطويلة.
-      </div>
-    </div>
-  </div>
-
-  <!-- DAY 3 -->
-  <div class="card day-card" data-day="3">
-    <div class="day-banner alps">
-      <div class="day-banner-content">
-        <div class="day-num-big">03</div>
-        <div class="day-info">
-          <div class="day-date">Venerdì · الجمعة 22 مايو</div>
-          <div class="day-title-text">جبال الألب · القطار الأحمر</div>
-        </div>
-        <div class="day-icon-big">🏔️</div>
-      </div>
-    </div>
-    <div class="day-summary-row">
-      <span>التجربة الخرافية - يوم كامل</span>
-      <span class="expand-icon">▼</span>
-    </div>
-    <div class="day-body">
-      <div class="timeline">
-        <div class="timeline-item">
-          <div class="time-tag">5:30</div>
-          <div class="activity">
-            <div class="activity-title">الاستيقاظ والإفطار السريع</div>
-            <div class="activity-desc">جهزوا ساندويتشات وفواكه للقطار (إلياس راح يحتاج وجبات خفيفة)</div>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="time-tag">6:20</div>
-          <div class="activity">
-            <div class="activity-title">Trenord من Milano Centrale</div>
-            <div class="activity-desc">قطار إقليمي مباشر لـ Tirano. اشتروا التذاكر من الآلة بالمحطة.</div>
-            <a class="activity-place" href="https://www.google.com/maps/search/Milano+Centrale" target="_blank">محطة Milano Centrale</a>
-            <span class="activity-cost">€25 (إلياس مجاناً)</span>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="time-tag">8:50</div>
-          <div class="activity">
-            <div class="activity-title">وصول Tirano</div>
-            <div class="activity-desc">امشوا 5 دقايق لمحطة RhB السويسرية بنفس الساحة. اشتروا تذاكر Red Train.</div>
-            <span class="activity-cost">~€80 (الكبار)</span>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="time-tag">9:41</div>
-          <div class="activity">
-            <div class="activity-title">🚂 Red Train · Tirano → St. Moritz</div>
-            <div class="activity-desc">الرحلة الخرافية! قمم جبال الألب، بحيرات فيروزية، نهر Morteratsch الجليدي، جسر Brusio الحلزوني. الشبابيك تفتح للصور.</div>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="time-tag">12:05</div>
-          <div class="activity">
-            <div class="activity-title">وصول St. Moritz · سويسرا 🇨🇭</div>
-            <div class="activity-desc">ارتفاع 1,856م. مدينة المنتجعات الفاخرة والبحيرات.</div>
-            <a class="activity-place" href="https://www.google.com/maps/search/St.+Moritz+Switzerland" target="_blank">St. Moritz</a>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="time-tag">12:30</div>
-          <div class="activity">
-            <div class="activity-title">غداء + مشي عند البحيرة</div>
-            <div class="activity-desc">صلاة الظهر (بدل الجمعة - مقبولة شرعاً عند تعذر صلاة الجمعة بالسفر). امشوا عند بحيرة St. Moritz</div>
-            <span class="activity-cost">~€60 (سويسرا غالية!)</span>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="time-tag">15:48</div>
-          <div class="activity">
-            <div class="activity-title">🚂 Red Train · العودة لـ Tirano</div>
-            <div class="activity-desc">نفس المناظر بضوء عصري ذهبي - مختلف وجميل بطريقة ثانية</div>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="time-tag">17:13</div>
-          <div class="activity">
-            <div class="activity-title">وصول Tirano · انتقال للقطار الإيطالي</div>
-            <div class="activity-desc">7 دقايق مشي بين المحطتين</div>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="time-tag">17:20</div>
-          <div class="activity">
-            <div class="activity-title">Trenord · العودة لميلانو</div>
-            <div class="activity-desc">إلياس راح ينام على القطار غالباً 😴</div>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="time-tag">19:50</div>
-          <div class="activity">
-            <div class="activity-title">وصول ميلانو + عشاء خفيف</div>
-            <div class="activity-desc">عشاء سريع قريب من Centrale أو شقتكم</div>
-            <span class="activity-cost">~€35</span>
-          </div>
-        </div>
-      </div>
-      <div class="tip-box">
-        <strong>⚠️ مهم:</strong> خذوا الجوازات (سويسرا بشينغن بس بيتم التحقق). البسوا طبقات - الحرارة فوق قد تكون 5-10°C حتى بمايو. خذوا فرنك سويسري أو يورو للأكل (الكاش مفضل بالقرى الصغيرة).
-      </div>
-    </div>
-  </div>
-
-  <!-- DAY 4 -->
-  <div class="card day-card" data-day="4">
-    <div class="day-banner venice">
-      <div class="day-banner-content">
-        <div class="day-num-big">04</div>
-        <div class="day-info">
-          <div class="day-date">Sabato · السبت 23 مايو</div>
-          <div class="day-title-text">سحر البندقية</div>
-        </div>
-        <div class="day-icon-big">🛶</div>
-      </div>
-    </div>
-    <div class="day-summary-row">
-      <span>وصول البندقية + الجوندولا (مبيت)</span>
-      <span class="expand-icon">▼</span>
-    </div>
-    <div class="day-body">
-      <div class="timeline">
-        <div class="timeline-item">
-          <div class="time-tag">8:00</div>
-          <div class="activity">
-            <div class="activity-title">Frecciarossa · ميلانو ← البندقية</div>
-            <div class="activity-desc">قطار سريع مباشر، حضنوا إلياس وخذوا له وجبات خفيفة</div>
-            <span class="activity-cost">~€80 (محجوز مسبقاً)</span>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="time-tag">10:15</div>
-          <div class="activity">
-            <div class="activity-title">وصول Venezia Santa Lucia</div>
-            <div class="activity-desc">المحطة تطل على القنال الكبير مباشرة - أول منظر يخطف الأنفاس!</div>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="time-tag">10:30</div>
-          <div class="activity">
-            <div class="activity-title">تذكرة Vaporetto 24 ساعة</div>
-            <div class="activity-desc">باص مائي - الترانسبورت الرئيسي بفينيسيا. تذكرة يوم كامل أوفر بكتير من تذاكر فردية</div>
-            <span class="activity-cost">€50 (الكبار)</span>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="time-tag">11:00</div>
-          <div class="activity">
-            <div class="activity-title">Vaporetto #1 على القنال الكبير</div>
-            <div class="activity-desc">اجلسوا بمقدمة الباص - تجربة سحرية لإلياس. يمر بكل القصور الكبيرة وجسر ريالتو</div>
-            <a class="activity-place" href="https://www.google.com/maps/search/Grand+Canal+Venice" target="_blank">Canal Grande</a>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="time-tag">12:00</div>
-          <div class="activity">
-            <div class="activity-title">ساحة San Marco</div>
-            <div class="activity-desc">أهم ساحة بفينيسيا. الحمام، البرج (Campanile)، الكنيسة الذهبية (من الخارج مجانية)</div>
-            <a class="activity-place" href="https://www.google.com/maps/search/Piazza+San+Marco" target="_blank">Piazza San Marco</a>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="time-tag">13:30</div>
-          <div class="activity">
-            <div class="activity-title">غداء قريب من San Marco</div>
-            <div class="activity-desc">جربوا "Cicchetti" - أكلات صغيرة فينيسية، أو بيتزا/باستا</div>
-            <span class="activity-cost">~€55</span>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="time-tag">15:30</div>
-          <div class="activity">
-            <div class="activity-title">جسر Rialto والسوق</div>
-            <div class="activity-desc">جسر القنال الكبير الأشهر، الصور هنا أيقونية</div>
-            <a class="activity-place" href="https://www.google.com/maps/search/Ponte+di+Rialto" target="_blank">Ponte di Rialto</a>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="time-tag">17:00</div>
-          <div class="activity">
-            <div class="activity-title">🚣 ركوب الجوندولا</div>
-            <div class="activity-desc">التجربة الكلاسيكية - 30 دقيقة بقوارب فينيسيا الخشبية. مكلف بس "خرافي" زي ما طلبت. أحسن وقت قبل الغروب.</div>
-            <span class="activity-cost">€90 (لكل قارب، يسع 6)</span>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="time-tag">18:30</div>
-          <div class="activity">
-            <div class="activity-title">تسجيل دخول الفندق</div>
-            <div class="activity-desc">في حي Cannaregio (الأهدأ، الأقل ازدحام)</div>
-            <span class="activity-cost">€140 (1 ليلة)</span>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="time-tag">20:00</div>
-          <div class="activity">
-            <div class="activity-title">عشاء بـ Cannaregio</div>
-            <div class="activity-desc">المنطقة فيها مطاعم محلية أرخص وأطعم من سان مارك السياحية</div>
-            <span class="activity-cost">~€65</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- DAY 5 -->
-  <div class="card day-card" data-day="5">
-    <div class="day-banner venice">
-      <div class="day-banner-content">
-        <div class="day-num-big">05</div>
-        <div class="day-info">
-          <div class="day-date">Domenica · الأحد 24 مايو</div>
-          <div class="day-title-text">Burano الملونة + العودة</div>
-        </div>
-        <div class="day-icon-big">🏘️</div>
-      </div>
-    </div>
-    <div class="day-summary-row">
-      <span>صباح هادئ + قطار العودة</span>
-      <span class="expand-icon">▼</span>
-    </div>
-    <div class="day-body">
-      <div class="timeline">
-        <div class="timeline-item">
-          <div class="time-tag">9:00</div>
-          <div class="activity">
-            <div class="activity-title">إفطار + checkout</div>
-            <div class="activity-desc">إفطار بكافيه قريب من الفندق، اتركوا الحقائب عند الاستقبال</div>
-            <span class="activity-cost">~€20</span>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="time-tag">10:00</div>
-          <div class="activity">
-            <div class="activity-title">Vaporetto لجزيرة Burano</div>
-            <div class="activity-desc">45 دقيقة بالفابوريتو - رحلة ممتعة. تذكرة الـ24 ساعة لسة شغالة</div>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="time-tag">11:00</div>
-          <div class="activity">
-            <div class="activity-title">Burano · الجزيرة الملونة 🌈</div>
-            <div class="activity-desc">بيوت ملونة بكل ألوان قوس قزح، شهيرة بصناعة الدانتيل. إلياس راح يحبها جداً - صور رهيبة!</div>
-            <a class="activity-place" href="https://www.google.com/maps/search/Burano+Venice" target="_blank">Isola di Burano</a>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="time-tag">12:30</div>
-          <div class="activity">
-            <div class="activity-title">غداء بـ Burano</div>
-            <div class="activity-desc">المأكولات البحرية محلية وطازجة (تأكدوا بدون كحول بالطبخ)</div>
-            <span class="activity-cost">~€60</span>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="time-tag">14:00</div>
-          <div class="activity">
-            <div class="activity-title">عودة لفينيسيا + استرجاع الحقائب</div>
-            <div class="activity-desc">Vaporetto 45 دقيقة + استلام الحقائب من الفندق</div>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="time-tag">16:00</div>
-          <div class="activity">
-            <div class="activity-title">Frecciarossa · فينيسيا ← ميلانو</div>
-            <div class="activity-desc">2 ساعة 15 دقيقة، إلياس راح ينام</div>
-            <span class="activity-cost">~€80 (محجوز)</span>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="time-tag">18:15</div>
-          <div class="activity">
-            <div class="activity-title">وصول ميلانو</div>
-            <div class="activity-desc">عشاء قريب من الشقة، راحة</div>
-            <span class="activity-cost">~€40</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- DAY 6 -->
-  <div class="card day-card" data-day="6">
-    <div class="day-banner rest">
-      <div class="day-banner-content">
-        <div class="day-num-big">06</div>
-        <div class="day-info">
-          <div class="day-date">Lunedì · الإثنين 25 مايو</div>
-          <div class="day-title-text">يوم راحة في ميلانو</div>
-        </div>
-        <div class="day-icon-big">😌</div>
-      </div>
-    </div>
-    <div class="day-summary-row">
-      <span>الحدائق · الأكواريوم · Navigli</span>
-      <span class="expand-icon">▼</span>
-    </div>
-    <div class="day-body">
-      <div class="timeline">
-        <div class="timeline-item">
-          <div class="time-tag">10:30</div>
-          <div class="activity">
-            <div class="activity-title">إفطار متأخر بالشقة</div>
-            <div class="activity-desc">يوم بدون عجلة. اشتروا croissants وقهوة من كافيه قريب</div>
-            <span class="activity-cost">~€15</span>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="time-tag">12:00</div>
-          <div class="activity">
-            <div class="activity-title">حديقة Sempione</div>
-            <div class="activity-desc">إلياس يلعب، الكبار يرتاحوا تحت الأشجار. مجاناً.</div>
-            <a class="activity-place" href="https://www.google.com/maps/search/Parco+Sempione" target="_blank">Parco Sempione</a>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="time-tag">13:30</div>
-          <div class="activity">
-            <div class="activity-title">Acquario Civico</div>
-            <div class="activity-desc">أكواريوم ميلانو القديم - <strong>مجاناً</strong>! صغير لكن إلياس راح يحبه. داخل الحديقة.</div>
-            <a class="activity-place" href="https://www.google.com/maps/search/Acquario+Civico+Milano" target="_blank">Acquario Civico Milano</a>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="time-tag">14:30</div>
-          <div class="activity">
-            <div class="activity-title">غداء + قيلولة إلياس</div>
-            <div class="activity-desc">عودة للشقة، إلياس ينام شوي</div>
-            <span class="activity-cost">~€45</span>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="time-tag">17:30</div>
-          <div class="activity">
-            <div class="activity-title">حي Navigli</div>
-            <div class="activity-desc">القنوات القديمة - أجمل وقت قبل الغروب. شوارع حجرية، محلات أنتيكا، كافيهات.</div>
-            <a class="activity-place" href="https://www.google.com/maps/search/Navigli+Milan" target="_blank">Navigli</a>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="time-tag">19:30</div>
-          <div class="activity">
-            <div class="activity-title">عشاء بـ Navigli</div>
-            <div class="activity-desc">جربوا Risotto alla Milanese (الريزوتو الميلاني الأصلي). بدون كحول.</div>
-            <span class="activity-cost">~€55</span>
-          </div>
-        </div>
-      </div>
-      <div class="tip-box">
-        <strong>🛁 يوم الاستجمام:</strong> هذا يومك للراحة قبل رحلة فلورنسا الأطول. خلّيه على هواكم - ممكن تستبدلوا أي نشاط بنوم إضافي أو ساعة بالحديقة.
-      </div>
-    </div>
-  </div>
-
-  <!-- DAY 7 -->
-  <div class="card day-card" data-day="7">
-    <div class="day-banner pisa">
-      <div class="day-banner-content">
-        <div class="day-num-big">07</div>
-        <div class="day-info">
-          <div class="day-date">Martedì · الثلاثاء 26 مايو</div>
-          <div class="day-title-text">بيزا 🗼 + فلورنسا</div>
-        </div>
-        <div class="day-icon-big">🗼</div>
-      </div>
-    </div>
-    <div class="day-summary-row">
-      <span>البرج المائل + ليلة فلورنسا</span>
-      <span class="expand-icon">▼</span>
-    </div>
-    <div class="day-body">
-      <div class="timeline">
-        <div class="timeline-item">
-          <div class="time-tag">7:30</div>
-          <div class="activity">
-            <div class="activity-title">إفطار + المحطة</div>
-            <div class="activity-desc">حقيبة سفر صغيرة بس - راجعين الشقة. الباقي اتركوه بميلانو.</div>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="time-tag">8:00</div>
-          <div class="activity">
-            <div class="activity-title">Frecciarossa · ميلانو ← بيزا</div>
-            <div class="activity-desc">قطار مباشر 2 ساعة 50 دقيقة. احجزوا مسبقاً.</div>
-            <span class="activity-cost">~€60</span>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="time-tag">11:00</div>
-          <div class="activity">
-            <div class="activity-title">وصول Pisa Centrale</div>
-            <div class="activity-desc">باص LAM ROSSO أو 20 دقيقة مشي للبرج (€1.70 الباص)</div>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="time-tag">11:30</div>
-          <div class="activity">
-            <div class="activity-title">🗼 Piazza dei Miracoli</div>
-            <div class="activity-desc">البرج المائل، الكاتدرائية، المعمودية. الساحة عشب واسع وإلياس يقدر يركض. الصور الكلاسيكية مع البرج!</div>
-            <a class="activity-place" href="https://www.google.com/maps/search/Piazza+dei+Miracoli+Pisa" target="_blank">Piazza dei Miracoli</a>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="time-tag">13:00</div>
-          <div class="activity">
-            <div class="activity-title">غداء بقرب الساحة</div>
-            <div class="activity-desc">مطاعم محلية، تجنبوا الكافيهات السياحية المباشرة على البرج (أغلى وأقل جودة)</div>
-            <span class="activity-cost">~€55</span>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="time-tag">14:30</div>
-          <div class="activity">
-            <div class="activity-title">العودة للمحطة</div>
-            <div class="activity-desc">باص أو تاكسي (€10) خاصة مع الحقائب</div>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="time-tag">15:00</div>
-          <div class="activity">
-            <div class="activity-title">قطار إقليمي · بيزا ← فلورنسا</div>
-            <div class="activity-desc">1 ساعة، تذكرة رخيصة، لا تحتاج حجز مسبق. اشتروا بالمحطة.</div>
-            <span class="activity-cost">~€20</span>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="time-tag">16:00</div>
-          <div class="activity">
-            <div class="activity-title">وصول Firenze SMN + الفندق</div>
-            <div class="activity-desc">المحطة مركزية، 5-10 دقايق مشي للفندق. تسجيل دخول، راحة قصيرة.</div>
-            <span class="activity-cost">€110 (1 ليلة)</span>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="time-tag">18:00</div>
-          <div class="activity">
-            <div class="activity-title">Ponte Vecchio عند الغروب</div>
-            <div class="activity-desc">أقدم جسر بفلورنسا، محلات ذهب وخواتم. المنظر سحري قبل الغروب.</div>
-            <a class="activity-place" href="https://www.google.com/maps/search/Ponte+Vecchio+Florence" target="_blank">Ponte Vecchio</a>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="time-tag">19:30</div>
-          <div class="activity">
-            <div class="activity-title">عشاء بـ Piazza della Signoria</div>
-            <div class="activity-desc">جربوا Pappa al Pomodoro (شوربة بندورة وخبز) أو Ribollita - أكلات فلورنسية تقليدية</div>
-            <span class="activity-cost">~€65</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- DAY 8 -->
-  <div class="card day-card" data-day="8">
-    <div class="day-banner florence">
-      <div class="day-banner-content">
-        <div class="day-num-big">08</div>
-        <div class="day-info">
-          <div class="day-date">Mercoledì · الأربعاء 27 مايو</div>
-          <div class="day-title-text">فلورنسا · عاصمة النهضة</div>
-        </div>
-        <div class="day-icon-big">🎨</div>
-      </div>
-    </div>
-    <div class="day-summary-row">
-      <span>الدومو · سينيوريا · بيازاله</span>
-      <span class="expand-icon">▼</span>
-    </div>
-    <div class="day-body">
-      <div class="timeline">
-        <div class="timeline-item">
-          <div class="time-tag">9:00</div>
-          <div class="activity">
-            <div class="activity-title">دومو فلورنسا</div>
-            <div class="activity-desc">قبة Brunelleschi الأيقونية + المعمودية. من الخارج مجاناً ومذهل. مع إلياس، لا داعي للصعود (طوابير طويلة).</div>
-            <a class="activity-place" href="https://www.google.com/maps/search/Duomo+Florence" target="_blank">Duomo di Firenze</a>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="time-tag">10:30</div>
-          <div class="activity">
-            <div class="activity-title">Piazza della Signoria</div>
-            <div class="activity-desc">"متحف نحت مفتوح" - تماثيل عصر النهضة مجاناً. Palazzo Vecchio يطل عليها.</div>
-            <a class="activity-place" href="https://www.google.com/maps/search/Piazza+della+Signoria" target="_blank">Piazza della Signoria</a>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="time-tag">12:00</div>
-          <div class="activity">
-            <div class="activity-title">سوق Mercato Centrale</div>
-            <div class="activity-desc">السوق المسقف الشهير - أكل محلي طازج، أرخص وأطعم من المطاعم السياحية</div>
-            <span class="activity-cost">~€45</span>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="time-tag">13:30</div>
-          <div class="activity">
-            <div class="activity-title">الرجوع للفندق + checkout</div>
-            <div class="activity-desc">استلام الحقائب، احفظوها بالاستقبال للعصر</div>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="time-tag">14:30</div>
-          <div class="activity">
-            <div class="activity-title">Piazzale Michelangelo</div>
-            <div class="activity-desc">المنظر البانورامي الأشهر لفلورنسا. باص #12 من Santa Maria Novella. إلياس راح يحب الصعود.</div>
-            <a class="activity-place" href="https://www.google.com/maps/search/Piazzale+Michelangelo" target="_blank">Piazzale Michelangelo</a>
-            <span class="activity-cost">€5 (الباص)</span>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="time-tag">16:00</div>
-          <div class="activity">
-            <div class="activity-title">Gelato Time! 🍨</div>
-            <div class="activity-desc">جربوا أفضل جيلاتو بفلورنسا - "La Carraia" أو "Vivoli". إلياس راح يفرح!</div>
-            <span class="activity-cost">~€15</span>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="time-tag">17:30</div>
-          <div class="activity">
-            <div class="activity-title">Frecciarossa · فلورنسا ← ميلانو</div>
-            <div class="activity-desc">1 ساعة 50 دقيقة، إلياس ينام</div>
-            <span class="activity-cost">~€80 (محجوز)</span>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="time-tag">19:30</div>
-          <div class="activity">
-            <div class="activity-title">وصول ميلانو · العشاء الأخير</div>
-            <div class="activity-desc">عشاء قريب من الشقة، احتفلوا بنجاح الرحلة!</div>
-            <span class="activity-cost">~€60</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- DAY 9 -->
-  <div class="card day-card" data-day="9">
-    <div class="day-banner departure">
-      <div class="day-banner-content">
-        <div class="day-num-big">09</div>
-        <div class="day-info">
-          <div class="day-date">Giovedì · الخميس 28 مايو</div>
-          <div class="day-title-text">المغادرة · Arrivederci Italia</div>
-        </div>
-        <div class="day-icon-big">✈️</div>
-      </div>
-    </div>
-    <div class="day-summary-row">
-      <span>تجهيز الحقائب والعودة</span>
-      <span class="expand-icon">▼</span>
-    </div>
-    <div class="day-body">
-      <div class="timeline">
-        <div class="timeline-item">
-          <div class="time-tag">صباحاً</div>
-          <div class="activity">
-            <div class="activity-title">إفطار وحزم الحقائب</div>
-            <div class="activity-desc">بدون عجلة - الشقة لين الساعة 11. شراء هدايا أخيرة لو فيه وقت.</div>
-            <span class="activity-cost">~€25</span>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="time-tag">11:00</div>
-          <div class="activity">
-            <div class="activity-title">Checkout</div>
-            <div class="activity-desc">شكر مضيف Airbnb (تقييم بالفيديو لاحقاً!)</div>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="time-tag">حسب الطيران</div>
-          <div class="activity">
-            <div class="activity-title">Malpensa Express للمطار</div>
-            <div class="activity-desc">قبل الإقلاع بـ 3 ساعات للأمان مع إلياس. القطار من Centrale 47 دقيقة.</div>
-            <span class="activity-cost">€26</span>
-          </div>
-        </div>
-        <div class="timeline-item">
-          <div class="time-tag">✈️</div>
-          <div class="activity">
-            <div class="activity-title">طيران ITA Airways · ميلانو ← هامبورغ</div>
-            <div class="activity-desc">رحلة العودة مع ذكريات لا تُنسى ❤️</div>
-            <span class="activity-cost">مدفوع ✓</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- HOTELS TAB -->
-<div class="tab-content" id="hotels">
-  <div class="section-title">فنادق البندقية</div>
-  <div class="hotel-section-title">
-    <span class="city-tag">السبت 23 مايو</span>
-    <span class="city-night">ليلة واحدة</span>
-  </div>
-
-  <div class="hotel-card recommended">
-    <span class="recommended-tag">⭐ الأنسب</span>
-    <div class="hotel-header">
-      <div>
-        <div class="hotel-name">Hotel Tre Archi</div>
-        <div class="hotel-area">📍 Cannaregio · 10 دقايق من المحطة</div>
-      </div>
-      <div class="hotel-price">
-        <div class="hotel-price-num">€140</div>
-        <div class="hotel-price-label">/ ليلة</div>
-      </div>
-    </div>
-    <div class="hotel-features">
-      <span class="feature-tag">⭐⭐⭐</span>
-      <span class="feature-tag">عائلي</span>
-      <span class="feature-tag">إفطار</span>
-      <span class="feature-tag">واي فاي</span>
-      <span class="feature-tag">حي هادي</span>
-    </div>
-    <p class="muted" style="font-size:0.82rem; line-height:1.55;">فندق صغير مدار عائلياً، مثالي مع الأطفال. Cannaregio منطقة محلية أصيلة - أقل سياحة من San Marco وأرخص للأكل.</p>
-    <div class="hotel-actions">
-      <a class="btn btn-primary" href="https://www.booking.com/searchresults.html?ss=Hotel+Tre+Archi+Venice" target="_blank">احجز على Booking</a>
-      <a class="btn btn-outline" href="https://www.google.com/maps/search/Hotel+Tre+Archi+Venice" target="_blank">🗺️ الخريطة</a>
-    </div>
-  </div>
-
-  <div class="hotel-card">
-    <div class="hotel-header">
-      <div>
-        <div class="hotel-name">Hotel Antiche Figure</div>
-        <div class="hotel-area">📍 Santa Croce · مقابل المحطة مباشرة</div>
-      </div>
-      <div class="hotel-price">
-        <div class="hotel-price-num">€155</div>
-        <div class="hotel-price-label">/ ليلة</div>
-      </div>
-    </div>
-    <div class="hotel-features">
-      <span class="feature-tag">⭐⭐⭐</span>
-      <span class="feature-tag">منظر القنال</span>
-      <span class="feature-tag">قريب جداً</span>
-    </div>
-    <p class="muted" style="font-size:0.82rem; line-height:1.55;">على القنال الكبير، 2 دقايق من Santa Lucia. ممتاز لو ما تبغوا تتعبوا مع الحقائب وإلياس.</p>
-    <div class="hotel-actions">
-      <a class="btn btn-primary" href="https://www.booking.com/searchresults.html?ss=Hotel+Antiche+Figure+Venice" target="_blank">احجز</a>
-      <a class="btn btn-outline" href="https://www.google.com/maps/search/Hotel+Antiche+Figure+Venice" target="_blank">🗺️</a>
-    </div>
-  </div>
-
-  <div class="hotel-card">
-    <div class="hotel-header">
-      <div>
-        <div class="hotel-name">Generator Venice</div>
-        <div class="hotel-area">📍 Giudecca · جزيرة مقابل San Marco</div>
-      </div>
-      <div class="hotel-price">
-        <div class="hotel-price-num">€120</div>
-        <div class="hotel-price-label">/ ليلة</div>
-      </div>
-    </div>
-    <div class="hotel-features">
-      <span class="feature-tag">تصميم عصري</span>
-      <span class="feature-tag">غرف عائلية</span>
-      <span class="feature-tag">الأرخص</span>
-    </div>
-    <p class="muted" style="font-size:0.82rem; line-height:1.55;">تصميم بوتيك حديث، الأرخص. عيب: تحتاج فابوريتو 5 دقايق - بس المنظر من الجزيرة لـ San Marco خرافي!</p>
-    <div class="hotel-actions">
-      <a class="btn btn-primary" href="https://www.booking.com/searchresults.html?ss=Generator+Venice" target="_blank">احجز</a>
-      <a class="btn btn-outline" href="https://www.google.com/maps/search/Generator+Venice" target="_blank">🗺️</a>
-    </div>
-  </div>
-
-  <div class="section-title">فنادق فلورنسا</div>
-  <div class="hotel-section-title">
-    <span class="city-tag">الثلاثاء 26 مايو</span>
-    <span class="city-night">ليلة واحدة</span>
-  </div>
-
-  <div class="hotel-card recommended">
-    <span class="recommended-tag">⭐ الأنسب</span>
-    <div class="hotel-header">
-      <div>
-        <div class="hotel-name">Hotel Crocini</div>
-        <div class="hotel-area">📍 Santa Maria Novella · 5 دقايق من المحطة</div>
-      </div>
-      <div class="hotel-price">
-        <div class="hotel-price-num">€110</div>
-        <div class="hotel-price-label">/ ليلة</div>
-      </div>
-    </div>
-    <div class="hotel-features">
-      <span class="feature-tag">⭐⭐⭐</span>
-      <span class="feature-tag">عائلي</span>
-      <span class="feature-tag">إفطار</span>
-      <span class="feature-tag">قيمة ممتازة</span>
-    </div>
-    <p class="muted" style="font-size:0.82rem; line-height:1.55;">قريب من المحطة وقريب من الدومو (10 دقايق مشي). ممتاز للوصول من بيزا والرحيل لميلانو.</p>
-    <div class="hotel-actions">
-      <a class="btn btn-primary" href="https://www.booking.com/searchresults.html?ss=Hotel+Crocini+Florence" target="_blank">احجز</a>
-      <a class="btn btn-outline" href="https://www.google.com/maps/search/Hotel+Crocini+Florence" target="_blank">🗺️</a>
-    </div>
-  </div>
-
-  <div class="hotel-card">
-    <div class="hotel-header">
-      <div>
-        <div class="hotel-name">Hotel Casci</div>
-        <div class="hotel-area">📍 وسط البلد · قريب من Duomo</div>
-      </div>
-      <div class="hotel-price">
-        <div class="hotel-price-num">€125</div>
-        <div class="hotel-price-label">/ ليلة</div>
-      </div>
-    </div>
-    <div class="hotel-features">
-      <span class="feature-tag">⭐⭐⭐</span>
-      <span class="feature-tag">عائلي جداً</span>
-      <span class="feature-tag">تاريخي</span>
-    </div>
-    <p class="muted" style="font-size:0.82rem; line-height:1.55;">مبنى تاريخي (كان بيت ملحن إيطالي)، إدارة عائلية ودودة مع الأطفال. قريب من Duomo.</p>
-    <div class="hotel-actions">
-      <a class="btn btn-primary" href="https://www.booking.com/searchresults.html?ss=Hotel+Casci+Florence" target="_blank">احجز</a>
-      <a class="btn btn-outline" href="https://www.google.com/maps/search/Hotel+Casci+Florence" target="_blank">🗺️</a>
-    </div>
-  </div>
-
-  <div class="hotel-card">
-    <div class="hotel-header">
-      <div>
-        <div class="hotel-name">B&B Soggiorno Battistero</div>
-        <div class="hotel-area">📍 على Piazza del Duomo مباشرة</div>
-      </div>
-      <div class="hotel-price">
-        <div class="hotel-price-num">€95</div>
-        <div class="hotel-price-label">/ ليلة</div>
-      </div>
-    </div>
-    <div class="hotel-features">
-      <span class="feature-tag">منظر الدومو</span>
-      <span class="feature-tag">الأرخص</span>
-      <span class="feature-tag">B&B</span>
-    </div>
-    <p class="muted" style="font-size:0.82rem; line-height:1.55;">صغير وبسيط بس على ساحة الدومو مباشرة - المنظر من النافذة خرافي. قيمة لا تُصدق.</p>
-    <div class="hotel-actions">
-      <a class="btn btn-primary" href="https://www.booking.com/searchresults.html?ss=Soggiorno+Battistero+Florence" target="_blank">احجز</a>
-      <a class="btn btn-outline" href="https://www.google.com/maps/search/Soggiorno+Battistero+Florence" target="_blank">🗺️</a>
-    </div>
-  </div>
-
-  <div class="tip-box">
-    <strong>💡 لماذا هذه المناطق:</strong>
-    <ul style="margin-top:0.4rem; padding-right:1rem; font-size:0.82rem;">
-      <li><strong>Cannaregio (فينيسيا):</strong> أهدى، أرخص للأكل، قريب من المحطة - مثالي مع طفل</li>
-      <li><strong>Santa Maria Novella (فلورنسا):</strong> قريب من المحطة، يوفر عليك مشي طويل مع الحقائب وإلياس</li>
-    </ul>
-  </div>
-</div>
-
-<!-- BUDGET TAB -->
-<div class="tab-content" id="budget">
-  <div class="budget-total">
-    <div class="budget-label">المجموع المتوقع</div>
-    <div class="budget-amount">€2,860</div>
-    <div class="budget-note">لعائلة من 3 (الطيران مستثنى - محجوز ومدفوع)</div>
-  </div>
-
-  <div class="section-title">السكن</div>
-  <div class="budget-item paid">
-    <div class="budget-cat">
-      <div class="budget-emoji">🏠</div>
-      <div>
-        <div class="budget-name">Airbnb ميلانو<span class="paid-stamp">مدفوع</span></div>
-        <div class="budget-detail">8 ليالي · حي Bullona</div>
-      </div>
-    </div>
-    <div class="budget-price">€716.60</div>
-  </div>
-  <div class="budget-item">
-    <div class="budget-cat">
-      <div class="budget-emoji">🏨</div>
-      <div>
-        <div class="budget-name">فندق البندقية</div>
-        <div class="budget-detail">1 ليلة · Cannaregio</div>
-      </div>
-    </div>
-    <div class="budget-price">€140</div>
-  </div>
-  <div class="budget-item">
-    <div class="budget-cat">
-      <div class="budget-emoji">🏨</div>
-      <div>
-        <div class="budget-name">فندق فلورنسا</div>
-        <div class="budget-detail">1 ليلة · Santa Maria Novella</div>
-      </div>
-    </div>
-    <div class="budget-price">€110</div>
-  </div>
-
-  <div class="section-title">القطارات والمواصلات</div>
-  <div class="budget-item">
-    <div class="budget-cat">
-      <div class="budget-emoji">🚂</div>
-      <div>
-        <div class="budget-name">رحلة Bernina الألبية</div>
-        <div class="budget-detail">Trenord + Red Train للعائلة</div>
-      </div>
-    </div>
-    <div class="budget-price">€210</div>
-  </div>
-  <div class="budget-item">
-    <div class="budget-cat">
-      <div class="budget-emoji">🚄</div>
-      <div>
-        <div class="budget-name">Frecciarossa فينيسيا</div>
-        <div class="budget-detail">ذهاب وإياب · بالغين 2</div>
-      </div>
-    </div>
-    <div class="budget-price">€160</div>
-  </div>
-  <div class="budget-item">
-    <div class="budget-cat">
-      <div class="budget-emoji">🚄</div>
-      <div>
-        <div class="budget-name">ميلانو → بيزا → فلورنسا → ميلانو</div>
-        <div class="budget-detail">3 قطارات (سريع + إقليمي)</div>
-      </div>
-    </div>
-    <div class="budget-price">€160</div>
-  </div>
-  <div class="budget-item">
-    <div class="budget-cat">
-      <div class="budget-emoji">🚇</div>
-      <div>
-        <div class="budget-name">مواصلات داخل ميلانو</div>
-        <div class="budget-detail">Metro/Tram/Bus + المطار</div>
-      </div>
-    </div>
-    <div class="budget-price">€90</div>
-  </div>
-
-  <div class="section-title">الأنشطة والتذاكر</div>
-  <div class="budget-item">
-    <div class="budget-cat">
-      <div class="budget-emoji">⛪</div>
-      <div>
-        <div class="budget-name">سطح الدومو ميلانو</div>
-        <div class="budget-detail">تذكرتين بالغ</div>
-      </div>
-    </div>
-    <div class="budget-price">€30</div>
-  </div>
-  <div class="budget-item">
-    <div class="budget-cat">
-      <div class="budget-emoji">🛶</div>
-      <div>
-        <div class="budget-name">Vaporetto Venice 24h</div>
-        <div class="budget-detail">باص مائي - يوم كامل</div>
-      </div>
-    </div>
-    <div class="budget-price">€50</div>
-  </div>
-  <div class="budget-item">
-    <div class="budget-cat">
-      <div class="budget-emoji">🚣</div>
-      <div>
-        <div class="budget-name">جولة الجوندولا</div>
-        <div class="budget-detail">30 دقيقة · العائلة كاملة</div>
-      </div>
-    </div>
-    <div class="budget-price">€90</div>
-  </div>
-
-  <div class="section-title">الأكل (€95/يوم × 9 أيام)</div>
-  <div class="budget-item">
-    <div class="budget-cat">
-      <div class="budget-emoji">🍝</div>
-      <div>
-        <div class="budget-name">إفطار وغداء وعشاء</div>
-        <div class="budget-detail">~€40/شخص بالغ يومياً، €15 لإلياس</div>
-      </div>
-    </div>
-    <div class="budget-price">€855</div>
-  </div>
-  <div class="budget-item">
-    <div class="budget-cat">
-      <div class="budget-emoji">🍨</div>
-      <div>
-        <div class="budget-name">Gelato + قهوة + سناكات</div>
-        <div class="budget-detail">المهم!</div>
-      </div>
-    </div>
-    <div class="budget-price">€80</div>
-  </div>
-
-  <div class="section-title">متفرقات</div>
-  <div class="budget-item">
-    <div class="budget-cat">
-      <div class="budget-emoji">🎁</div>
-      <div>
-        <div class="budget-name">هدايا وتذكارات</div>
-        <div class="budget-detail">حقايب جلد فلورنسا · أقنعة بندقية · شوكولاتة</div>
-      </div>
-    </div>
-    <div class="budget-price">€100</div>
-  </div>
-  <div class="budget-item">
-    <div class="budget-cat">
-      <div class="budget-emoji">💼</div>
-      <div>
-        <div class="budget-name">احتياطي/طوارئ</div>
-        <div class="budget-detail">15% للأمان</div>
-      </div>
-    </div>
-    <div class="budget-price">€170</div>
-  </div>
-
-  <div class="tip-box">
-    <strong>💡 نصائح توفير:</strong><br>
-    • اشتروا Trenord Milan-Tirano بنفس اليوم (نفس السعر، ما في فرق)<br>
-    • Frecciarossa: احجزوا اليوم وراح يكلف نص السعر (€25-30 بدل €60)<br>
-    • Red Train بـ Tirano: اشتروا من شباك المحطة، أرخص بـ 30% من الإنترنت<br>
-    • الغداء: panini + ماء من supermarket = €15 للعائلة (بدل €50 بمطعم)
-  </div>
-</div>
-
-<!-- BOOKINGS TAB -->
-<div class="tab-content" id="bookings">
-  <div class="progress-section">
-    <div class="progress-title">
-      <span>حجوزات مكتملة</span>
-      <span class="progress-count"><span id="bookingsDone">0</span> / 7</span>
-    </div>
-    <div class="progress-bar">
-      <div class="progress-fill" id="bookingsProgress" style="width: 0%"></div>
-    </div>
-  </div>
-
-  <div class="section-title">احجز اليوم/بكرا 🔥</div>
-
-  <div class="booking-item urgent" data-booking="1">
-    <div class="booking-check" onclick="toggleBooking(this)"></div>
-    <div class="booking-content">
-      <div class="booking-title">1. Frecciarossa ميلانو ↔ البندقية</div>
-      <div class="muted" style="font-size:0.8rem;">السبت 23 ذهاب 8:00 ص، الأحد 24 عودة 16:00</div>
-      <div class="booking-meta">
-        <span class="booking-deadline">⏰ احجز فوراً</span>
-        <span class="booking-price">~€160</span>
-      </div>
-      <a class="booking-link" href="https://www.trenitalia.com" target="_blank">trenitalia.com</a>
-      <a class="booking-link" href="https://www.italotreno.it" target="_blank" style="margin-right:0.6rem;">italotreno.it</a>
-    </div>
-  </div>
-
-  <div class="booking-item urgent" data-booking="2">
-    <div class="booking-check" onclick="toggleBooking(this)"></div>
-    <div class="booking-content">
-      <div class="booking-title">2. Frecciarossa ميلانو ← بيزا</div>
-      <div class="muted" style="font-size:0.8rem;">الثلاثاء 26 · 8:00 ص</div>
-      <div class="booking-meta">
-        <span class="booking-deadline">⏰ احجز فوراً</span>
-        <span class="booking-price">~€60</span>
-      </div>
-      <a class="booking-link" href="https://www.trenitalia.com" target="_blank">trenitalia.com</a>
-    </div>
-  </div>
-
-  <div class="booking-item urgent" data-booking="3">
-    <div class="booking-check" onclick="toggleBooking(this)"></div>
-    <div class="booking-content">
-      <div class="booking-title">3. Frecciarossa فلورنسا ← ميلانو</div>
-      <div class="muted" style="font-size:0.8rem;">الأربعاء 27 · 17:30</div>
-      <div class="booking-meta">
-        <span class="booking-deadline">⏰ احجز فوراً</span>
-        <span class="booking-price">~€80</span>
-      </div>
-      <a class="booking-link" href="https://www.trenitalia.com" target="_blank">trenitalia.com</a>
-    </div>
-  </div>
-
-  <div class="section-title">خلال 2-3 أيام</div>
-
-  <div class="booking-item soon" data-booking="4">
-    <div class="booking-check" onclick="toggleBooking(this)"></div>
-    <div class="booking-content">
-      <div class="booking-title">4. فندق البندقية (ليلة السبت)</div>
-      <div class="muted" style="font-size:0.8rem;">شوف قسم الفنادق - Hotel Tre Archi مقترح</div>
-      <div class="booking-meta">
-        <span class="booking-deadline">📅 خلال يومين</span>
-        <span class="booking-price">€140</span>
-      </div>
-      <a class="booking-link" href="https://www.booking.com" target="_blank">booking.com</a>
-    </div>
-  </div>
-
-  <div class="booking-item soon" data-booking="5">
-    <div class="booking-check" onclick="toggleBooking(this)"></div>
-    <div class="booking-content">
-      <div class="booking-title">5. فندق فلورنسا (ليلة الثلاثاء)</div>
-      <div class="muted" style="font-size:0.8rem;">شوف قسم الفنادق - Hotel Crocini مقترح</div>
-      <div class="booking-meta">
-        <span class="booking-deadline">📅 خلال يومين</span>
-        <span class="booking-price">€110</span>
-      </div>
-      <a class="booking-link" href="https://www.booking.com" target="_blank">booking.com</a>
-    </div>
-  </div>
-
-  <div class="booking-item normal" data-booking="6">
-    <div class="booking-check" onclick="toggleBooking(this)"></div>
-    <div class="booking-content">
-      <div class="booking-title">6. تذاكر سطح الدومو ميلانو</div>
-      <div class="muted" style="font-size:0.8rem;">للخميس 21 صباحاً · يوفّر طوابير</div>
-      <div class="booking-meta">
-        <span class="booking-deadline">📅 خلال 3 أيام</span>
-        <span class="booking-price">€30</span>
-      </div>
-      <a class="booking-link" href="https://www.duomomilano.it" target="_blank">duomomilano.it</a>
-    </div>
-  </div>
-
-  <div class="section-title">يوم السفر</div>
-
-  <div class="booking-item normal" data-booking="7">
-    <div class="booking-check" onclick="toggleBooking(this)"></div>
-    <div class="booking-content">
-      <div class="booking-title">7. Trenord + RhB Red Train</div>
-      <div class="muted" style="font-size:0.8rem;">اشتر من المحطة يوم الجمعة (سعر ثابت)</div>
-      <div class="booking-meta">
-        <span class="booking-deadline">🎫 بالمحطة</span>
-        <span class="booking-price">~€210 عائلة</span>
-      </div>
-    </div>
-  </div>
-
-  <div class="tip-box">
-    <strong>📋 سبب الترتيب:</strong> القطارات السريعة (Frecciarossa) أسعارها تطلع مع اقتراب التاريخ - يا تحجز اليوم وتدفع نص السعر، يا تأجل وتدفع الضعف. الفنادق الاقتصادية تنفد بسرعة لأن المايو موسم سياحي. تذاكر الدومو تتنفد قبل بأيام.
-  </div>
-</div>
-
-<!-- INFO TAB -->
-<div class="tab-content" id="info">
-  <div class="section-title">مطاعم حلال 🍽️</div>
-  
-  <div class="info-card">
-    <div class="info-card-title">في ميلانو</div>
-    <div class="info-card-content">
-      <ul class="halal-list">
-        <li><strong>Al-Madina</strong> - مأكولات شامية، حلال موثق</li>
-        <li><strong>حي Sarpi</strong> - عشرات مطاعم الحلال والكباب (قريب من Bullona)</li>
-        <li><strong>Doner Kebab</strong> - منتشرة بكل مكان، أغلبها حلال</li>
-        <li><strong>تطبيق Zabihah</strong> - لإيجاد مطاعم بأي حي</li>
-      </ul>
-    </div>
-  </div>
-
-  <div class="info-card">
-    <div class="info-card-title">في البندقية</div>
-    <div class="info-card-content">
-      <ul class="halal-list">
-        <li><strong>الخيار الذكي:</strong> مأكولات بحرية (سمك، روبيان) - حلال طبيعياً، تأكدوا بدون كحول بالطبخ</li>
-        <li><strong>Cannaregio</strong> فيها كباب وفلافل</li>
-        <li><strong>Margherita Pizza</strong> - حلال طبيعياً (لا لحم، لا كحول)</li>
-      </ul>
-    </div>
-  </div>
-
-  <div class="info-card">
-    <div class="info-card-title">في فلورنسا</div>
-    <div class="info-card-content">
-      <ul class="halal-list">
-        <li><strong>Eby's Latin Bar</strong> - رغم الاسم، عندهم أطباق حلال لبنانية</li>
-        <li><strong>Mercato Centrale</strong> - السوق فيه أكلات نباتية وأسماك طازجة</li>
-        <li><strong>Kebab corners</strong> حول Santa Maria Novella</li>
-      </ul>
-    </div>
-  </div>
-
-  <div class="info-card">
-    <div class="info-card-title">في بيزا وSt. Moritz</div>
-    <div class="info-card-content">
-      <ul class="halal-list">
-        <li><strong>بيزا:</strong> كباب قرب المحطة، أو سمك من Trattoria محلية</li>
-        <li><strong>St. Moritz (سويسرا):</strong> صعب - خذوا ساندويتشات معكم من ميلانو، أو أكلوا أسماك بمطعم البحيرة</li>
-      </ul>
-    </div>
-  </div>
-
-  <div class="section-title">المساجد 🕌</div>
-
-  <div class="info-card">
-    <div class="info-card-content">
-      <ul class="mosque-list">
-        <li><strong>ميلانو:</strong> Centro Islamico, Viale Jenner 50 (الأكبر، خطبة بالعربي والإيطالي)</li>
-        <li><strong>ميلانو:</strong> Moschea di Segrate (جنوب شرق)</li>
-        <li><strong>فلورنسا:</strong> Centro Islamico, Borgo Allegri 64</li>
-        <li><strong>البندقية:</strong> Centro Culturale Islamico, Mestre (على البر، تحتاج باص)</li>
-      </ul>
-    </div>
-  </div>
-
-  <div class="info-card">
-    <div class="info-card-title">صلاة الجمعة (22 مايو)</div>
-    <div class="info-card-content">
-      ستكون <strong>على القطار وقت الجمعة</strong>. شرعياً، عند تعذر صلاة الجمعة بالسفر، تُصلى ركعتين ظهراً بدلاً منها. أو إذا وصلتم Tirano قبل الظهر يمكن السؤال إن كان فيه مسجد قريب (Tirano مدينة صغيرة، احتمال ضعيف).
-    </div>
-  </div>
-
-  <div class="section-title">معلومات مهمة 📞</div>
-
-  <div class="info-card">
-    <div class="info-card-title">طوارئ وأرقام</div>
-    <div class="info-card-content">
-      <strong>112</strong> - الطوارئ العامة بإيطاليا وسويسرا (شرطة، إسعاف، إطفاء)<br>
-      <strong>117</strong> - الشرطة بسويسرا<br>
-      <strong>سفارة الأردن بروما</strong>: +39 06 8632 1184<br>
-      <strong>أعراض طبية إيطالي:</strong> "Mio figlio sta male" (ابني تعبان)
-    </div>
-  </div>
-
-  <div class="info-card">
-    <div class="info-card-title">عبارات إيطالية مفيدة</div>
-    <div class="info-card-content">
-      <strong>Buongiorno</strong> - صباح الخير<br>
-      <strong>Grazie</strong> - شكراً<br>
-      <strong>Per favore</strong> - من فضلك<br>
-      <strong>Senza maiale, senza alcol</strong> - بدون لحم خنزير، بدون كحول (مهم بالطلبات!)<br>
-      <strong>Halal?</strong> - يفهموها عموماً<br>
-      <strong>Il conto, per favore</strong> - الفاتورة من فضلك
-    </div>
-  </div>
-
-  <div class="info-card">
-    <div class="info-card-title">تطبيقات لازم تنزلها</div>
-    <div class="info-card-content">
-      • <strong>Trenitalia</strong> + <strong>Italo</strong> - للقطارات السريعة<br>
-      • <strong>ATM Milano</strong> - مواصلات ميلانو<br>
-      • <strong>Google Maps</strong> - حمّلوا الخرائط أوفلاين<br>
-      • <strong>Google Translate</strong> - مع كاميرا للمنيوهات<br>
-      • <strong>Citymapper</strong> - بديل ممتاز للخرائط بميلانو<br>
-      • <strong>Muslim Pro</strong> - أوقات الصلاة والقبلة
-    </div>
-  </div>
-
-  <div class="info-card">
-    <div class="info-card-title">نصائح إلياس (3 سنين)</div>
-    <div class="info-card-content">
-      • <strong>عربية أطفال</strong> طوال الرحلة - أحسن من stroller لتعب الأمومة<br>
-      • <strong>وجبات سناك</strong> دايماً جاهزة - بسكويت، فواكه، عصير<br>
-      • <strong>قيلولة ضرورية</strong> - خططوا للعودة للشقة عصراً<br>
-      • <strong>ملابس ملونة وحذاء مريح</strong> - مشي كثير على الحجر<br>
-      • <strong>كريم شمس + قبعة</strong> - مايو شمس قوية<br>
-      • <strong>لعبة مفضلة</strong> للقطارات والمطار
-    </div>
-  </div>
-</div>
-
-</main>
-
-<!-- Floating share -->
-<div class="float-share">
-  <div class="share-menu" id="shareMenu">
-    <a class="share-option" href="#" id="whatsappShare">
-      <span>💬</span> WhatsApp لتالا
-    </a>
-    <button class="share-option" onclick="downloadFile()">
-      <span>💾</span> تحميل الملف
-    </button>
-    <button class="share-option" onclick="window.print()">
-      <span>🖨️</span> طباعة / PDF
-    </button>
-    <button class="share-option" onclick="copyMessage()">
-      <span>📋</span> نسخ رسالة الملخص
-    </button>
-  </div>
-  <button class="share-btn" id="shareBtn" title="مشاركة">📤</button>
-</div>
-
-<div class="footer">
-  <div class="footer-divider"></div>
-  <em>Buon viaggio! · رحلة سعيدة</em>
-  <div style="margin-top:0.5rem; font-size:0.7rem; opacity:0.5;">احفظ هذا الملف على تلفونك لاستخدامه أوفلاين</div>
-</div>
-
-<script>
-// Tab navigation
-document.querySelectorAll('.tab-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const target = btn.dataset.tab;
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById(target).classList.add('active');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  });
-});
-
-// Day cards expand/collapse
-document.querySelectorAll('.day-card').forEach(card => {
-  card.addEventListener('click', (e) => {
-    if (e.target.tagName === 'A') return;
-    card.classList.toggle('expanded');
-    saveState();
-  });
-});
-
-// Booking checkboxes
-function toggleBooking(el) {
-  el.classList.toggle('checked');
-  const item = el.closest('.booking-item');
-  if (el.classList.contains('checked')) {
-    item.classList.add('done');
-  } else {
-    item.classList.remove('done');
-  }
-  updateBookingProgress();
-  saveState();
-}
-
-function updateBookingProgress() {
-  const total = document.querySelectorAll('.booking-item').length;
-  const done = document.querySelectorAll('.booking-check.checked').length;
-  document.getElementById('bookingsDone').textContent = done;
-  document.getElementById('bookingsProgress').style.width = (done/total*100) + '%';
-}
-
-// Save/restore state (works when file is downloaded; falls back gracefully)
-function saveState() {
-  try {
-    const state = {
-      bookings: Array.from(document.querySelectorAll('.booking-item')).map((el,i) => ({
-        i, checked: el.querySelector('.booking-check').classList.contains('checked')
-      })),
-      days: Array.from(document.querySelectorAll('.day-card')).map((el,i) => ({
-        i, expanded: el.classList.contains('expanded')
-      }))
-    };
-    localStorage.setItem('italyTrip', JSON.stringify(state));
-  } catch(e) { /* localStorage might be disabled */ }
-}
-
-function loadState() {
-  try {
-    const saved = localStorage.getItem('italyTrip');
-    if (!saved) return;
-    const state = JSON.parse(saved);
-    state.bookings.forEach(b => {
-      if (b.checked) {
-        const item = document.querySelectorAll('.booking-item')[b.i];
-        if (item) {
-          item.querySelector('.booking-check').classList.add('checked');
-          item.classList.add('done');
+        <!-- Add Food Page -->
+        <div class="page" id="addFoodPage">
+            <div class="section-title">
+                <h2>➕ إضافة طعام</h2>
+            </div>
+            
+            <div class="add-food-section">
+                <div class="add-food-tabs">
+                    <button class="tab-btn active" onclick="switchTab('camera')">📷 صورة</button>
+                    <button class="tab-btn" onclick="switchTab('text')">✏️ وصف</button>
+                </div>
+
+                <!-- Camera Tab -->
+                <div class="tab-content active" id="cameraTab">
+                    <div class="upload-area" id="uploadArea" onclick="document.getElementById('imageInput').click()">
+                        <div class="upload-icon">📸</div>
+                        <p class="upload-text">اضغط لالتقاط أو رفع صورة</p>
+                        <p class="upload-hint">يدعم PNG, JPG حتى 10MB</p>
+                    </div>
+                    <input type="file" id="imageInput" accept="image/*" capture="environment" style="display:none;" onchange="handleImageUpload(event)">
+                    <img id="imagePreview" alt="معاينة الصورة">
+                    
+                    <button class="btn-analyze" id="analyzeImageBtn" onclick="analyzeFromImage()" disabled>
+                        🤖 تحليل الصورة بالذكاء الاصطناعي
+                    </button>
+                </div>
+
+                <!-- Text Tab -->
+                <div class="tab-content" id="textTab">
+                    <div class="food-input-area">
+                        <div class="input-group">
+                            <label>🍽️ صف طعامك</label>
+                            <textarea id="foodDescription" placeholder="مثال: طبق أرز مع دجاج مشوي وسلطة خضار..."></textarea>
+                        </div>
+                        
+                        <div class="input-group">
+                            <label>🔢 الكمية (اختياري)</label>
+                            <select id="portionSize">
+                                <option value="small">وجبة صغيرة</option>
+                                <option value="medium" selected>وجبة متوسطة</option>
+                                <option value="large">وجبة كبيرة</option>
+                                <option value="extra-large">وجبة كبيرة جداً</option>
+                            </select>
+                        </div>
+
+                        <div class="input-group">
+                            <label>🕐 نوع الوجبة</label>
+                            <select id="mealType">
+                                <option value="breakfast">فطور</option>
+                                <option value="lunch">غداء</option>
+                                <option value="dinner">عشاء</option>
+                                <option value="snack">وجبة خفيفة</option>
+                            </select>
+                        </div>
+
+                        <button class="btn-analyze" onclick="analyzeFromText()">
+                            🤖 تحليل بالنص
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Analysis Result -->
+                <div class="analysis-result" id="analysisResult">
+                    <div class="result-header">
+                        <div class="result-icon">✅</div>
+                        <div class="result-title">
+                            <h3 id="resultFoodName">تم التحليل</h3>
+                            <p id="resultConfidence">دقة التحليل: 95%</p>
+                        </div>
+                    </div>
+                    
+                    <div class="nutrition-grid">
+                        <div class="nutrition-item">
+                            <div class="value" id="resultCalories">0</div>
+                            <div class="label">سعرة حرارية</div>
+                        </div>
+                        <div class="nutrition-item">
+                            <div class="value" id="resultProtein">0g</div>
+                            <div class="label">بروتين</div>
+                        </div>
+                        <div class="nutrition-item">
+                            <div class="value" id="resultCarbs">0g</div>
+                            <div class="label">كربوهيدرات</div>
+                        </div>
+                        <div class="nutrition-item">
+                            <div class="value" id="resultFat">0g</div>
+                            <div class="label">دهون</div>
+                        </div>
+                    </div>
+
+                    <button class="btn-add-to-log" onclick="addToLog()">
+                        ➕ إضافة إلى السجل
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Page -->
+        <div class="page" id="statsPage">
+            <div class="section-title">
+                <h2>📊 الإحصائيات</h2>
+            </div>
+            
+            <div class="food-input-area" style="margin: 0 15px;">
+                <h3 style="margin-bottom: 15px;">تقدم اليوم</h3>
+                
+                <div style="margin-bottom: 20px;">
+                    <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
+                        <span>🔥 السعرات الحرارية</span>
+                        <span id="progressCaloriesText">0 / 2000</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill progress-calories" id="progressCaloriesBar" style="width:0%"></div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
+                        <span>🥩 البروتين</span>
+                        <span id="progressProteinText">0g / 150g</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill progress-protein" id="progressProteinBar" style="width:0%"></div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
+                        <span>🍞 الكربوهيدرات</span>
+                        <span id="progressCarbsText">0g / 250g</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill progress-carbs" id="progressCarbsBar" style="width:0%"></div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
+                        <span>🥑 الدهون</span>
+                        <span id="progressFatText">0g / 65g</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill progress-fat" id="progressFatBar" style="width:0%"></div>
+                    </div>
+                </div>
+
+                <div class="summary-chart-container">
+                    <canvas id="macrosChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Page -->
+        <div class="page" id="settingsPage">
+            <div class="section-title">
+                <h2>⚙️ الإعدادات</h2>
+            </div>
+            
+            <div class="settings-panel active">
+                <div class="setting-item">
+                    <label class="setting-label">🎯 هدف السعرات الحرارية اليومي</label>
+                    <input type="number" class="setting-input" id="settingCalories" value="2000">
+                </div>
+                
+                <div class="setting-item">
+                    <label class="setting-label">🥩 هدف البروتين (جرام)</label>
+                    <input type="number" class="setting-input" id="settingProtein" value="150">
+                </div>
+                
+                <div class="setting-item">
+                    <label class="setting-label">🍞 هدف الكربوهيدرات (جرام)</label>
+                    <input type="number" class="setting-input" id="settingCarbs" value="250">
+                </div>
+                
+                <div class="setting-item">
+                    <label class="setting-label">🥑 هدف الدهون (جرام)</label>
+                    <input type="number" class="setting-input" id="settingFat" value="65">
+                </div>
+
+                <div class="setting-item">
+                    <label class="setting-label">💧 عدد أكواب الماء اليومية</label>
+                    <input type="number" class="setting-input" id="settingWater" value="8" min="1" max="20">
+                </div>
+
+                <button class="btn-save-settings" onclick="saveSettings()">💾 حفظ الإعدادات</button>
+                <button class="btn-clear-data" onclick="clearAllData()">🗑️ مسح جميع البيانات</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Daily Summary Modal -->
+    <div class="modal-overlay" id="summaryModal">
+        <div class="modal-content">
+            <div class="modal-handle"></div>
+            <h2 class="modal-title">📋 ملخص اليوم</h2>
+            
+            <canvas id="dailyChart" height="200"></canvas>
+            
+            <div class="summary-stats" id="summaryStats">
+                <!-- Generated by JS -->
+            </div>
+
+            <button class="close-modal" onclick="closeModal()">إغلاق</button>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+        <div class="nav-item active" data-page="homePage" onclick="switchPage('homePage')">
+            <span>🏠</span>
+            <span>الرئيسية</span>
+        </div>
+        <div class="nav-item" data-page="addFoodPage" onclick="switchPage('addFoodPage')">
+            <span>➕</span>
+            <span>إضافة</span>
+        </div>
+        <div class="nav-item" data-page="statsPage" onclick="switchPage('statsPage')">
+            <span>📊</span>
+            <span>إحصائيات</span>
+        </div>
+        <div class="nav-item" data-page="settingsPage" onclick="switchPage('settingsPage')">
+            <span>⚙️</span>
+            <span>إعدادات</span>
+        </div>
+    </nav>
+
+    <script>
+        // ==================== DATA & STATE ====================
+        let appState = {
+            foodLog: [],
+            waterIntake: 0,
+            fastingState: {
+                isFasting: false,
+                startTime: null,
+                elapsedSeconds: 0
+            },
+            settings: {
+                calories: 2000,
+                protein: 150,
+                carbs: 250,
+                fat: 65,
+                waterGoal: 8
+            },
+            currentAnalysis: null
+        };
+
+        // ==================== FOOD DATABASE (AI Simulation) ====================
+        const foodDatabase = {
+            // أطباق عربية
+            'أرز': { calories: 130, protein: 2.7, carbs: 28, fat: 0.3, emoji: '🍚' },
+            'رز': { calories: 130, protein: 2.7, carbs: 28, fat: 0.3, emoji: '🍚' },
+            'دجاج': { calories: 165, protein: 31, carbs: 0, fat: 3.6, emoji: '🍗' },
+            'دجاج مشوي': { calories: 140, protein: 26, carbs: 0, fat: 3, emoji: '🍗' },
+            'لحم': { calories: 250, protein: 26, carbs: 0, fat: 15, emoji: '🥩' },
+            'لحم ضأن': { calories: 294, protein: 25, carbs: 0, fat: 21, emoji: '🥩' },
+            'سمك': { calories: 136, protein: 26, carbs: 0, fat: 3, emoji: '🐟' },
+            'سمك مشوي': { calories: 120, protein: 24, carbs: 0, fat: 2.5, emoji: '🐟' },
+            'سلطة': { calories: 45, protein: 2, carbs: 8, fat: 1.5, emoji: '🥗' },
+            'سلطة خضار': { calories: 35, protein: 1.5, carbs: 6, fat: 0.5, emoji: '🥗' },
+            'خبز': { calories: 265, protein: 9, carbs: 49, fat: 3.2, emoji: '🍞' },
+            'خبز عربي': { calories: 270, protein: 8, carbs: 52, fat: 3, emoji: '🫓' },
+            'شاورما': { calories: 380, protein: 25, carbs: 35, fat: 18, emoji: '🌯' },
+            'فلافل': { calories: 333, protein: 13, carbs: 31, fat: 18, emoji: '🧆' },
+            'حمص': { calories: 164, protein: 8, carbs: 14, fat: 10, emoji: '🫘' },
+            'متبل': { calories: 180, protein: 6, carbs: 12, fat: 13, emoji: '🫘' },
+            'بابا غنوج': { calories: 170, protein: 3, carbs: 12, fat: 13, emoji: '🍆' },
+            'كبة': { calories: 280, protein: 15, carbs: 22, fat: 15, emoji: '🧆' },
+            'مندي': { calories: 450, protein: 32, carbs: 40, fat: 20, emoji: '🍖' },
+            'مقلوبة': { calories: 380, protein: 18, carbs: 45, fat: 16, emoji: '🍛' },
+            'معكرونة': { calories: 220, protein: 8, carbs: 43, fat: 2.5, emoji: '🍝' },
+            'بيتزا': { calories: 266, protein: 11, carbs: 33, fat: 10, emoji: '🍕' },
+            'برجر': { calories: 540, protein: 25, carbs: 40, fat: 30, emoji: '🍔' },
+            'بطاطس مقلية': { calories: 312, protein: 3.4, carbs: 41, fat: 15, emoji: '🍟' },
+            'بيض': { calories: 155, protein: 13, carbs: 1.1, fat: 11, emoji: '🥚' },
+            'مخملية': { calories: 280, protein: 5, carbs: 42, fat: 11, emoji: '🧁' },
+            'كيك': { calories: 257, protein: 3.5, carbs: 46, fat: 8, emoji: '🎂' },
+            'آيس كريم': { calories: 207, protein: 3.5, carbs: 24, fat: 11, emoji: '🍦' },
+            'عصير برتقال': { calories: 45, protein: 0.7, carbs: 10, fat: 0.2, emoji: '🍊' },
+            'شاي': { calories: 2, protein: 0, carbs: 0.5, fat: 0, emoji: '🍵' },
+            'قهوة': { calories: 2, protein: 0.3, carbs: 0, fat: 0, emoji: '☕' },
+            'حليب': { calories: 42, protein: 3.4, carbs: 5, fat: 1, emoji: '🥛' },
+            'جبن': { calories: 113, protein: 7, carbs: 0.5, fat: 9, emoji: '🧀' },
+            'لبن': { calories: 59, protein: 10, carbs: 3.6, fat: 0.7, emoji: '🥛' },
+            'تمر': { calories: 277, protein: 2, carbs: 75, fat: 0.2, emoji: '🌴' },
+            'فواكه': { calories: 52, protein: 0.7, carbs: 14, fat: 0.2, emoji: '🍎' },
+            'تفاح': { calories: 52, protein: 0.3, carbs: 14, fat: 0.2, emoji: '🍎' },
+            'موز': { calories: 89, protein: 1.1, carbs: 23, fat: 0.3, emoji: '🍌' },
+            'شوكولاتة': { calories: 546, protein: 5, carbs: 60, fat: 31, emoji: '🍫' },
+            'بوب كورن': { calories: 387, protein: 13, carbs: 78, fat: 5, emoji: '🍿' },
+            // أطباق أخرى
+            'شوربة': { calories: 65, protein: 3, carbs: 8, fat: 2, emoji: '🍲' },
+            'مكرونة بالصلصة': { calories: 280, protein: 10, carbs: 45, fat: 7, emoji: '🍝' },
+            'ساندويتش': { calories: 320, protein: 14, carbs: 35, fat: 14, emoji: '🥪' },
+            'فول': { calories: 222, protein: 14, carbs: 38, fat: 1.5, emoji: '🫘' },
+            'فول مدمس': { calories: 230, protein: 15, carbs: 38, fat: 2, emoji: '🫘' },
+            'مسبحة': { calories: 350, protein: 12, carbs: 30, fat: 22, emoji: '🥘' },
+            'مرق': { calories: 80, protein: 8, carbs: 2, fat: 4, emoji: '🍲' },
+            'yuksa': { calories: 120, protein: 15, carbs: 5, fat: 4, emoji: '🍲' },
+        };
+
+        const portionMultipliers = {
+            'small': 0.65,
+            'medium': 1,
+            'large': 1.4,
+            'extra-large': 1.8
+        };
+
+        // ==================== INITIALIZATION ====================
+        document.addEventListener('DOMContentLoaded', function() {
+            loadFromStorage();
+            updateDateDisplay();
+            initWaterTracker();
+            updateUI();
+            startTimerUpdate();
+            generateTips();
+            initChart();
+            
+            // Drag and drop for image upload
+            const uploadArea = document.getElementById('uploadArea');
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('dragover');
+            });
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                if (e.dataTransfer.files.length) {
+                    handleFile(e.dataTransfer.files[0]);
+                }
+            });
+        });
+
+        // ==================== STORAGE ====================
+        function saveToStorage() {
+            localStorage.setItem('nutriTrackData', JSON.stringify(appState));
         }
-      }
-    });
-    state.days.forEach(d => {
-      if (d.expanded) {
-        const card = document.querySelectorAll('.day-card')[d.i];
-        if (card) card.classList.add('expanded');
-      }
-    });
-    updateBookingProgress();
-  } catch(e) { /* ignore */ }
-}
 
-// Share menu
-const shareBtn = document.getElementById('shareBtn');
-const shareMenu = document.getElementById('shareMenu');
-shareBtn.addEventListener('click', (e) => {
-  e.stopPropagation();
-  shareMenu.classList.toggle('open');
-});
-document.addEventListener('click', () => shareMenu.classList.remove('open'));
-shareMenu.addEventListener('click', (e) => e.stopPropagation());
+        function loadFromStorage() {
+            const saved = localStorage.getItem('nutriTrackData');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                appState = { ...appState, ...parsed };
+                
+                // Check if it's a new day
+                const today = new Date().toDateString();
+                const lastSave = parsed.lastSaveDate;
+                if (lastSave && lastSave !== today) {
+                    // New day - reset daily data but keep settings
+                    appState.foodLog = [];
+                    appState.waterIntake = 0;
+                }
+            }
+            appState.lastSaveDate = new Date().toDateString();
+            saveToStorage();
+        }
 
-// WhatsApp share
-const whatsappMsg = `حبيبتي تالا ❤️
+        // ==================== UI UPDATES ====================
+        function updateUI() {
+            // Calculate totals
+            let totals = { calories: 0, protein: 0, carbs: 0, fat: 0 };
+            appState.foodLog.forEach(item => {
+                totals.calories += item.calories;
+                totals.protein += item.protein;
+                totals.carbs += item.carbs;
+                totals.fat += item.fat;
+            });
 
-جهزت خطة رحلة إيطاليا 🇮🇹
-20-28 مايو 2026 · 9 أيام · 5 مدن
+            // Update macro cards
+            document.getElementById('totalCalories').textContent = Math.round(totals.calories);
+            document.getElementById('totalProtein').textContent = Math.round(totals.protein);
+            document.getElementById('totalCarbs').textContent = Math.round(totals.carbs);
+            document.getElementById('totalFat').textContent = Math.round(totals.fat);
 
-🗓️ المسار:
-• ميلانو (القاعدة، 8 ليالي)
-• جبال الألب السويسرية (Bernina Express)
-• البندقية (ليلة مبيت)
-• بيزا (البرج المائل)
-• فلورنسا (ليلة مبيت)
+            // Update goals display
+            document.getElementById('goalCalories').textContent = appState.settings.calories;
+            document.getElementById('goalProtein').textContent = appState.settings.protein;
+            document.getElementById('goalCarbs').textContent = appState.settings.carbs;
+            document.getElementById('goalFat').textContent = appState.settings.fat;
 
-💰 الميزانية المتوقعة: ~€2,860 (شامل كل شي عدا الطيران)
+            // Update progress bars
+            const calPercent = Math.min((totals.calories / appState.settings.calories) * 100, 100);
+            const proPercent = Math.min((totals.protein / appState.settings.protein) * 100, 100);
+            const carbPercent = Math.min((totals.carbs / appState.settings.carbs) * 100, 100);
+            const fatPercent = Math.min((totals.fat / appState.settings.fat) * 100, 100);
 
-📎 افتحي الملف المرفق على تلفونك لكل التفاصيل:
-- 9 أيام بتوقيت دقيق
-- 6 فنادق مرشحة بفلورنسا والبندقية
-- ميزانية مفصلة
-- قائمة حجوزات
-- مطاعم حلال ومساجد
+            document.getElementById('progressCaloriesBar').style.width = calPercent + '%';
+            document.getElementById('progressProteinBar').style.width = proPercent + '%';
+            document.getElementById('progressCarbsBar').style.width = carbPercent + '%';
+            document.getElementById('progressFatBar').style.width = fatPercent + '%';
 
-نحبك ❤️`;
+            document.getElementById('progressCaloriesText').textContent = `${Math.round(totals.calories)} / ${appState.settings.calories}`;
+            document.getElementById('progressProteinText').textContent = `${Math.round(totals.protein)}g / ${appState.settings.protein}g`;
+            document.getElementById('progressCarbsText').textContent = `${Math.round(totals.carbs)}g / ${appState.settings.carbs}g`;
+            document.getElementById('progressFatText').textContent = `${Math.round(totals.fat)}g / ${appState.settings.fat}g`;
 
-document.getElementById('whatsappShare').addEventListener('click', (e) => {
-  e.preventDefault();
-  const url = 'https://wa.me/?text=' + encodeURIComponent(whatsappMsg);
-  window.open(url, '_blank');
-});
+            // Update food log
+            renderFoodLog();
 
-function copyMessage() {
-  navigator.clipboard.writeText(whatsappMsg).then(() => {
-    alert('تم نسخ الرسالة! الصقها بأي مكان.');
-  }).catch(() => {
-    const ta = document.createElement('textarea');
-    ta.value = whatsappMsg;
-    document.body.appendChild(ta);
-    ta.select();
-    document.execCommand('copy');
-    document.body.removeChild(ta);
-    alert('تم نسخ الرسالة!');
-  });
-}
+            // Update water
+            updateWaterDisplay();
 
-function downloadFile() {
-  alert('احفظ الصفحة الحالية:\n\nالكمبيوتر: Ctrl+S أو Cmd+S\nالتلفون: من قائمة المتصفح اختر "تحميل" أو "Save Page"\n\nالملف بيشتغل أوفلاين بعد التحميل.');
-}
+            // Update tips
+            generateTips();
 
-// Load on init
-loadState();
-</script>
+            // Update chart
+            updateChart([totals.protein, totals.carbs, totals.fat]);
 
+            // Save
+            saveToStorage();
+        }
+
+        function renderFoodLog() {
+            const container = document.getElementById('foodLog');
+            if (appState.foodLog.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <span>🍽️</span>
+                        <p>لم يتم إضافة أي طعام بعد</p>
+                        <p style="font-size: 12px; margin-top: 5px;">قم بإضافة وجبتك الأولى!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = appState.foodLog.map((item, index) => `
+                <div class="log-entry">
+                    <div class="entry-emoji">${item.emoji}</div>
+                    <div class="entry-info">
+                        <div class="entry-name">${item.name}</div>
+                        <div class="entry-macros">پ: ${item.protein}g | ك: ${item.carbs}g | د: ${item.fat}g</div>
+                    </div>
+                    <div class="entry-calories">${item.calories}</div>
+                    <button class="delete-btn" onclick="deleteFood(${index})">✕</button>
+                </div>
+            `).join('');
+        }
+
+        function updateDateDisplay() {
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            document.getElementById('currentDate').textContent = new Date().toLocaleDateString('ar-SA', options);
+        }
+
+        // ==================== NAVIGATION ====================
+        function switchPage(pageId) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            
+            document.getElementById(pageId).classList.add('active');
+            document.querySelector(`[data-page="${pageId}"]`).classList.add('active');
+
+            if (pageId === 'statsPage') {
+                setTimeout(() => {
+                    const ctx = document.getElementById('macrosChart').getContext('2d');
+                    new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['بروتين', 'كربوهيدرات', 'دهون'],
+                            datasets: [{
+                                data: [
+                                    parseFloat(document.getElementById('totalProtein').textContent),
+                                    parseFloat(document.getElementById('totalCarbs').textContent),
+                                    parseFloat(document.getElementById('totalFat').textContent)
+                                ],
+                                backgroundColor: ['#3b82f6', '#ec4899', '#f97316'],
+                                borderWidth: 0
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom',
+                                    labels: { font: { family: 'Tajawal' } }
+                                }
+                            }
+                        }
+                    });
+                }, 100);
+            }
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tab + 'Tab').classList.add('active');
+        }
+
+        // ==================== IMAGE HANDLING ====================
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (file) handleFile(file);
+        }
+
+        function handleFile(file) {
+            if (!file.type.startsWith('image/')) {
+                showToast('❌ يرجى اختيار صورة صحيحة');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const preview = document.getElementById('imagePreview');
+                preview.src = e.target.result;
+                preview.style.display = 'block';
+                document.getElementById('analyzeImageBtn').disabled = false;
+                appState.currentImage = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // ==================== AI ANALYSIS (Simulated) ====================
+        async function analyzeFromImage() {
+            showLoading(true);
+            
+            // Simulate AI processing delay
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
+            // Simulate image recognition results
+            const foods = Object.keys(foodDatabase);
+            const randomFoods = [];
+            const count = Math.floor(Math.random() * 2) + 1;
+            
+            for (let i = 0; i < count; i++) {
+                randomFoods.push(foods[Math.floor(Math.random() * foods.length)]);
+            }
+
+            // Combine random foods for analysis result
+            let result = { name: '', calories: 0, protein: 0, carbs: 0, fat: 0, emoji: '🍽️' };
+            
+            randomFoods.forEach((food, idx) => {
+                const foodData = foodDatabase[food];
+                if (foodData) {
+                    result.calories += foodData.calories;
+                    result.protein += foodData.protein;
+                    result.carbs += foodData.carbs;
+                    result.fat += foodData.fat;
+                    result.name += (idx > 0 ? ' + ' : '') + food;
+                    result.emoji = foodData.emoji;
+                }
+            });
+
+            // Apply portion multiplier
+            const portion = document.getElementById('portionSize').value;
+            const mult = portionMultipliers[portion];
+            result.calories *= mult;
+            result.protein *= mult;
+            result.carbs *= mult;
+            result.fat *= mult;
+
+            appState.currentAnalysis = result;
+            showAnalysisResult(result);
+            showLoading(false);
+        }
+
+        async function analyzeFromText() {
+            const description = document.getElementById('foodDescription').value.trim();
+            if (!description) {
+                showToast('❌ يرجى كتابة وصف للطعام');
+                return;
+            }
+
+            showLoading(true);
+
+            // Simulate AI processing delay
+            await new Promise(resolve => setTimeout(resolve, 1500));
+
+            // Analyze text to find matching foods
+            let result = { 
+                name: description.substring(0, 30) + (description.length > 30 ? '...' : ''), 
+                calories: 0, 
+                protein: 0, 
+                carbs: 0, 
+                fat: 0, 
+                emoji: '🍽️' 
+            };
+
+            let foundFoods = 0;
+            for (const [foodName, foodData] of Object.entries(foodDatabase)) {
+                if (description.includes(foodName)) {
+                    result.calories += foodData.calories;
+                    result.protein += foodData.protein;
+                    result.carbs += foodData.carbs;
+                    result.fat += foodData.fat;
+                    result.emoji = foodData.emoji;
+                    foundFoods++;
+                }
+            }
+
+            // If no exact match, estimate based on keywords
+            if (foundFoods === 0) {
+                // Default estimation for unknown foods
+                const mealType = document.getElementById('mealType').value;
+                const baseEstimates = {
+                    breakfast: { calories: 400, protein: 15, carbs: 50, fat: 14 },
+                    lunch: { calories: 600, protein: 30, carbs: 65, fat: 22 },
+                    dinner: { calories: 550, protein: 28, carbs: 55, fat: 20 },
+                    snack: { calories: 200, protein: 5, carbs: 28, fat: 8 }
+                };
+                result = { ...baseEstimates[mealType], ...result, emoji: '🍽️' };
+            }
+
+            // Apply portion multiplier
+            const portion = document.getElementById('portionSize').value;
+            const mult = portionMultipliers[portion];
+            result.calories = Math.round(result.calories * mult);
+            result.protein = Math.round(result.protein * mult * 10) / 10;
+            result.carbs = Math.round(result.carbs * mult * 10) / 10;
+            result.fat = Math.round(result.fat * mult * 10) / 10;
+
+            appState.currentAnalysis = result;
+            showAnalysisResult(result);
+            showLoading(false);
+        }
+
+        function showAnalysisResult(result) {
+            document.getElementById('resultFoodName').textContent = result.name;
+            document.getElementById('resultCalories').textContent = Math.round(result.calories);
+            document.getElementById('resultProtein').textContent = result.protein.toFixed(1) + 'g';
+            document.getElementById('resultCarbs').textContent = result.carbs.toFixed(1) + 'g';
+            document.getElementById('resultFat').textContent = result.fat.toFixed(1) + 'g';
+            document.getElementById('analysisResult').style.display = 'block';
+        }
+
+        // ==================== FOOD LOG ====================
+        function addToLog() {
+            if (!appState.currentAnalysis) return;
+
+            const mealType = document.getElementById('mealType').value;
+            const mealNames = {
+                breakfast: '🌅 فطور',
+                lunch: '☀️ غداء',
+                dinner: '🌙 عشاء',
+                snack: '🍪 خفيفة'
+            };
+
+            const entry = {
+                ...appState.currentAnalysis,
+                time: new Date().toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' }),
+                meal: mealNames[mealType],
+                id: Date.now()
+            };
+
+            appState.foodLog.push(entry);
+            
+            // Reset form
+            document.getElementById('foodDescription').value = '';
+            document.getElementById('analysisResult').style.display = 'none';
+            document.getElementById('imagePreview').style.display = 'none';
+            document.getElementById('analyzeImageBtn').disabled = true;
+            appState.currentAnalysis = null;
+
+            updateUI();
+            showToast('✅ تمت إضافة الوجبة بنجاح!');
+        }
+
+        function deleteFood(index) {
+            appState.foodLog.splice(index, 1);
+            updateUI();
+            showToast('🗑️ تم حذف الوجبة');
+        }
+
+        // ==================== FASTING TRACKER ====================
+        function startFasting() {
+            appState.fastingState.isFasting = true;
+            appState.fastingState.startTime = new Date();
+            appState.fastingState.elapsedSeconds = 0;
+            
+            document.getElementById('startFastBtn').style.display = 'none';
+            document.getElementById('stopFastBtn').style.display = 'block';
+            document.getElementById('fastingStatus').textContent = 'صائم 🔥';
+            document.getElementById('fastingStatus').className = 'fasting-status status-fasting';
+            document.getElementById('timerLabel').textContent = 'مدة الصيام';
+            
+            saveToStorage();
+            showToast('🎯 بدء الصيام - حظاً موفقاً!');
+        }
+
+        function stopFasting() {
+            const hours = (appState.fastingState.elapsedSeconds / 3600).toFixed(1);
+            appState.fastingState.isFasting = false;
+            appState.fastingState.startTime = null;
+            appState.fastingState.elapsedSeconds = 0;
+            
+            document.getElementById('startFastBtn').style.display = 'block';
+            document.getElementById('stopFastBtn').style.display = 'none';
+            document.getElementById('fastingStatus').textContent = 'فترة الأكل';
+            document.getElementById('fastingStatus').className = 'fasting-status status-eating';
+            document.getElementById('timerDisplay').textContent = '00:00:00';
+            document.getElementById('timerLabel').textContent = 'ابدأ الصيام الآن';
+            
+            saveToStorage();
+            showToast(`🎉 أحسنت! صمت ${hours} ساعة`);
+        }
+
+        function startTimerUpdate() {
+            setInterval(() => {
+                if (appState.fastingState.isFasting && appState.fastingState.startTime) {
+                    const now = new Date();
+                    const diff = Math.floor((now - appState.fastingState.startTime) / 1000);
+                    appState.fastingState.elapsedSeconds = diff;
+                    
+                    const hours = Math.floor(diff / 3600);
+                    const minutes = Math.floor((diff % 3600) / 60);
+                    const seconds = diff % 60;
+                    
+                    document.getElementById('timerDisplay').textContent = 
+                        `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                }
+            }, 1000);
+        }
+
+        // ==================== WATER TRACKER ====================
+        function initWaterTracker() {
+            const container = document.getElementById('waterGlasses');
+            const goal = appState.settings.waterGoal || 8;
+            
+            container.innerHTML = '';
+            for (let i = 0; i < goal; i++) {
+                const glass = document.createElement('button');
+                glass.className = `glass-btn ${i < appState.waterIntake ? 'filled' : ''}`;
+                glass.onclick = () => toggleWater(i);
+                glass.innerHTML = '💧';
+                container.appendChild(glass);
+            }
+        }
+
+        function toggleWater(index) {
+            if (index < appState.waterIntake) {
+                appState.waterIntake = index;
+            } else {
+                appState.waterIntake = index + 1;
+            }
+            initWaterTracker();
+            updateWaterDisplay();
+            saveToStorage();
+        }
+
+        function updateWaterDisplay() {
+            document.getElementById('waterCount').textContent = `${appState.waterIntake} / ${appState.settings.waterGoal || 8} أكواب`;
+        }
+
+        // ==================== TIPS GENERATOR ====================
+        function generateTips() {
+            const totals = { calories: 0, protein: 0, carbs: 0, fat: 0 };
+            appState.foodLog.forEach(item => {
+                totals.calories += item.calories;
+                totals.protein += item.protein;
+                totals.carbs += item.carbs;
+                totals.fat += item.fat;
+            });
+
+            const tips = [];
+
+            // Protein tip
+            if (totals.protein < appState.settings.protein * 0.5) {
+                tips.push({ icon: '🥩', text: `تحتاج ${(appState.settings.protein - totals.protein).toFixed(0)}g بوتين إضافي. جرب الدجاج أو السمك!` });
+            } else if (totals.protein >= appState.settings.protein) {
+                tips.push({ icon: '💪', text: 'ممتاز! حققت هدف البروتين اليومي!' });
+            }
+
+            // Carbs tip
+            if (totals.carbs < appState.settings.carbs * 0.5) {
+                tips.push({ icon: '🍞', text: `أضف بعض الكربوهيدرات الصحية مثل الأرز البني أو الشوفان` });
+            }
+
+            // Calories tip
+            if (totals.calories >= appState.settings.calories) {
+                tips.push({ icon: '⚠️', text: 'وصلت للهدف من السعرات! حاول عدم الإفراط' });
+            } else if (totals.calories < appState.settings.calories * 0.3 && appState.foodLog.length > 0) {
+                tips.push({ icon: '🍽️', text: `ما زلت بحاجة لـ ${(appState.settings.calories - totals.calories).toFixed(0)} سعرة` });
+            }
+
+            // Water tip
+            if (appState.waterIntake < (appState.settings.waterGoal || 8) * 0.5) {
+                tips.push({ icon: '💧', text: `اشرب المزيد! هدفك ${(appState.settings.waterGoal || 8)} أكواب يومياً` });
+            } else if (appState.waterIntake >= (appState.settings.waterGoal || 8)) {
+                tips.push({ icon: '🌊', text: 'رائع! أكملت هدف الماء اليومي!' });
+            }
+
+            // Fasting tip
+            if (!appState.fastingState.isFasting && appState.foodLog.length === 0) {
+                tips.push({ icon: '⏰', text: 'ابدأ الصيام المتقطع لتحسين الأيض' });
+            }
+
+            // Default tips if no specific ones
+            if (tips.length === 0) {
+                tips.push({ icon: '🌟', text: 'استمر! أنت على الطريق الصحيح' });
+                tips.push({ icon: '🥗', text: 'حاول إضافة المزيد من الخضروات لوجباتك' });
+            }
+
+            const container = document.getElementById('tipsContainer');
+            container.innerHTML = tips.slice(0, 3).map(tip => `
+                <div class="tip-item">
+                    <span class="tip-icon">${tip.icon}</span>
+                    <span>${tip.text}</span>
+                </div>
+            `).join('');
+        }
+
+        // ==================== CHARTS ====================
+        let macrosChart = null;
+
+        function initChart() {
+            const ctx = document.getElementById('macrosChart').getContext('2d');
+            macrosChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['بروتين', 'كربوهيدرات', 'دهون'],
+                    datasets: [{
+                        data: [0, 0, 0],
+                        backgroundColor: ['#3b82f6', '#ec4899', '#f97316'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    cutout: '70%',
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { 
+                                font: { family: 'Tajawal', size: 12 },
+                                padding: 15
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateChart(data) {
+            if (macrosChart) {
+                macrosChart.data.datasets[0].data = data;
+                macrosChart.update();
+            }
+        }
+
+        // ==================== DAILY SUMMARY MODAL ====================
+        function showDailySummary() {
+            const modal = document.getElementById('summaryModal');
+            modal.classList.add('show');
+
+            const totals = { calories: 0, protein: 0, carbs: 0, fat: 0 };
+            appState.foodLog.forEach(item => {
+                totals.calories += item.calories;
+                totals.protein += item.protein;
+                totals.carbs += item.carbs;
+                totals.fat += item.fat;
+            });
+
+            // Create summary chart
+            const ctx = document.getElementById('dailyChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['السعرات', 'البروتين', 'الكارب', 'الدهون'],
+                    datasets: [{
+                        label: 'المستهلك',
+                        data: [
+                            Math.round(totals.calories / 50), // Scale down for visibility
+                            Math.round(totals.protein),
+                            Math.round(totals.carbs),
+                            Math.round(totals.fat)
+                        ],
+                        backgroundColor: ['#fbbf24', '#3b82f6', '#ec4899', '#f97316'],
+                        borderRadius: 8
+                    }, {
+                        label: 'الهدف',
+                        data: [
+                            Math.round(appState.settings.calories / 50),
+                            appState.settings.protein,
+                            appState.settings.carbs,
+                            appState.settings.fat
+                        ],
+                        backgroundColor: ['#e5e7eb', '#dbeafe', '#fce7f3', '#fed7aa'],
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+
+            // Stats
+            document.getElementById('summaryStats').innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-value">${appState.foodLog.length}</div>
+                    <div class="stat-label">عدد الوجبات</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${appState.waterIntake}</div>
+                    <div class="stat-label">أكواب ماء</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${formatTime(appState.fastingState.elapsedSeconds)}</div>
+                    <div class="stat-label">مدة الصيام</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${Math.round((totals.calories / appState.settings.calories) * 100)}%</div>
+                    <div class="stat-label">من هدف السعرات</div>
+                </div>
+            `;
+        }
+
+        function closeModal() {
+            document.getElementById('summaryModal').classList.remove('show');
+        }
+
+        function formatTime(seconds) {
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            return `${h}س ${m}د`;
+        }
+
+        // ==================== SETTINGS ====================
+        function saveSettings() {
+            appState.settings.calories = parseInt(document.getElementById('settingCalories').value) || 2000;
+            appState.settings.protein = parseInt(document.getElementById('settingProtein').value) || 150;
+            appState.settings.carbs = parseInt(document.getElementById('settingCarbs').value) || 250;
+            appState.settings.fat = parseInt(document.getElementById('settingFat').value) || 65;
+            appState.settings.waterGoal = parseInt(document.getElementById('settingWater').value) || 8;
+            
+            initWaterTracker();
+            updateUI();
+            showToast('✅ تم حفظ الإعدادات');
+        }
+
+        function clearAllData() {
+            if (confirm('هل أنت متأكد من مسح جميع البيانات؟')) {
+                localStorage.removeItem('nutriTrackData');
+                location.reload();
+            }
+        }
+
+        // Load settings into inputs
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                document.getElementById('settingCalories').value = appState.settings.calories;
+                document.getElementById('settingProtein').value = appState.settings.protein;
+                document.getElementById('settingCarbs').value = appState.settings.carbs;
+                document.getElementById('settingFat').value = appState.settings.fat;
+                document.getElementById('settingWater').value = appState.settings.waterGoal;
+            }, 100);
+        });
+
+        // ==================== UTILITIES ====================
+        function showLoading(show) {
+            document.getElementById('loadingOverlay').classList.toggle('show', show);
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        // Close modal on outside click
+        document.getElementById('summaryModal').addEventListener('click', (e) => {
+            if (e.target.id === 'summaryModal') closeModal();
+        });
+    </script>
 </body>
 </html>
