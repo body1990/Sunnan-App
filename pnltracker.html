@@ -355,22 +355,34 @@ function openDay(d){
 }
 
 /* ----------------------- snapshot via image / manual --------------- */
-function openImport(){importState={url:null,busy:false,err:'',val:'',pnl:'',date:nextFreeDate()};renderImport();}
+function openImport(){importState={url:null,busy:false,err:'',val:'',pnl:'',date:nextFreeDate(),items:null};renderImport();}
 function renderImport(){
   const i=importState;
   const top = !i.url
     ? `<button class="pick" onclick="document.getElementById('file').click()">
          <span style="font-size:28px">📷</span><span style="color:var(--text);font-weight:600">اختر لقطة شاشة (اختياري)</span>
-         <span style="font-size:12px">القراءة التلقائية تشتغل بعد نشر التطبيق على الإنترنت</span></button>`
+         <span style="font-size:12px">سجل الأوامر أو شاشة قيمة المحفظة</span></button>`
     : `<img src="${i.url}" style="width:100%;max-height:170px;object-fit:contain;border-radius:12px;border:1px solid var(--border);background:#000">
        <div style="display:flex;gap:10px;margin-top:10px">
          <button class="ibtn" style="padding:0 14px" onclick="document.getElementById('file').click()">تغيير</button>
          <button class="primary" style="flex:1" ${i.busy?'disabled':''} onclick="runImport()">${i.busy?'<span class="spin">◠</span> جارٍ القراءة…':'✨ اقرأ الصورة تلقائياً'}</button>
        </div>`;
   const note = i.err ? `<div style="color:var(--orange);font-size:12.5px;margin-top:12px;line-height:1.7;background:rgba(255,122,26,.08);border:1px solid var(--border);border-radius:12px;padding:10px 12px">${esc(i.err)}</div>` : '';
+  const hasItems = i.items && i.items.length;
+  const itemsHtml = hasItems ? `<div style="margin-top:14px">
+      <div style="color:var(--muted);font-size:12px;margin-bottom:8px">تم استخراج ${i.items.length} قيمة — عدّل التاريخ أو المبلغ إذا لزم:</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+      ${i.items.map((it,k)=>`<div class="card" style="padding:10px;display:flex;gap:8px;align-items:center">
+          <input type="date" style="width:auto;flex:0 0 auto;padding:8px 10px" value="${esc(it.date)}" oninput="importState.items[${k}].date=this.value">
+          <input class="num" style="flex:1" type="number" step="any" value="${esc(it.value)}" oninput="importState.items[${k}].value=num(this.value)">
+          <button class="ibtn" style="color:var(--red)" onclick="importState.items.splice(${k},1);renderImport()">🗑</button>
+        </div>`).join('')}
+      </div>
+      <button class="primary" style="margin-top:12px" onclick="saveAllItems()">حفظ الكل (${i.items.length})</button>
+    </div>` : '';
   const fields = `<div style="display:flex;flex-direction:column;gap:12px;margin-top:14px">
-      <label class="lab"><span class="labt">القيمة الإجمالية (${esc(sym())})</span>
-        <input id="impVal" class="num" type="number" inputmode="decimal" step="any" value="${esc(i.val)}" placeholder="3629.67" oninput="importState.val=this.value"></label>
+      <label class="lab"><span class="labt">المبلغ / القيمة (${esc(sym())})</span>
+        <input id="impVal" class="num" type="number" inputmode="decimal" step="any" value="${esc(i.val)}" placeholder="3520.40" oninput="importState.val=this.value"></label>
       <div style="display:flex;gap:12px">
         <label class="lab"><span class="labt">ربح اليوم — اختياري</span>
           <input id="impPnl" class="num" type="number" inputmode="decimal" step="any" value="${esc(i.pnl)}" placeholder="95.17" oninput="importState.pnl=this.value"></label>
@@ -381,10 +393,10 @@ function renderImport(){
     </div>`;
   const ok = i.ok ? `<div style="color:${RH_UP};font-size:12.5px;margin-bottom:12px;background:rgba(31,209,107,.08);border:1px solid var(--border);border-radius:12px;padding:10px 12px">${esc(i.ok)} — جاهز للصورة التالية.</div>` : '';
   showModal(`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><h2>✨ تسجيل قيمة المحفظة</h2><button class="ibtn" onclick="closeModal()">✕</button></div>
-    <div style="color:var(--muted);font-size:12px;margin-bottom:14px">كل قيمة تُحفظ بيوم مستقل والقديم يظل محفوظ. صوّر شاشتك أو اكتب القيمة يدوياً.</div>
-    ${ok}${top}${note}${fields}`);
+    <div style="color:var(--muted);font-size:12px;margin-bottom:14px">صوّر سجل الأوامر أو شاشة المحفظة واقرأها، أو اكتب القيمة يدوياً. كل قيمة تُحفظ بيومها والقديم يظل محفوظ.</div>
+    ${ok}${top}${note}${hasItems?itemsHtml:fields}`);
 }
-function onFile(e){const f=e.target.files&&e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{importState.url=r.result;importState.err='';renderImport();};r.readAsDataURL(f);e.target.value='';}
+function onFile(e){const f=e.target.files&&e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{importState.url=r.result;importState.err='';importState.items=null;importState.ok='';renderImport();};r.readAsDataURL(f);e.target.value='';}
 function loadTesseract(){return new Promise((res,rej)=>{if(window.Tesseract)return res();const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.1.0/tesseract.min.js';s.onload=()=>res();s.onerror=()=>rej(new Error('load'));document.head.appendChild(s);});}
 async function runImport(){
   importState.busy=true;importState.err='';renderImport();
@@ -393,23 +405,40 @@ async function runImport(){
     const worker=await Tesseract.createWorker('eng');
     const{data:{text}}=await worker.recognize(importState.url);
     await worker.terminate();
-    const r=parseOCR(text);
-    if(r.value){importState.val=String(r.value);if(r.dayPnl!=null)importState.pnl=String(r.dayPnl);importState.err='';}
-    else importState.err='قرأت الصورة بس ما لقيت رقم القيمة بوضوح. اكتبه يدوياً تحت.';
+    const items=parseOCR(text);
+    if(items.length){importState.items=items;importState.err='';}
+    else importState.err='قرأت الصورة بس ما لقيت "Filled value" أو رقم القيمة بوضوح. اكتبه يدوياً تحت.';
   }catch(err){
-    importState.err='القراءة التلقائية معطّلة داخل معاينة Claude (ما بتسمح بتحميل المحرّك). افتح التطبيق بعد نشره على GitHub Pages أو من Safari لتشتغل القراءة المجانية. الآن اكتب القيمة يدوياً تحت — بتنحفظ عادي.';
+    importState.err='القراءة التلقائية معطّلة داخل معاينة Claude. افتح التطبيق بعد نشره على GitHub Pages أو من Safari لتشتغل القراءة المجانية. الآن اكتب القيمة يدوياً تحت — بتنحفظ عادي.';
   }
   importState.busy=false;renderImport();
 }
 function parseOCR(text){
-  let value=0,dayPnl=null;
-  let m=text.match(/asset value[^0-9]*([0-9][0-9,]*\.?[0-9]*)/i);
-  if(m)value=num(m[1]);
-  if(!value){const big=text.match(/([0-9]{1,3}(?:,[0-9]{3})+\.[0-9]{2})/);if(big)value=num(big[1]);}
-  if(!value){const any=text.match(/([0-9]+\.[0-9]{2})(?!\d)/);if(any)value=num(any[1]);}
-  const t=text.match(/today'?s pnl[^0-9+\-]*([+\-]?[0-9][0-9,]*\.?[0-9]*)/i);
-  if(t)dayPnl=num(t[1]);
-  return {value,dayPnl};
+  const items=[];
+  // PnL / asset value screen → snapshot واحد
+  const av=text.match(/asset value[^0-9]*([0-9][0-9,]*\.?[0-9]*)/i);
+  if(av){
+    const dv=text.match(/today'?s pnl[^0-9+\-]*([+\-]?[0-9][0-9,]*\.?[0-9]*)/i);
+    const dm=text.match(/to\s+(\d{4}-\d{2}-\d{2})/i)||text.match(/(\d{4}-\d{2}-\d{2})/);
+    items.push({date:dm?dm[1]:todayStr(), value:num(av[1]), dayPnl:dv?num(dv[1]):null});
+    return items;
+  }
+  // Order history → كل أمر: Filled value (USDT) + تاريخه
+  const lines=text.split('\n');
+  let curDate=null;
+  for(let idx=0;idx<lines.length;idx++){
+    const ln=lines[idx];
+    const dm=ln.match(/(\d{4}-\d{2}-\d{2})/);
+    if(dm)curDate=dm[1];
+    const fv=ln.match(/filled\s*value[^0-9]*([0-9][0-9,]*\.?[0-9]*)/i);
+    if(fv){
+      let d=curDate;
+      if(!d){for(let j=idx-1;j>=Math.max(0,idx-8);j--){const m2=lines[j].match(/(\d{4}-\d{2}-\d{2})/);if(m2){d=m2[1];break;}}}
+      if(!d){for(let j=idx+1;j<Math.min(lines.length,idx+8);j++){const m2=lines[j].match(/(\d{4}-\d{2}-\d{2})/);if(m2){d=m2[1];break;}}}
+      items.push({date:d||todayStr(), value:num(fv[1])});
+    }
+  }
+  return items;
 }
 function saveImport(){
   const value=num(importState.val);
@@ -418,7 +447,14 @@ function saveImport(){
   state.snaps=state.snaps.filter(x=>x.date!==date);
   state.snaps.push({id:Date.now(),date,value,dayPnl:(importState.pnl===''||importState.pnl==null)?null:num(importState.pnl)});
   save();render();
-  importState={url:null,busy:false,err:'',val:'',pnl:'',date:nextFreeDate(),ok:`تم حفظ قيمة ${fmtNice(date)} ✓ — إجمالي القيم: ${state.snaps.length}`};
+  importState={url:null,busy:false,err:'',val:'',pnl:'',date:nextFreeDate(),items:null,ok:`تم حفظ قيمة ${fmtNice(date)} ✓ — إجمالي القيم: ${state.snaps.length}`};
+  renderImport();
+}
+function saveAllItems(){
+  let n=0;
+  (importState.items||[]).forEach((it,k)=>{const v=num(it.value);if(v>0){const d=it.date||todayStr();state.snaps=state.snaps.filter(x=>x.date!==d);state.snaps.push({id:Date.now()+k,date:d,value:v,dayPnl:it.dayPnl==null?null:num(it.dayPnl)});n++;}});
+  save();render();
+  importState={url:null,busy:false,err:'',val:'',pnl:'',date:nextFreeDate(),items:null,ok:`تم حفظ ${n} قيمة ✓ — إجمالي القيم: ${state.snaps.length}`};
   renderImport();
 }
 
