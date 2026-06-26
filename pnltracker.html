@@ -75,6 +75,7 @@ const num=s=>{const v=parseFloat(String(s).replace(/,/g,'').replace(/[^0-9.\-]/g
 const pad2=n=>String(n).padStart(2,'0');
 const fmtD=d=>`${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
 const todayStr=()=>fmtD(new Date());
+const nextFreeDate=()=>{const d=new Date();d.setHours(0,0,0,0);for(let i=0;i<800;i++){const s=fmtD(d);if(!state.snaps.some(x=>x.date===s))return s;d.setDate(d.getDate()-1);}return todayStr();};
 const parseD=s=>{const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)};
 const shortDate=s=>{const d=parseD(s);return `${d.getDate()}/${d.getMonth()+1}`};
 const pc=v=>v>0?C.green:v<0?C.red:C.muted;
@@ -289,7 +290,7 @@ function shiftMonth(d){const x=new Date(state.cursor.y,state.cursor.m+d,1);state
 
 /* snapshot */
 function openSnap(v){
-  v=v||{date:todayStr(),value:'',dayPnl:''};
+  v=v||{date:nextFreeDate(),value:'',dayPnl:''};
   showModal(head('تسجيل قيمة المحفظة')+`<div style="display:flex;flex-direction:column;gap:14px">
     <label class="lab"><span class="labt">التاريخ</span><input id="sDate" type="date" value="${esc(v.date)}"></label>
     <label class="lab"><span class="labt">القيمة الإجمالية (${esc(sym())})</span><input id="sVal" class="num" type="number" inputmode="decimal" step="any" value="${esc(v.value)}" placeholder="3629.67"></label>
@@ -354,7 +355,7 @@ function openDay(d){
 }
 
 /* ----------------------- snapshot via image / manual --------------- */
-function openImport(){importState={url:null,busy:false,err:'',val:'',pnl:'',date:todayStr()};renderImport();}
+function openImport(){importState={url:null,busy:false,err:'',val:'',pnl:'',date:nextFreeDate()};renderImport();}
 function renderImport(){
   const i=importState;
   const top = !i.url
@@ -378,9 +379,10 @@ function renderImport(){
       </div>
       <button class="primary" onclick="saveImport()">حفظ القيمة</button>
     </div>`;
+  const ok = i.ok ? `<div style="color:${RH_UP};font-size:12.5px;margin-bottom:12px;background:rgba(31,209,107,.08);border:1px solid var(--border);border-radius:12px;padding:10px 12px">${esc(i.ok)} — جاهز للصورة التالية.</div>` : '';
   showModal(`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><h2>✨ تسجيل قيمة المحفظة</h2><button class="ibtn" onclick="closeModal()">✕</button></div>
-    <div style="color:var(--muted);font-size:12px;margin-bottom:14px">صوّر شاشة محفظتك واقرأها تلقائياً، أو اكتب القيمة يدوياً — الطريقتان مجانيتان وبدون مفتاح.</div>
-    ${top}${note}${fields}`);
+    <div style="color:var(--muted);font-size:12px;margin-bottom:14px">كل قيمة تُحفظ بيوم مستقل والقديم يظل محفوظ. صوّر شاشتك أو اكتب القيمة يدوياً.</div>
+    ${ok}${top}${note}${fields}`);
 }
 function onFile(e){const f=e.target.files&&e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{importState.url=r.result;importState.err='';renderImport();};r.readAsDataURL(f);e.target.value='';}
 function loadTesseract(){return new Promise((res,rej)=>{if(window.Tesseract)return res();const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.1.0/tesseract.min.js';s.onload=()=>res();s.onerror=()=>rej(new Error('load'));document.head.appendChild(s);});}
@@ -415,7 +417,9 @@ function saveImport(){
   const date=importState.date||todayStr();
   state.snaps=state.snaps.filter(x=>x.date!==date);
   state.snaps.push({id:Date.now(),date,value,dayPnl:(importState.pnl===''||importState.pnl==null)?null:num(importState.pnl)});
-  save();closeModal();render();
+  save();render();
+  importState={url:null,busy:false,err:'',val:'',pnl:'',date:nextFreeDate(),ok:`تم حفظ قيمة ${fmtNice(date)} ✓ — إجمالي القيم: ${state.snaps.length}`};
+  renderImport();
 }
 
 /* ----------------------------- backup ---------------------------- */
