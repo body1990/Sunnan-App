@@ -7,10 +7,7 @@
 <meta name="theme-color" content="#0A0A0D" />
 <title>محفظتي</title>
 <style>
-  :root{
-    --bg:#0A0A0D; --surface:#15151B; --surface2:#1F1F27; --border:#2A2A34;
-    --text:#F1F1F4; --muted:#8A8A96; --orange:#FF7A1A; --orange2:#FFA04D; --green:#22D39A; --red:#FF4D6D;
-  }
+  :root{--bg:#0A0A0D;--surface:#15151B;--surface2:#1F1F27;--border:#2A2A34;--text:#F1F1F4;--muted:#8A8A96;--orange:#FF7A1A;--orange2:#FFA04D;--green:#22D39A;--red:#FF4D6D}
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
   body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,'Segoe UI',Tahoma,sans-serif;min-height:100vh}
   .num{font-family:ui-monospace,'SF Mono','Roboto Mono',Menlo,monospace;font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:plaintext}
@@ -44,425 +41,289 @@
   .menu{position:fixed;bottom:calc(150px + env(safe-area-inset-bottom));inset-inline-start:max(16px,calc(50% - 224px));display:flex;flex-direction:column;gap:8px;z-index:41}
   .menu button{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:12px;padding:10px 14px;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.4)}
   .menu .dot{color:var(--orange);font-weight:900}
-  .seg{flex:1;padding:11px;border-radius:12px;border:1px solid var(--border);background:var(--bg);color:var(--muted);font-weight:700;cursor:pointer}
-  .pick{width:100%;border:1.5px dashed var(--border);background:var(--bg);border-radius:16px;padding:34px 16px;display:flex;flex-direction:column;align-items:center;gap:10px;cursor:pointer;color:var(--muted)}
+  .pick{width:100%;border:1.5px dashed var(--border);background:var(--bg);border-radius:16px;padding:22px 16px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;color:var(--muted)}
   h2{font-size:18px;font-weight:700}
 </style>
 </head>
 <body>
 <div class="wrap fade" id="view"></div>
-
 <div class="nav"><div class="navin" id="nav"></div></div>
 <button class="fab" id="fab" onclick="toggleMenu()">+</button>
 <div id="menu"></div>
 <div id="modal"></div>
 <input id="file" type="file" accept="image/*" style="display:none" onchange="onFile(event)" />
-
+<datalist id="coinDL"></datalist>
 <script>
-/* ----------------------------- state ----------------------------- */
 const C={orange:'#FF7A1A',green:'#22D39A',red:'#FF4D6D',border:'#2A2A34',muted:'#8A8A96'};
-const state={snaps:[],orders:[],settings:{sym:'$'},tab:'home',tf:30,cursor:{y:new Date().getFullYear(),m:new Date().getMonth()},menu:false};
-let importState={url:null,result:null,busy:false,err:''};
-let editId=null;
+const RH_UP='#1FD16B',RH_DN='#FF5A5F';
+const state={trades:[],settings:{sym:'$'},tab:'home',tf:30,cursor:{y:new Date().getFullYear(),m:new Date().getMonth()},menu:false};
+let importState={};let editId=null;
 
-function save(){try{localStorage.setItem('pt_state',JSON.stringify({snaps:state.snaps,orders:state.orders,settings:state.settings}))}catch(e){}}
-function load(){try{const s=JSON.parse(localStorage.getItem('pt_state')||'{}');if(s.snaps)state.snaps=s.snaps;if(s.orders)state.orders=s.orders;if(s.settings)Object.assign(state.settings,s.settings)}catch(e){}}
+function save(){try{localStorage.setItem('pt_state',JSON.stringify({trades:state.trades,settings:state.settings}))}catch(e){}}
+function load(){try{const s=JSON.parse(localStorage.getItem('pt_state')||'{}');if(s.trades)state.trades=s.trades;if(s.settings)Object.assign(state.settings,s.settings)}catch(e){}}
 
-/* ----------------------------- helpers --------------------------- */
 const sym=()=>state.settings.sym||'$';
 const nf=(n,d=2)=>(Number.isFinite(+n)?+n:0).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
 const num=s=>{const v=parseFloat(String(s).replace(/,/g,'').replace(/[^0-9.\-]/g,''));return isNaN(v)?0:v};
 const pad2=n=>String(n).padStart(2,'0');
 const fmtD=d=>`${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
 const todayStr=()=>fmtD(new Date());
-const nextFreeDate=()=>{const d=new Date();d.setHours(0,0,0,0);for(let i=0;i<800;i++){const s=fmtD(d);if(!state.snaps.some(x=>x.date===s))return s;d.setDate(d.getDate()-1);}return todayStr();};
-const parseD=s=>{const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)};
-const shortDate=s=>{const d=parseD(s);return `${d.getDate()}/${d.getMonth()+1}`};
+const parseD=s=>{const[y,m,d]=String(s).split('-').map(Number);return new Date(y,(m||1)-1,d||1)};
+const fmtNice=s=>{const d=parseD(s);return d.getDate()+' '+AR_MONTHS[d.getMonth()]};
 const pc=v=>v>0?C.green:v<0?C.red:C.muted;
-const sgn=v=>`${v>=0?'+':'−'}${sym()}${nf(Math.abs(v))}`;
+const sg=v=>`${v>=0?'+':'−'}${sym()}${nf(Math.abs(v))}`;
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const val=id=>{const e=document.getElementById(id);return e?e.value:''};
 const AR_MONTHS=['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
 const AR_DOW=['إثنين','ثلاثاء','أربعاء','خميس','جمعة','سبت','أحد'];
 const COINS=['BTC','ETH','SOL','BNB','XRP','DOGE','ADA','AVAX','LINK','TRX','TON','DOT','NEAR','SUI','HYPE','PEPE','WIF','FET','ENA','ONDO','JUP','TIA','INJ','SEI','ARB','OP','MEGA','KAS','TAO'];
 
-/* ----------------------------- analytics ------------------------- */
+function startOf(k){const d=new Date();d.setHours(0,0,0,0);if(k==='week')d.setDate(d.getDate()-((d.getDay()+6)%7));else if(k==='month')d.setDate(1);else if(k==='year')d.setMonth(0,1);return fmtD(d)}
 function analytics(){
-  const s=[...state.snaps].sort((a,b)=>a.date.localeCompare(b.date)||a.id-b.id);
-  const cur=s[s.length-1]||null;
-  const firstV=s[0]?s[0].value:0;
-  const valBefore=d=>{let v=null;for(const x of s){if(x.date<d)v=x.value;else break;}return v;};
-  const startOf=k=>{const d=new Date();d.setHours(0,0,0,0);if(k==='week')d.setDate(d.getDate()-((d.getDay()+6)%7));else if(k==='month')d.setDate(1);else if(k==='year')d.setMonth(0,1);return fmtD(d);};
-  const period=k=>{if(!cur)return 0;const b=valBefore(startOf(k));return cur.value-(b==null?firstV:b);};
-  let today=0;
-  if(cur){if(cur.dayPnl!=null&&cur.date===todayStr())today=cur.dayPnl;else if(s.length>=2)today=cur.value-s[s.length-2].value;else if(cur.dayPnl!=null)today=cur.dayPnl;}
-  const daily=[];for(let i=1;i<s.length;i++)daily.push({date:s[i].date,pnl:s[i].value-s[i-1].value});
-  const dailyMap={};daily.forEach(d=>dailyMap[d.date]=(dailyMap[d.date]||0)+d.pnl);
-  return {s,cur,daily,dailyMap,today:period('day')||today,week:period('week'),month:period('month'),year:period('year')};
+  const t=[...state.trades].map(x=>({...x,profit:(+x.proceeds||0)-(+x.cost||0)-(+x.fee||0)})).sort((a,b)=>(a.sellDate||'').localeCompare(b.sellDate||'')||a.id-b.id);
+  let cum=0;const curve=[],dailyMap={};
+  t.forEach(x=>{cum+=x.profit;curve.push({date:x.sellDate||x.buyDate||todayStr(),value:cum});const d=x.sellDate||x.buyDate||todayStr();dailyMap[d]=(dailyMap[d]||0)+x.profit});
+  const dailyArr=Object.keys(dailyMap).sort().map(d=>({date:d,pnl:dailyMap[d]}));
+  const per=k=>{const s=startOf(k);return t.filter(x=>(x.sellDate||x.buyDate||'')>=s).reduce((a,b)=>a+b.profit,0)};
+  const wins=t.filter(x=>x.profit>0).length;
+  return {t,curve,dailyMap,dailyArr,total:cum,today:per('day'),week:per('week'),month:per('month'),year:per('year'),count:t.length,winRate:t.length?wins/t.length*100:0};
 }
 
-/* ----------------------------- svg charts ------------------------ */
-function fmtNice(s){const d=parseD(s);return d.getDate()+' '+AR_MONTHS[d.getMonth()];}
-const RH_UP='#1FD16B', RH_DN='#FF5A5F';
-function smoothPath(pts){
-  if(pts.length<2)return '';
-  let d=`M ${pts[0].x} ${pts[0].y}`;
-  for(let i=0;i<pts.length-1;i++){
-    const p0=pts[i-1]||pts[i],p1=pts[i],p2=pts[i+1],p3=pts[i+2]||p2;
-    const c1x=p1.x+(p2.x-p0.x)/6,c1y=p1.y+(p2.y-p0.y)/6;
-    const c2x=p2.x-(p3.x-p1.x)/6,c2y=p2.y-(p3.y-p1.y)/6;
-    d+=` C ${c1x.toFixed(2)} ${c1y.toFixed(2)}, ${c2x.toFixed(2)} ${c2y.toFixed(2)}, ${p2.x} ${p2.y}`;
-  }
-  return d;
-}
+/* charts */
+function smoothPath(pts){if(pts.length<2)return '';let d=`M ${pts[0].x} ${pts[0].y}`;for(let i=0;i<pts.length-1;i++){const p0=pts[i-1]||pts[i],p1=pts[i],p2=pts[i+1],p3=pts[i+2]||p2;const c1x=p1.x+(p2.x-p0.x)/6,c1y=p1.y+(p2.y-p0.y)/6,c2x=p2.x-(p3.x-p1.x)/6,c2y=p2.y-(p3.y-p1.y)/6;d+=` C ${c1x.toFixed(2)} ${c1y.toFixed(2)}, ${c2x.toFixed(2)} ${c2y.toFixed(2)}, ${p2.x} ${p2.y}`}return d}
 function lineChartHTML(series){
   window._chartPts=null;
-  if(series.length<2)return '<div class="empty">سجّل قيمتين على الأقل لرسم المنحنى</div>';
+  if(series.length<2)return '<div class="empty">سجّل صفقتين على الأقل ليظهر المنحنى</div>';
   const w=320,h=176,p=9,vals=series.map(s=>s.value),min=Math.min(...vals),max=Math.max(...vals),rng=(max-min)||1;
   const pts=series.map((s,i)=>({x:+(p+i*(w-2*p)/(series.length-1)).toFixed(2),y:+(p+(h-2*p)*(1-(s.value-min)/rng)).toFixed(2),value:s.value,date:s.date}));
-  const up=pts[pts.length-1].value>=pts[0].value, col=up?RH_UP:RH_DN;
-  window._chartPts={pts,w,h,col,baseline:pts[0].value};
+  const up=pts[pts.length-1].value>=pts[0].value,col=up?RH_UP:RH_DN;
+  window._chartPts={pts,w,h,col};
   const dPath=smoothPath(pts);
   const baseY=(p+(h-2*p)*(1-(pts[0].value-min)/rng)).toFixed(2);
   return `<div id="chartWrap" style="position:relative;height:184px;touch-action:none;-webkit-user-select:none;user-select:none">
-    <svg id="chartSvg" viewBox="0 0 ${w} ${h}" width="100%" height="184" preserveAspectRatio="none" style="display:block">
+    <svg viewBox="0 0 ${w} ${h}" width="100%" height="184" preserveAspectRatio="none" style="display:block">
       <line x1="0" y1="${baseY}" x2="${w}" y2="${baseY}" stroke="${C.border}" stroke-width="1" stroke-dasharray="2 4" vector-effect="non-scaling-stroke"/>
       <path d="${dPath}" fill="none" stroke="${col}" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/>
       <line id="crossLine" x1="0" y1="0" x2="0" y2="${h}" stroke="${C.muted}" stroke-width="1" vector-effect="non-scaling-stroke" style="opacity:0"/>
     </svg>
     <div id="endDot" style="position:absolute;width:9px;height:9px;border-radius:99px;background:${col};transform:translate(-50%,-50%);box-shadow:0 0 0 4px ${col}33;pointer-events:none"></div>
     <div id="scrubDot" style="position:absolute;width:12px;height:12px;border-radius:99px;background:var(--bg);border:2.5px solid ${col};transform:translate(-50%,-50%);opacity:0;pointer-events:none;z-index:6"></div>
-    <div id="chartTip" style="position:absolute;top:0;left:0;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:3px 8px;pointer-events:none;opacity:0;white-space:nowrap;z-index:5;font-size:10.5px;color:var(--muted);transition:opacity .1s" class="num"></div>
+    <div id="chartTip" class="num" style="position:absolute;top:0;left:0;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:3px 8px;pointer-events:none;opacity:0;white-space:nowrap;z-index:5;font-size:10.5px;color:var(--muted);transition:opacity .1s"></div>
   </div>`;
 }
 function bindChartCursor(){
   const wrap=document.getElementById('chartWrap');if(!wrap||!window._chartPts)return;
-  const{pts,w,h,col,baseline}=window._chartPts;
+  const{pts,w,h}=window._chartPts;
   const line=document.getElementById('crossLine'),tip=document.getElementById('chartTip'),scrub=document.getElementById('scrubDot'),endDot=document.getElementById('endDot');
   const hv=document.getElementById('homeVal'),hd=document.getElementById('homeDelta');
-  const defV=hv?hv.textContent:'',defD=hd?hd.innerHTML:'',defC=hd?hd.style.color:'';
-  const last=pts[pts.length-1];
-  const r0=wrap.getBoundingClientRect();
-  if(endDot){endDot.style.left=(last.x/w*r0.width)+'px';endDot.style.top=(last.y/h*r0.height)+'px';}
-  const move=(clientX)=>{
-    const r=wrap.getBoundingClientRect();let f=(clientX-r.left)/r.width;f=Math.max(0,Math.min(1,f));
-    const q=pts[Math.round(f*(pts.length-1))];
-    const px=q.x/w*r.width, py=q.y/h*r.height;
+  const dVT=hv?hv.textContent:'',dVC=hv?hv.style.color:'',dDT=hd?hd.innerHTML:'',dDC=hd?hd.style.color:'';
+  const r0=wrap.getBoundingClientRect(),last=pts[pts.length-1];
+  if(endDot){endDot.style.left=(last.x/w*r0.width)+'px';endDot.style.top=(last.y/h*r0.height)+'px'}
+  const move=cx=>{
+    const r=wrap.getBoundingClientRect();let f=(cx-r.left)/r.width;f=Math.max(0,Math.min(1,f));
+    const q=pts[Math.round(f*(pts.length-1))],px=q.x/w*r.width,py=q.y/h*r.height;
     line.setAttribute('x1',q.x);line.setAttribute('x2',q.x);line.style.opacity='1';
     scrub.style.left=px+'px';scrub.style.top=py+'px';scrub.style.opacity='1';
     tip.textContent=fmtNice(q.date);tip.style.opacity='1';
     tip.style.left=Math.max(28,Math.min(r.width-28,px))+'px';tip.style.top=Math.max(0,py-28)+'px';
-    if(hv)hv.textContent=sym()+nf(q.value);
-    if(hd){const dv=q.value-baseline,pct=baseline?dv/baseline*100:0,c=dv>0?RH_UP:dv<0?RH_DN:C.muted;
-      hd.style.color=c;hd.innerHTML=`${dv>=0?'▲':'▼'} ${dv>=0?'+':'−'}${sym()}${nf(Math.abs(dv))} (${dv>=0?'+':'−'}${nf(Math.abs(pct))}%)`;}
+    if(hv){hv.textContent=(q.value>=0?'+':'−')+sym()+nf(Math.abs(q.value));hv.style.color=q.value>0?RH_UP:q.value<0?RH_DN:C.muted}
+    if(hd){hd.textContent='حتى '+fmtNice(q.date);hd.style.color=C.muted}
   };
-  const reset=()=>{line.style.opacity='0';scrub.style.opacity='0';tip.style.opacity='0';if(hv)hv.textContent=defV;if(hd){hd.innerHTML=defD;hd.style.color=defC;}};
-  wrap.onpointerdown=e=>{try{wrap.setPointerCapture(e.pointerId)}catch(_){}move(e.clientX);};
-  wrap.onpointermove=e=>{if(e.pointerType!=='mouse'||e.buttons)move(e.clientX);};
+  const reset=()=>{line.style.opacity='0';scrub.style.opacity='0';tip.style.opacity='0';if(hv){hv.textContent=dVT;hv.style.color=dVC}if(hd){hd.innerHTML=dDT;hd.style.color=dDC}};
+  wrap.onpointerdown=e=>{try{wrap.setPointerCapture(e.pointerId)}catch(_){}move(e.clientX)};
+  wrap.onpointermove=e=>{if(e.pointerType!=='mouse'||e.buttons)move(e.clientX)};
   wrap.onpointerup=reset;wrap.onpointercancel=reset;wrap.onpointerleave=reset;
 }
 function svgBars(items){
   if(!items.length)return '<div class="empty">لا توجد بيانات كافية بعد</div>';
   const w=320,h=150,p=6,n=items.length,maxAbs=Math.max(...items.map(d=>Math.abs(d.pnl)))||1,zero=p+(h-2*p)/2,bw=(w-2*p)/n;
-  let bars='';items.forEach((d,i)=>{const x=p+i*bw+bw*.15,bwi=bw*.7,bh=Math.abs(d.pnl)/maxAbs*((h-2*p)/2),y=d.pnl>=0?zero-bh:zero;
-    bars+=`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bwi.toFixed(1)}" height="${Math.max(1,bh).toFixed(1)}" rx="1.5" fill="${d.pnl>=0?C.green:C.red}"/>`;});
+  let bars='';items.forEach((d,i)=>{const x=p+i*bw+bw*.15,bwi=bw*.7,bh=Math.abs(d.pnl)/maxAbs*((h-2*p)/2),y=d.pnl>=0?zero-bh:zero;bars+=`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bwi.toFixed(1)}" height="${Math.max(1,bh).toFixed(1)}" rx="1.5" fill="${d.pnl>=0?C.green:C.red}"/>`});
   return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="150" preserveAspectRatio="none"><line x1="${p}" y1="${zero}" x2="${w-p}" y2="${zero}" stroke="${C.border}"/>${bars}</svg>`;
 }
 
-/* ----------------------------- render ---------------------------- */
-function header(){
-  return `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
-    <div style="display:flex;align-items:center;gap:9px">
-      <div style="width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--orange),var(--orange2));display:flex;align-items:center;justify-content:center;color:#1a0d00;font-weight:900">₿</div>
-      <span style="font-size:17px;font-weight:800">محفظتي</span>
-    </div>
-    <button class="ibtn" style="background:rgba(255,122,26,.12);border-color:var(--orange);color:var(--orange);gap:6px" onclick="openImport()">📷 استيراد</button>
-  </div>`;
-}
+/* render */
+function header(){return `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+  <div style="display:flex;align-items:center;gap:9px"><div style="width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--orange),var(--orange2));display:flex;align-items:center;justify-content:center;color:#1a0d00;font-weight:900">₿</div><span style="font-size:17px;font-weight:800">محفظتي</span></div>
+  <button class="ibtn" style="background:rgba(255,122,26,.12);border-color:var(--orange);color:var(--orange);gap:6px" onclick="openTradeImg()">📷 استيراد صفقة</button></div>`}
 function render(){
   load._done||(load(),load._done=true);
-  document.getElementById('view').innerHTML=header()+({home:viewHome,cal:viewCal,ord:viewOrd,set:viewSet}[state.tab]());
-  document.getElementById('nav').innerHTML=[['home','التحليل','📊'],['cal','التقويم','🗓️'],['ord','الأوامر','📋'],['set','إعدادات','⚙️']]
-    .map(([k,t,i])=>`<button class="navb ${state.tab===k?'on':''}" onclick="setTab('${k}')"><span style="font-size:20px">${i}</span>${t}</button>`).join('');
+  document.getElementById('coinDL').innerHTML=COINS.map(c=>`<option value="${c}">`).join('');
+  document.getElementById('view').innerHTML=header()+({home:viewHome,cal:viewCal,trd:viewTrades,set:viewSet}[state.tab]());
+  document.getElementById('nav').innerHTML=[['home','التحليل','📊'],['cal','التقويم','🗓️'],['trd','الصفقات','📋'],['set','إعدادات','⚙️']].map(([k,t,i])=>`<button class="navb ${state.tab===k?'on':''}" onclick="setTab('${k}')"><span style="font-size:20px">${i}</span>${t}</button>`).join('');
   document.getElementById('fab').className='fab'+(state.menu?' open':'');
   document.getElementById('menu').innerHTML=state.menu?`<div class="menu">
-     <button onclick="closeMenu();openImport()"><span class="dot">📷</span> استيراد من صورة</button>
-     <button onclick="closeMenu();openSnap()"><span class="dot">💼</span> تسجيل قيمة المحفظة</button>
-     <button onclick="closeMenu();openOrder()"><span class="dot">📋</span> إضافة أمر</button></div>`:'';
+    <button onclick="closeMenu();openTradeImg()"><span class="dot">📷</span> استيراد صفقة (شراء + بيع)</button>
+    <button onclick="closeMenu();openTrade()"><span class="dot">✍️</span> إضافة صفقة يدوياً</button></div>`:'';
   if(state.tab==='home')bindChartCursor();
 }
 function viewHome(){
   const A=analytics();
   const cut=new Date();cut.setDate(cut.getDate()-state.tf);const cutStr=fmtD(cut);
   const inR=d=>state.tf>=9999||d>=cutStr;
-  const series=A.s.filter(x=>inR(x.date));
-  const bars=A.daily.filter(x=>inR(x.date)).map(x=>({pnl:x.pnl}));
+  const series=A.curve.filter(x=>inR(x.date));
+  const bars=A.dailyArr.filter(x=>inR(x.date));
   const TF=[[7,'٧ أيام'],[30,'شهر'],[90,'٣ شهور'],[365,'سنة'],[9999,'الكل']];
   return `<div class="fade" style="display:flex;flex-direction:column;gap:14px">
     <div class="card" style="padding:18px;background:radial-gradient(120% 90% at 80% 0%,rgba(255,122,26,.10),var(--surface))">
-      <span style="color:var(--muted);font-size:13px">القيمة التقديرية للأصول</span>
-      <div id="homeVal" class="num" style="color:var(--orange);font-size:40px;font-weight:800;letter-spacing:-1px;margin-top:4px;text-shadow:0 0 30px rgba(255,122,26,.25)">${sym()}${nf(A.cur?A.cur.value:0)}</div>
-      <div id="homeDelta" class="num" style="margin-top:6px;color:${pc(A.today)};font-size:14px;font-weight:600">${A.today>=0?'▲':'▼'} ربح اليوم ${sgn(A.today)}</div>
+      <span style="color:var(--muted);font-size:13px">إجمالي الأرباح المحقّقة</span>
+      <div id="homeVal" class="num" style="color:${pc(A.total)};font-size:40px;font-weight:800;letter-spacing:-1px;margin-top:4px">${A.total>=0?'+':'−'}${sym()}${nf(Math.abs(A.total))}</div>
+      <div id="homeDelta" style="margin-top:6px;color:var(--muted);font-size:13px;font-weight:600">${A.count} صفقة · ${nf(A.winRate,0)}% رابحة</div>
     </div>
     <div style="display:flex;gap:10px">
-      ${[['الأسبوع',A.week],['الشهر',A.month],['السنة',A.year]].map(([l,v])=>`<div class="card" style="padding:12px;flex:1;display:flex;flex-direction:column;gap:4px">
-        <span style="color:var(--muted);font-size:11px">${l}</span><span class="num" style="color:${pc(v)};font-size:15px;font-weight:700">${sgn(v)}</span></div>`).join('')}
+      ${[['اليوم',A.today],['الأسبوع',A.week],['الشهر',A.month],['السنة',A.year]].map(([l,v])=>`<div class="card" style="padding:10px 8px;flex:1;display:flex;flex-direction:column;gap:4px;text-align:center"><span style="color:var(--muted);font-size:11px">${l}</span><span class="num" style="color:${pc(v)};font-size:13px;font-weight:700">${sg(v)}</span></div>`).join('')}
     </div>
     <div class="card" style="padding:14px">
-      <div style="display:flex;gap:6px;overflow-x:auto;margin-bottom:8px">
-        ${TF.map(([v,t])=>`<button class="chip ${state.tf===v?'on':''}" onclick="setTf(${v})">${t}</button>`).join('')}
-      </div>
-      <span style="color:var(--muted);font-size:12px">قيمة المحفظة</span>
+      <div style="display:flex;gap:6px;overflow-x:auto;margin-bottom:8px">${TF.map(([v,t])=>`<button class="chip ${state.tf===v?'on':''}" onclick="setTf(${v})">${t}</button>`).join('')}</div>
+      <span style="color:var(--muted);font-size:12px">الأرباح المتراكمة</span>
       <div style="margin-top:8px;margin-inline:-6px">${lineChartHTML(series)}</div>
     </div>
-    <div class="card" style="padding:14px">
-      <span style="color:var(--muted);font-size:12px">الربح اليومي</span>
-      <div style="margin-top:8px;margin-inline:-6px">${svgBars(bars)}</div>
-    </div>
-    ${!A.s.length?`<div class="card" style="padding:20px;text-align:center;color:var(--muted);font-size:14px">ابدأ: اضغط <b style="color:var(--orange)">استيراد</b> وأعطِ التطبيق لقطة شاشة، أو سجّل القيمة يدوياً من زر <b style="color:var(--orange)">+</b>.</div>`:''}
+    <div class="card" style="padding:14px"><span style="color:var(--muted);font-size:12px">الربح اليومي</span><div style="margin-top:8px;margin-inline:-6px">${svgBars(bars)}</div></div>
+    ${!A.count?`<div class="card" style="padding:20px;text-align:center;color:var(--muted);font-size:14px">ابدأ: اضغط <b style="color:var(--orange)">استيراد صفقة</b> وأعطِ صورة الشراء وصورة البيع، أو أضِف صفقة يدوياً من زر <b style="color:var(--orange)">+</b>.</div>`:''}
   </div>`;
 }
 function viewCal(){
   const A=analytics();const{y,m}=state.cursor;
   const first=new Date(y,m,1),offset=(first.getDay()+6)%7,days=new Date(y,m+1,0).getDate();
-  const cells=[];for(let i=0;i<offset;i++)cells.push(null);
-  for(let d=1;d<=days;d++)cells.push(`${y}-${pad2(m+1)}-${pad2(d)}`);
-  const ordDays={};state.orders.forEach(o=>ordDays[o.date]=true);
+  const cells=[];for(let i=0;i<offset;i++)cells.push(null);for(let d=1;d<=days;d++)cells.push(`${y}-${pad2(m+1)}-${pad2(d)}`);
   const maxAbs=Math.max(1,...cells.filter(Boolean).map(d=>Math.abs(A.dailyMap[d]||0)));
   const monthPnl=cells.filter(Boolean).reduce((t,d)=>t+(A.dailyMap[d]||0),0);
   return `<div class="fade card" style="padding:14px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
       <button class="ibtn" onclick="shiftMonth(-1)">‹</button>
-      <div style="text-align:center"><div style="font-weight:700;font-size:15px">${AR_MONTHS[m]} ${y}</div><div class="num" style="color:${pc(monthPnl)};font-size:12px;font-weight:600">${sgn(monthPnl)}</div></div>
-      <button class="ibtn" onclick="shiftMonth(1)">›</button>
-    </div>
+      <div style="text-align:center"><div style="font-weight:700;font-size:15px">${AR_MONTHS[m]} ${y}</div><div class="num" style="color:${pc(monthPnl)};font-size:12px;font-weight:600">${sg(monthPnl)}</div></div>
+      <button class="ibtn" onclick="shiftMonth(1)">›</button></div>
     <div class="grid7" style="margin-bottom:6px">${AR_DOW.map(d=>`<div style="text-align:center;color:var(--muted);font-size:10px">${d}</div>`).join('')}</div>
-    <div class="grid7">${cells.map(d=>{
-      if(!d)return '<div></div>';
-      const p=A.dailyMap[d],has=p!==undefined,isT=d===todayStr();
-      const a=has?Math.min(.85,.18+Math.abs(p)/maxAbs*.6):0;
-      const bg=has?(p>0?`rgba(34,211,154,${a})`:p<0?`rgba(255,77,109,${a})`:'var(--surface2)'):'var(--bg)';
-      return `<button class="day" onclick="openDay('${d}')" style="background:${bg};${isT?'border-color:var(--orange)':''}">
-        <span class="num" style="${has?'font-weight:700':'opacity:.55'}">${parseD(d).getDate()}</span>
-        ${has?`<span class="num" style="font-size:8.5px;opacity:.9">${p>=0?'+':''}${nf(p,0)}</span>`:''}
-        ${ordDays[d]?'<span style="position:absolute;top:4px;inset-inline-end:4px;width:5px;height:5px;border-radius:99px;background:var(--orange)"></span>':''}</button>`;
-    }).join('')}</div></div>`;
+    <div class="grid7">${cells.map(d=>{if(!d)return '<div></div>';const p=A.dailyMap[d],has=p!==undefined,isT=d===todayStr();const a=has?Math.min(.85,.18+Math.abs(p)/maxAbs*.6):0;const bg=has?(p>0?`rgba(34,211,154,${a})`:p<0?`rgba(255,77,109,${a})`:'var(--surface2)'):'var(--bg)';return `<button class="day" onclick="openDay('${d}')" style="background:${bg};${isT?'border-color:var(--orange)':''}"><span class="num" style="${has?'font-weight:700':'opacity:.55'}">${parseD(d).getDate()}</span>${has?`<span class="num" style="font-size:8.5px;opacity:.9">${p>=0?'+':''}${nf(p,0)}</span>`:''}</button>`}).join('')}</div></div>`;
 }
-function viewOrd(){
-  if(!state.orders.length)return `<div class="fade card" style="padding:22px;text-align:center;color:var(--muted)">لا توجد أوامر. أضِف يدوياً أو استورد من صورة.</div>`;
-  const list=[...state.orders].sort((a,b)=>(b.date+(b.time||'')).localeCompare(a.date+(a.time||'')));
-  return `<div class="fade" style="display:flex;flex-direction:column;gap:10px">${list.map(o=>`
+function viewTrades(){
+  const A=analytics();
+  if(!A.t.length)return `<div class="fade card" style="padding:22px;text-align:center;color:var(--muted)">لا توجد صفقات بعد.</div>`;
+  const list=[...A.t].sort((a,b)=>(b.sellDate||'').localeCompare(a.sellDate||''));
+  return `<div class="fade" style="display:flex;flex-direction:column;gap:10px">${list.map(x=>{const pct=x.cost?x.profit/x.cost*100:0;return `
     <div class="card" style="padding:14px"><div style="display:flex;justify-content:space-between;align-items:flex-start">
-      <div><div style="display:flex;align-items:center;gap:8px">
-        <span style="color:${o.side==='sell'?'var(--red)':'var(--green)'};font-weight:700;font-size:14px">${o.side==='sell'?'▲ بيع':'▼ شراء'}</span>
-        <span style="font-weight:700;font-size:15px">${esc(o.coin)}</span>
-        <span class="num" style="color:var(--muted);font-size:11px">${esc(o.date)}${o.time?' '+esc(o.time):''}</span></div>
-        <div class="num" style="color:var(--muted);font-size:11px;margin-top:4px">${nf(o.qty,6)} @ ${sym()}${nf(o.price)}${o.fee?` · رسوم ${nf(o.fee)}`:''}</div></div>
+      <div><div style="font-weight:700;font-size:15px">${esc(x.coin)}</div>
+        <div class="num" style="color:var(--muted);font-size:11px;margin-top:4px">${esc(x.buyDate||'—')} ← ${esc(x.sellDate||'—')}</div>
+        <div class="num" style="color:var(--muted);font-size:11px;margin-top:2px">${sym()}${nf(x.cost)} ← ${sym()}${nf(x.proceeds)}${x.fee?` · رسوم ${nf(x.fee)}`:''}</div></div>
       <div style="text-align:left;display:flex;flex-direction:column;align-items:flex-end;gap:8px">
-        <span class="num" style="font-weight:700;font-size:15px">${sym()}${nf(o.value)}</span>
-        <div style="display:flex;gap:6px"><button class="ibtn" onclick="openOrder('${o.id}')">تعديل</button><button class="ibtn" onclick="delOrder('${o.id}')" style="color:var(--red)">🗑</button></div>
-      </div></div></div>`).join('')}</div>`;
+        <div class="num" style="color:${pc(x.profit)};font-size:16px;font-weight:800">${x.profit>=0?'+':'−'}${sym()}${nf(Math.abs(x.profit))}</div>
+        <div class="num" style="color:${pc(x.profit)};font-size:12px">${pct>=0?'+':'−'}${nf(Math.abs(pct))}%</div>
+        <div style="display:flex;gap:6px"><button class="ibtn" onclick="openTrade('${x.id}')">تعديل</button><button class="ibtn" style="color:var(--red)" onclick="delTrade('${x.id}')">🗑</button></div>
+      </div></div></div>`}).join('')}</div>`;
 }
-function viewSet(){
-  return `<div class="fade" style="display:flex;flex-direction:column;gap:14px">
-    <div class="card" style="padding:16px"><label class="lab"><span class="labt">رمز العملة</span>
-      <input id="symIn" maxlength="4" value="${esc(sym())}" style="width:110px" oninput="state.settings.sym=this.value;save()"></label></div>
-    <div class="card" style="padding:16px;display:flex;flex-direction:column;gap:12px">
-      <span style="font-weight:700;font-size:14px">النسخ الاحتياطي</span>
-      <span style="color:var(--muted);font-size:12px">كل البيانات محفوظة على جهازك فقط.</span>
-      <div style="display:flex;gap:10px"><button class="ibtn" style="flex:1;height:auto;padding:12px" onclick="exportData()">⬇ تصدير</button>
-        <button class="ibtn" style="flex:1;height:auto;padding:12px;color:var(--orange)" onclick="importData()">⬆ استيراد</button></div>
-      <textarea id="ioBox" placeholder="الصق نسخة احتياطية هنا…" style="min-height:70px;font-family:monospace;font-size:12px;direction:ltr"></textarea>
-    </div>
-    <div class="card" style="padding:16px"><button onclick="clearData()" style="width:100%;background:none;border:1px solid var(--red);color:var(--red);border-radius:12px;padding:12px;font-weight:700;cursor:pointer">مسح كل البيانات</button></div>
-  </div>`;
-}
+function viewSet(){return `<div class="fade" style="display:flex;flex-direction:column;gap:14px">
+  <div class="card" style="padding:16px"><label class="lab"><span class="labt">رمز العملة</span><input maxlength="4" value="${esc(sym())}" style="width:110px" oninput="state.settings.sym=this.value;save()"></label></div>
+  <div class="card" style="padding:16px;display:flex;flex-direction:column;gap:12px"><span style="font-weight:700;font-size:14px">النسخ الاحتياطي</span><span style="color:var(--muted);font-size:12px">كل البيانات محفوظة على جهازك فقط.</span>
+    <div style="display:flex;gap:10px"><button class="ibtn" style="flex:1;height:auto;padding:12px" onclick="exportData()">⬇ تصدير</button><button class="ibtn" style="flex:1;height:auto;padding:12px;color:var(--orange)" onclick="importData()">⬆ استيراد</button></div>
+    <textarea id="ioBox" placeholder="الصق نسخة احتياطية هنا…" style="min-height:70px;font-family:monospace;font-size:12px;direction:ltr"></textarea></div>
+  <div class="card" style="padding:16px"><button onclick="clearData()" style="width:100%;background:none;border:1px solid var(--red);color:var(--red);border-radius:12px;padding:12px;font-weight:700;cursor:pointer">مسح كل الصفقات</button></div></div>`}
 
-/* ----------------------------- modals ---------------------------- */
-function showModal(html){document.getElementById('modal').innerHTML=`<div class="overlay" onclick="if(event.target===this)closeModal()"><div class="sheetbox sheet">${html}</div></div>`;}
-function closeModal(){document.getElementById('modal').innerHTML='';importState={url:null,result:null,busy:false,err:''};editId=null;}
+/* modal */
+function showModal(html){document.getElementById('modal').innerHTML=`<div class="overlay" onclick="if(event.target===this)closeModal()"><div class="sheetbox sheet">${html}</div></div>`}
+function closeModal(){document.getElementById('modal').innerHTML='';importState={};editId=null}
 const head=t=>`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px"><h2>${t}</h2><button class="ibtn" onclick="closeModal()">✕</button></div>`;
+function setTab(t){state.tab=t;state.menu=false;render()}
+function setTf(v){state.tf=v;render()}
+function toggleMenu(){state.menu=!state.menu;render()}
+function closeMenu(){state.menu=false;render()}
+function shiftMonth(d){const x=new Date(state.cursor.y,state.cursor.m+d,1);state.cursor={y:x.getFullYear(),m:x.getMonth()};render()}
 
-function setTab(t){state.tab=t;state.menu=false;render();}
-function setTf(v){state.tf=v;render();}
-function toggleMenu(){state.menu=!state.menu;render();}
-function closeMenu(){state.menu=false;render();}
-function shiftMonth(d){const x=new Date(state.cursor.y,state.cursor.m+d,1);state.cursor={y:x.getFullYear(),m:x.getMonth()};render();}
-
-/* snapshot */
-function openSnap(v){
-  v=v||{date:nextFreeDate(),value:'',dayPnl:''};
-  showModal(head('تسجيل قيمة المحفظة')+`<div style="display:flex;flex-direction:column;gap:14px">
-    <label class="lab"><span class="labt">التاريخ</span><input id="sDate" type="date" value="${esc(v.date)}"></label>
-    <label class="lab"><span class="labt">القيمة الإجمالية (${esc(sym())})</span><input id="sVal" class="num" type="number" inputmode="decimal" step="any" value="${esc(v.value)}" placeholder="3629.67"></label>
-    <label class="lab"><span class="labt">ربح اليوم (${esc(sym())}) — اختياري</span><input id="sPnl" class="num" type="number" inputmode="decimal" step="any" value="${esc(v.dayPnl)}" placeholder="95.17"></label>
-    <button class="primary" onclick="saveSnap()">حفظ</button></div>`);
+/* manual trade */
+function openTrade(id){
+  let tr={coin:'',buyDate:todayStr(),sellDate:todayStr(),cost:'',proceeds:'',fee:''};
+  if(id){const f=state.trades.find(x=>String(x.id)===String(id));if(f){tr={...f};editId=id}}
+  showModal(head(id?'تعديل صفقة':'صفقة يدوية')+`<div style="display:flex;flex-direction:column;gap:14px">
+    <label class="lab"><span class="labt">العملة</span><input id="mCoin" list="coinDL" autocapitalize="characters" value="${esc(tr.coin)}" placeholder="BTC"></label>
+    <div style="display:flex;gap:12px"><label class="lab"><span class="labt">تاريخ الشراء</span><input id="mBuyDate" type="date" value="${esc(tr.buyDate)}"></label><label class="lab"><span class="labt">تاريخ البيع</span><input id="mSellDate" type="date" value="${esc(tr.sellDate)}"></label></div>
+    <div style="display:flex;gap:12px"><label class="lab"><span class="labt">مبلغ الشراء (${esc(sym())})</span><input id="mCost" class="num" type="number" inputmode="decimal" step="any" value="${esc(tr.cost)}" placeholder="3520.40" oninput="updMP()"></label><label class="lab"><span class="labt">مبلغ البيع (${esc(sym())})</span><input id="mProceeds" class="num" type="number" inputmode="decimal" step="any" value="${esc(tr.proceeds)}" placeholder="3611.63" oninput="updMP()"></label></div>
+    <label class="lab"><span class="labt">الرسوم (${esc(sym())}) — اختياري</span><input id="mFee" class="num" type="number" inputmode="decimal" step="any" value="${esc(tr.fee)}" placeholder="0" oninput="updMP()"></label>
+    <div class="card" style="background:var(--bg);padding:14px;display:flex;justify-content:space-between;align-items:center"><span style="color:var(--muted);font-size:12px">الربح</span><span id="mProfit" class="num" style="font-size:18px;font-weight:800">${sym()}0.00</span></div>
+    <button class="primary" onclick="saveTradeManual()">${id?'حفظ التعديل':'حفظ الصفقة'}</button></div>`);
+  updMP();
 }
-function saveSnap(){
-  const date=document.getElementById('sDate').value,value=num(document.getElementById('sVal').value),pnl=document.getElementById('sPnl').value;
-  if(!(value>0))return alert('أدخل قيمة صحيحة.');
-  state.snaps=state.snaps.filter(x=>x.date!==date);
-  state.snaps.push({id:Date.now(),date,value,dayPnl:pnl===''?null:num(pnl)});
+function updMP(){const p=num(val('mProceeds'))-num(val('mCost'))-num(val('mFee'));const pct=num(val('mCost'))?p/num(val('mCost'))*100:0;const e=document.getElementById('mProfit');if(e){e.textContent=(p>=0?'+':'−')+sym()+nf(Math.abs(p))+' ('+(p>=0?'+':'−')+nf(Math.abs(pct))+'%)';e.style.color=p>0?RH_UP:p<0?RH_DN:C.muted}}
+function saveTradeManual(){
+  const coin=val('mCoin').trim().toUpperCase(),cost=num(val('mCost')),proceeds=num(val('mProceeds'));
+  if(!coin||!(cost>0)||!(proceeds>0))return alert('أدخل العملة ومبلغ الشراء ومبلغ البيع.');
+  const o={coin,buyDate:val('mBuyDate'),sellDate:val('mSellDate'),cost,proceeds,fee:num(val('mFee'))};
+  if(editId)state.trades=state.trades.map(x=>String(x.id)===String(editId)?{...o,id:x.id}:x);else state.trades.push({...o,id:Date.now()});
   save();closeModal();render();
 }
-
-/* order */
-function openOrder(id){
-  let o={coin:'',side:'buy',price:'',qty:'',fee:'',date:todayStr(),time:'',note:''};
-  if(id){const f=state.orders.find(x=>String(x.id)===String(id));if(f){o=f;editId=id;}}
-  showModal(head(id?'تعديل أمر':'أمر جديد')+`<div style="display:flex;flex-direction:column;gap:14px">
-    <div style="display:flex;gap:10px">
-      <button id="bBuy" class="seg" onclick="setSide('buy')">شراء</button>
-      <button id="bSell" class="seg" onclick="setSide('sell')">بيع</button></div>
-    <div style="display:flex;gap:12px">
-      <div style="position:relative;flex:1"><label class="lab"><span class="labt">العملة</span>
-        <input id="oCoin" autocapitalize="characters" value="${esc(o.coin)}" placeholder="ابحث أو اكتب…" oninput="coinList(this.value)" onfocus="coinList(this.value)" onblur="setTimeout(()=>{var d=document.getElementById('coinDD');if(d)d.style.display='none'},170)"></label>
-        <div id="coinDD" style="display:none;position:absolute;top:100%;inset-inline-start:0;inset-inline-end:0;z-index:10;background:var(--surface2);border:1px solid var(--border);border-radius:12px;margin-top:4px;max-height:168px;overflow-y:auto"></div></div>
-      <label class="lab"><span class="labt">التاريخ</span><input id="oDate" type="date" value="${esc(o.date)}"></label></div>
-    <div style="display:flex;gap:12px">
-      <label class="lab"><span class="labt">السعر</span><input id="oPrice" class="num" type="number" inputmode="decimal" step="any" value="${esc(o.price)}" placeholder="0.00" oninput="ordVal()"></label>
-      <label class="lab"><span class="labt">الكمية</span><input id="oQty" class="num" type="number" inputmode="decimal" step="any" value="${esc(o.qty)}" placeholder="0.00" oninput="ordVal()"></label></div>
-    <label class="lab"><span class="labt">الرسوم (${esc(sym())}) — اختياري</span><input id="oFee" class="num" type="number" inputmode="decimal" step="any" value="${esc(o.fee)}" placeholder="0"></label>
-    <div class="card" style="background:var(--bg);padding:14px;display:flex;justify-content:space-between;align-items:center"><span style="color:var(--muted);font-size:12px">قيمة الأمر</span><span id="oVal" class="num" style="font-size:18px;font-weight:700">${sym()}0.00</span></div>
-    <button class="primary" onclick="saveOrder()">${id?'حفظ التعديل':'إضافة'}</button></div>`);
-  window._side=o.side;setSide(o.side);ordVal();
-}
-function setSide(s){window._side=s;
-  const b=document.getElementById('bBuy'),sl=document.getElementById('bSell');if(!b)return;
-  b.style.cssText='flex:1;padding:11px;border-radius:12px;cursor:pointer;font-weight:700;'+(s==='buy'?'border:1px solid var(--green);background:rgba(34,211,154,.12);color:var(--green)':'border:1px solid var(--border);background:var(--bg);color:var(--muted)');
-  sl.style.cssText='flex:1;padding:11px;border-radius:12px;cursor:pointer;font-weight:700;'+(s==='sell'?'border:1px solid var(--red);background:rgba(255,77,109,.12);color:var(--red)':'border:1px solid var(--border);background:var(--bg);color:var(--muted)');
-}
-function coinList(q){const dd=document.getElementById('coinDD');if(!dd)return;q=(q||'').toUpperCase().trim();
-  const l=COINS.filter(x=>x.includes(q)).slice(0,40);
-  dd.innerHTML=l.map(x=>`<button type="button" class="num" onmousedown="event.preventDefault();document.getElementById('oCoin').value='${x}';document.getElementById('coinDD').style.display='none'" style="display:block;width:100%;text-align:start;background:none;border:none;color:var(--text);padding:10px 14px;cursor:pointer;font-size:14px;font-weight:600">${x}</button>`).join('');
-  dd.style.display=l.length?'block':'none';
-}
-function ordVal(){const v=num(document.getElementById('oPrice').value)*num(document.getElementById('oQty').value);const e=document.getElementById('oVal');if(e)e.textContent=sym()+nf(v);}
-function saveOrder(){
-  const coin=document.getElementById('oCoin').value.trim().toUpperCase(),price=num(document.getElementById('oPrice').value),qty=num(document.getElementById('oQty').value);
-  if(!coin||!(price>0)||!(qty>0))return alert('أدخل العملة والسعر والكمية.');
-  const o={coin,side:window._side||'buy',price,qty,fee:num(document.getElementById('oFee').value),date:document.getElementById('oDate').value,time:'',value:price*qty};
-  if(editId){state.orders=state.orders.map(x=>String(x.id)===String(editId)?{...o,id:x.id}:x);}else{state.orders.push({...o,id:Date.now()});}
-  save();closeModal();render();
-}
-function delOrder(id){if(confirm('حذف الأمر؟')){state.orders=state.orders.filter(x=>String(x.id)!==String(id));save();render();}}
+function delTrade(id){if(confirm('حذف الصفقة؟')){state.trades=state.trades.filter(x=>String(x.id)!==String(id));save();render()}}
 
 function openDay(d){
-  const A=analytics();const ords=state.orders.filter(o=>o.date===d);const p=A.dailyMap[d];
-  showModal(head(`<span class="num">${d}</span>`)+
-    (p!==undefined?`<div class="num" style="color:${pc(p)};font-size:13px;margin-top:-8px;margin-bottom:12px">ربح اليوم ${sgn(p)}</div>`:'')+
-    (!ords.length&&p===undefined?`<div style="color:var(--muted);font-size:13px">لا يوجد نشاط في هذا اليوم.</div>`:'')+
-    `<div style="display:flex;flex-direction:column;gap:8px">${ords.map(o=>`<div class="row"><span style="color:${o.side==='sell'?'var(--red)':'var(--green)'};font-weight:600">${o.side==='sell'?'بيع':'شراء'} ${esc(o.coin)}</span><span class="num" style="color:var(--muted)">${sym()}${nf(o.value)}</span></div>`).join('')}</div>`);
+  const A=analytics();const tr=A.t.filter(x=>(x.sellDate||x.buyDate)===d);const p=A.dailyMap[d];
+  showModal(head(`<span class="num">${d}</span>`)+(p!==undefined?`<div class="num" style="color:${pc(p)};font-size:13px;margin-top:-8px;margin-bottom:12px">ربح اليوم ${sg(p)}</div>`:'')+(!tr.length?`<div style="color:var(--muted);font-size:13px">لا توجد صفقات مغلقة في هذا اليوم.</div>`:'')+`<div style="display:flex;flex-direction:column;gap:8px">${tr.map(x=>`<div class="row"><span style="font-weight:600">${esc(x.coin)}</span><span class="num" style="color:${pc(x.profit)}">${x.profit>=0?'+':'−'}${sym()}${nf(Math.abs(x.profit))}</span></div>`).join('')}</div>`);
 }
 
-/* ----------------------- snapshot via image / manual --------------- */
-function openImport(){importState={url:null,busy:false,err:'',val:'',pnl:'',date:nextFreeDate(),items:null};renderImport();}
-function renderImport(){
+/* OCR helpers */
+function loadTesseract(){return new Promise((res,rej)=>{if(window.Tesseract)return res();const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.1.0/tesseract.min.js';s.onload=()=>res();s.onerror=()=>rej(new Error('load'));document.head.appendChild(s)})}
+function pickDate(text){const dt=text.match(/(\d{4}-\d{2}-\d{2})\s+\d{1,2}:\d{2}/);if(dt)return dt[1];const all=text.match(/\d{4}-\d{2}-\d{2}/g);if(all&&all.length)return all[all.length-1];return ''}
+function parseOrder(text){
+  const o={};
+  const pair=text.match(/([A-Z]{2,6})\s*\/\s*[A-Z]{2,6}/i);if(pair)o.coin=pair[1].toUpperCase();
+  o.side=/\bsell\b/i.test(text)?'sell':/\bbuy\b/i.test(text)?'buy':'';
+  o.date=pickDate(text);
+  const fv=text.match(/filled\s*value[^0-9]*([0-9][0-9,]*\.?[0-9]*)/i);if(fv)o.value=num(fv[1]);
+  if(!o.value){const od=text.match(/filled\s*amount[^0-9]*([0-9][0-9,]*\.?[0-9]*)/i);if(od)o.value=num(od[1])}
+  const fq=text.match(/filled\s*quantity[^0-9]*([0-9][0-9,]*\.?[0-9]*)/i);if(fq)o.qty=num(fq[1]);
+  const ap=text.match(/avg\.?\s*filled\s*price[^0-9]*([0-9][0-9,]*\.?[0-9]*)/i);if(ap)o.price=num(ap[1]);
+  return o;
+}
+
+/* trade import (two screenshots) */
+function openTradeImg(){importState={mode:'trade',target:'buy',buy:null,sell:null,busy:'',err:'',draft:null,ok:''};renderTradeImg()}
+function pickSlot(which){importState.mode='trade';importState.target=which;document.getElementById('file').click()}
+function onFile(e){const f=e.target.files&&e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{importState[importState.target]={url:r.result,data:null};importState.draft=null;importState.err='';importState.ok='';renderTradeImg()};r.readAsDataURL(f);e.target.value=''}
+async function readSlot(which){
+  importState.busy=which;importState.err='';renderTradeImg();
+  try{await loadTesseract();const w=await Tesseract.createWorker('eng');const{data:{text}}=await w.recognize(importState[which].url);await w.terminate();importState[which].data=parseOrder(text);importState.draft=null;}
+  catch(e){importState.err='تعذّرت القراءة. تأكد إنك فاتح التطبيق من رابط GitHub Pages (مش معاينة Claude)، أو عدّل القيم يدوياً تحت.';importState[which].data={}}
+  importState.busy='';renderTradeImg();
+}
+function slotHTML(which,label,color){
+  const sl=importState[which];
+  if(!sl||!sl.url)return `<button class="pick" style="padding:16px" onclick="pickSlot('${which}')"><span style="font-size:22px">📷</span><span style="color:${color};font-weight:700">${label}</span><span style="font-size:11px">اختر لقطة الشاشة</span></button>`;
+  if(!sl.data)return `<div class="card" style="padding:10px"><img src="${sl.url}" style="width:100%;max-height:110px;object-fit:contain;border-radius:8px;background:#000"><div style="display:flex;gap:8px;margin-top:8px"><button class="ibtn" onclick="pickSlot('${which}')">تغيير</button><button class="primary" style="flex:1" ${importState.busy===which?'disabled':''} onclick="readSlot('${which}')">${importState.busy===which?'<span class="spin">◠</span> قراءة…':'✨ اقرأ '+label}</button></div></div>`;
+  return `<div class="card" style="padding:12px;display:flex;justify-content:space-between;align-items:center"><div><div style="font-weight:700;font-size:13px;color:${color}">${label} ✓</div><div class="num" style="color:var(--muted);font-size:11px">${esc(sl.data.date||'—')} · ${sym()}${nf(sl.data.value||0)}</div></div><button class="ibtn" onclick="pickSlot('${which}')">تغيير</button></div>`;
+}
+function buildDraft(){
+  if(!importState.draft){const b=(importState.buy&&importState.buy.data)||{},s=(importState.sell&&importState.sell.data)||{};
+    importState.draft={coin:s.coin||b.coin||'',buyDate:b.date||'',sellDate:s.date||'',cost:b.value||'',proceeds:s.value||'',fee:''}}
+  return importState.draft;
+}
+function renderTradeImg(){
   const i=importState;
-  const top = !i.url
-    ? `<button class="pick" onclick="document.getElementById('file').click()">
-         <span style="font-size:28px">📷</span><span style="color:var(--text);font-weight:600">اختر لقطة شاشة (اختياري)</span>
-         <span style="font-size:12px">سجل الأوامر أو شاشة قيمة المحفظة</span></button>`
-    : `<img src="${i.url}" style="width:100%;max-height:170px;object-fit:contain;border-radius:12px;border:1px solid var(--border);background:#000">
-       <div style="display:flex;gap:10px;margin-top:10px">
-         <button class="ibtn" style="padding:0 14px" onclick="document.getElementById('file').click()">تغيير</button>
-         <button class="primary" style="flex:1" ${i.busy?'disabled':''} onclick="runImport()">${i.busy?'<span class="spin">◠</span> جارٍ القراءة…':'✨ اقرأ الصورة تلقائياً'}</button>
-       </div>`;
-  const note = i.err ? `<div style="color:var(--orange);font-size:12.5px;margin-top:12px;line-height:1.7;background:rgba(255,122,26,.08);border:1px solid var(--border);border-radius:12px;padding:10px 12px">${esc(i.err)}</div>` : '';
-  const hasItems = i.items && i.items.length;
-  const itemsHtml = hasItems ? `<div style="margin-top:14px">
-      <div style="color:var(--muted);font-size:12px;margin-bottom:8px">تم استخراج ${i.items.length} قيمة — عدّل التاريخ أو المبلغ إذا لزم:</div>
-      <div style="display:flex;flex-direction:column;gap:8px">
-      ${i.items.map((it,k)=>`<div class="card" style="padding:10px;display:flex;gap:8px;align-items:center">
-          <input type="date" style="width:auto;flex:0 0 auto;padding:8px 10px" value="${esc(it.date)}" oninput="importState.items[${k}].date=this.value">
-          <input class="num" style="flex:1" type="number" step="any" value="${esc(it.value)}" oninput="importState.items[${k}].value=num(this.value)">
-          <button class="ibtn" style="color:var(--red)" onclick="importState.items.splice(${k},1);renderImport()">🗑</button>
-        </div>`).join('')}
-      </div>
-      <button class="primary" style="margin-top:12px" onclick="saveAllItems()">حفظ الكل (${i.items.length})</button>
-    </div>` : '';
-  const fields = `<div style="display:flex;flex-direction:column;gap:12px;margin-top:14px">
-      <label class="lab"><span class="labt">المبلغ / القيمة (${esc(sym())})</span>
-        <input id="impVal" class="num" type="number" inputmode="decimal" step="any" value="${esc(i.val)}" placeholder="3520.40" oninput="importState.val=this.value"></label>
-      <div style="display:flex;gap:12px">
-        <label class="lab"><span class="labt">ربح اليوم — اختياري</span>
-          <input id="impPnl" class="num" type="number" inputmode="decimal" step="any" value="${esc(i.pnl)}" placeholder="95.17" oninput="importState.pnl=this.value"></label>
-        <label class="lab"><span class="labt">التاريخ</span>
-          <input id="impDate" type="date" value="${esc(i.date)}" oninput="importState.date=this.value"></label>
-      </div>
-      <button class="primary" onclick="saveImport()">حفظ القيمة</button>
-    </div>`;
-  const ok = i.ok ? `<div style="color:${RH_UP};font-size:12.5px;margin-bottom:12px;background:rgba(31,209,107,.08);border:1px solid var(--border);border-radius:12px;padding:10px 12px">${esc(i.ok)} — جاهز للصورة التالية.</div>` : '';
-  showModal(`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><h2>✨ تسجيل قيمة المحفظة</h2><button class="ibtn" onclick="closeModal()">✕</button></div>
-    <div style="color:var(--muted);font-size:12px;margin-bottom:14px">صوّر سجل الأوامر أو شاشة المحفظة واقرأها، أو اكتب القيمة يدوياً. كل قيمة تُحفظ بيومها والقديم يظل محفوظ.</div>
-    ${ok}${top}${note}${hasItems?itemsHtml:fields}`);
-}
-function onFile(e){const f=e.target.files&&e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{importState.url=r.result;importState.err='';importState.items=null;importState.ok='';renderImport();};r.readAsDataURL(f);e.target.value='';}
-function loadTesseract(){return new Promise((res,rej)=>{if(window.Tesseract)return res();const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.1.0/tesseract.min.js';s.onload=()=>res();s.onerror=()=>rej(new Error('load'));document.head.appendChild(s);});}
-async function runImport(){
-  importState.busy=true;importState.err='';renderImport();
-  try{
-    await loadTesseract();
-    const worker=await Tesseract.createWorker('eng');
-    const{data:{text}}=await worker.recognize(importState.url);
-    await worker.terminate();
-    const items=parseOCR(text);
-    if(items.length){importState.items=items;importState.err='';}
-    else importState.err='قرأت الصورة بس ما لقيت "Filled value" أو رقم القيمة بوضوح. اكتبه يدوياً تحت.';
-  }catch(err){
-    importState.err='القراءة التلقائية معطّلة داخل معاينة Claude. افتح التطبيق بعد نشره على GitHub Pages أو من Safari لتشتغل القراءة المجانية. الآن اكتب القيمة يدوياً تحت — بتنحفظ عادي.';
+  const both=i.buy&&i.buy.data&&i.sell&&i.sell.data;
+  let review='';
+  if(both){const d=buildDraft();
+    review=`<div style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px;display:flex;flex-direction:column;gap:12px">
+      <span style="font-weight:700;font-size:14px">راجع وعدّل</span>
+      <label class="lab"><span class="labt">العملة</span><input list="coinDL" value="${esc(d.coin)}" oninput="importState.draft.coin=this.value"></label>
+      <div style="display:flex;gap:12px"><label class="lab"><span class="labt">تاريخ الشراء</span><input type="date" value="${esc(d.buyDate)}" oninput="importState.draft.buyDate=this.value"></label><label class="lab"><span class="labt">تاريخ البيع</span><input type="date" value="${esc(d.sellDate)}" oninput="importState.draft.sellDate=this.value"></label></div>
+      <div style="display:flex;gap:12px"><label class="lab"><span class="labt">مبلغ الشراء</span><input class="num" type="number" step="any" value="${esc(d.cost)}" oninput="importState.draft.cost=this.value;updTP()"></label><label class="lab"><span class="labt">مبلغ البيع</span><input class="num" type="number" step="any" value="${esc(d.proceeds)}" oninput="importState.draft.proceeds=this.value;updTP()"></label></div>
+      <label class="lab"><span class="labt">الرسوم — اختياري</span><input class="num" type="number" step="any" value="${esc(d.fee)}" oninput="importState.draft.fee=this.value;updTP()"></label>
+      <div class="card" style="background:var(--bg);padding:14px;display:flex;justify-content:space-between;align-items:center"><span style="color:var(--muted);font-size:12px">الربح المحسوب</span><span id="tradeProfit" class="num" style="font-size:18px;font-weight:800"></span></div>
+      <button class="primary" onclick="saveDraft()">حفظ الصفقة</button></div>`;
   }
-  importState.busy=false;renderImport();
+  const ok=i.ok?`<div style="color:${RH_UP};font-size:12.5px;margin-bottom:12px;background:rgba(31,209,107,.08);border:1px solid var(--border);border-radius:12px;padding:10px 12px">${esc(i.ok)}</div>`:'';
+  const note=i.err?`<div style="color:var(--orange);font-size:12.5px;margin:12px 0;line-height:1.7;background:rgba(255,122,26,.08);border:1px solid var(--border);border-radius:12px;padding:10px 12px">${esc(i.err)}</div>`:'';
+  showModal(head('✨ صفقة من صورتين')+`<div style="color:var(--muted);font-size:12px;margin-bottom:14px">صوّر أمر الشراء وأمر البيع، والتطبيق يحسب التاريخ والمبلغ والربح تلقائياً.</div>
+    ${ok}<div style="display:flex;flex-direction:column;gap:10px">${slotHTML('buy','أمر الشراء',RH_UP)}${slotHTML('sell','أمر البيع',RH_DN)}</div>${note}${review}`);
+  updTP();
 }
-function parseOCR(text){
-  const items=[];
-  // PnL / asset value screen → snapshot واحد
-  const av=text.match(/asset value[^0-9]*([0-9][0-9,]*\.?[0-9]*)/i);
-  if(av){
-    const dv=text.match(/today'?s pnl[^0-9+\-]*([+\-]?[0-9][0-9,]*\.?[0-9]*)/i);
-    const dm=text.match(/to\s+(\d{4}-\d{2}-\d{2})/i)||text.match(/(\d{4}-\d{2}-\d{2})/);
-    items.push({date:dm?dm[1]:todayStr(), value:num(av[1]), dayPnl:dv?num(dv[1]):null});
-    return items;
-  }
-  // Order history → كل أمر: Filled value (USDT) + تاريخه
-  const lines=text.split('\n');
-  let curDate=null;
-  for(let idx=0;idx<lines.length;idx++){
-    const ln=lines[idx];
-    const dm=ln.match(/(\d{4}-\d{2}-\d{2})/);
-    if(dm)curDate=dm[1];
-    const fv=ln.match(/filled\s*value[^0-9]*([0-9][0-9,]*\.?[0-9]*)/i);
-    if(fv){
-      let d=curDate;
-      if(!d){for(let j=idx-1;j>=Math.max(0,idx-8);j--){const m2=lines[j].match(/(\d{4}-\d{2}-\d{2})/);if(m2){d=m2[1];break;}}}
-      if(!d){for(let j=idx+1;j<Math.min(lines.length,idx+8);j++){const m2=lines[j].match(/(\d{4}-\d{2}-\d{2})/);if(m2){d=m2[1];break;}}}
-      items.push({date:d||todayStr(), value:num(fv[1])});
-    }
-  }
-  return items;
-}
-function saveImport(){
-  const value=num(importState.val);
-  if(!(value>0))return alert('اكتب قيمة صحيحة أكبر من صفر.');
-  const date=importState.date||todayStr();
-  state.snaps=state.snaps.filter(x=>x.date!==date);
-  state.snaps.push({id:Date.now(),date,value,dayPnl:(importState.pnl===''||importState.pnl==null)?null:num(importState.pnl)});
+function updTP(){const d=importState.draft;if(!d)return;const p=num(d.proceeds)-num(d.cost)-num(d.fee);const pct=num(d.cost)?p/num(d.cost)*100:0;const e=document.getElementById('tradeProfit');if(e){e.textContent=(p>=0?'+':'−')+sym()+nf(Math.abs(p))+' ('+(p>=0?'+':'−')+nf(Math.abs(pct))+'%)';e.style.color=p>0?RH_UP:p<0?RH_DN:C.muted}}
+function saveDraft(){
+  const d=importState.draft;if(!d||!d.coin||!(num(d.cost)>0)||!(num(d.proceeds)>0))return alert('تأكد من العملة ومبلغ الشراء والبيع.');
+  state.trades.push({id:Date.now(),coin:d.coin.toUpperCase(),buyDate:d.buyDate||todayStr(),sellDate:d.sellDate||d.buyDate||todayStr(),cost:num(d.cost),proceeds:num(d.proceeds),fee:num(d.fee)});
   save();render();
-  importState={url:null,busy:false,err:'',val:'',pnl:'',date:nextFreeDate(),items:null,ok:`تم حفظ قيمة ${fmtNice(date)} ✓ — إجمالي القيم: ${state.snaps.length}`};
-  renderImport();
-}
-function saveAllItems(){
-  let n=0;
-  (importState.items||[]).forEach((it,k)=>{const v=num(it.value);if(v>0){const d=it.date||todayStr();state.snaps=state.snaps.filter(x=>x.date!==d);state.snaps.push({id:Date.now()+k,date:d,value:v,dayPnl:it.dayPnl==null?null:num(it.dayPnl)});n++;}});
-  save();render();
-  importState={url:null,busy:false,err:'',val:'',pnl:'',date:nextFreeDate(),items:null,ok:`تم حفظ ${n} قيمة ✓ — إجمالي القيم: ${state.snaps.length}`};
-  renderImport();
+  importState={mode:'trade',target:'buy',buy:null,sell:null,busy:'',err:'',draft:null,ok:'تم حفظ الصفقة ✓ — إجمالي الصفقات: '+state.trades.length};
+  renderTradeImg();
 }
 
-/* ----------------------------- backup ---------------------------- */
-function exportData(){const d=JSON.stringify({snaps:state.snaps,orders:state.orders,settings:state.settings});
-  if(navigator.clipboard)navigator.clipboard.writeText(d).then(()=>alert('تم النسخ.')).catch(()=>{document.getElementById('ioBox').value=d;});else document.getElementById('ioBox').value=d;}
-function importData(){try{const o=JSON.parse(document.getElementById('ioBox').value);if(o.snaps)state.snaps=o.snaps;if(o.orders)state.orders=o.orders;if(o.settings)Object.assign(state.settings,o.settings);save();render();alert('تم الاستيراد.');}catch(e){alert('صيغة غير صحيحة.');}}
-function clearData(){if(confirm('مسح كل البيانات نهائياً؟')){state.snaps=[];state.orders=[];save();render();}}
+/* backup */
+function exportData(){const d=JSON.stringify({trades:state.trades,settings:state.settings});if(navigator.clipboard)navigator.clipboard.writeText(d).then(()=>alert('تم النسخ.')).catch(()=>{document.getElementById('ioBox').value=d});else document.getElementById('ioBox').value=d}
+function importData(){try{const o=JSON.parse(val('ioBox'));if(o.trades)state.trades=o.trades;if(o.settings)Object.assign(state.settings,o.settings);save();render();alert('تم الاستيراد.')}catch(e){alert('صيغة غير صحيحة.')}}
+function clearData(){if(confirm('مسح كل الصفقات نهائياً؟')){state.trades=[];save();render()}}
 
 render();
 </script>
