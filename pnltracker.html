@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="theme-color" content="#0A0A0D" />
+<title>محفظتي</title>
+<style>
+  :root{
+    --bg:#0A0A0D; --surface:#15151B; --surface2:#1F1F27; --border:#2A2A34;
+    --text:#F1F1F4; --muted:#8A8A96; --orange:#FF7A1A; --orange2:#FFA04D; --green:#22D39A; --red:#FF4D6D;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,'Segoe UI',Tahoma,sans-serif;min-height:100vh}
+  .num{font-family:ui-monospace,'SF Mono','Roboto Mono',Menlo,monospace;font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:plaintext}
+  ::-webkit-scrollbar{width:0;height:0}
+  .wrap{max-width:480px;margin:0 auto;padding:18px 16px calc(104px + env(safe-area-inset-bottom))}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:18px}
+  input,textarea{background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:12px;padding:12px 14px;font-size:15px;outline:none;width:100%;font-family:inherit}
+  input::placeholder,textarea::placeholder{color:var(--muted);opacity:.5}
+  input[type=date]::-webkit-calendar-picker-indicator{filter:invert(.7)}
+  .lab{display:flex;flex-direction:column;gap:6px;flex:1}
+  .labt{color:var(--muted);font-size:12px}
+  .ibtn{background:var(--surface2);border:1px solid var(--border);border-radius:10px;min-width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text);font-size:12px;padding:0 8px}
+  .primary{background:var(--orange);color:#1a0d00;border:none;border-radius:14px;padding:15px;font-size:16px;font-weight:800;cursor:pointer;width:100%}
+  .row{display:flex;justify-content:space-between;align-items:center;background:var(--bg);border-radius:12px;padding:10px 12px}
+  .empty{height:100%;min-height:120px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px;text-align:center}
+  .chip{flex:0 0 auto;padding:6px 14px;border-radius:99px;border:none;background:var(--surface2);color:var(--muted);font-size:12px;font-weight:700;cursor:pointer}
+  .chip.on{background:var(--orange);color:#1a0d00}
+  .fade{animation:fade .3s ease}@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  .sheet{animation:rise .25s cubic-bezier(.2,.8,.2,1)}@keyframes rise{from{transform:translateY(40px);opacity:.4}to{transform:none;opacity:1}}
+  .spin{display:inline-block;animation:sp 1s linear infinite}@keyframes sp{to{transform:rotate(360deg)}}
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.66);z-index:50;display:flex;align-items:flex-end;justify-content:center}
+  .sheetbox{background:var(--surface);border-top:1px solid var(--border);border-radius:24px 24px 0 0;width:100%;max-width:480px;max-height:92vh;overflow-y:auto;padding:20px}
+  .grid7{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+  .day{aspect-ratio:1;border-radius:10px;border:1px solid var(--border);background:var(--bg);color:var(--text);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:2px;position:relative;font-size:12px}
+  .nav{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);z-index:35}
+  .navin{max-width:480px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);padding:8px 8px calc(8px + env(safe-area-inset-bottom))}
+  .navb{background:none;border:none;display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 0;cursor:pointer;color:var(--muted);font-size:10.5px;font-weight:500}
+  .navb.on{color:var(--orange);font-weight:700}
+  .fab{position:fixed;bottom:calc(82px + env(safe-area-inset-bottom));inset-inline-start:max(16px,calc(50% - 224px));width:56px;height:56px;border-radius:18px;border:none;background:linear-gradient(135deg,var(--orange),var(--orange2));display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(255,122,26,.4);cursor:pointer;z-index:40;color:#1a0d00;font-size:30px;line-height:1;transition:transform .2s}
+  .fab.open{transform:rotate(45deg)}
+  .menu{position:fixed;bottom:calc(150px + env(safe-area-inset-bottom));inset-inline-start:max(16px,calc(50% - 224px));display:flex;flex-direction:column;gap:8px;z-index:41}
+  .menu button{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:12px;padding:10px 14px;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.4)}
+  .menu .dot{color:var(--orange);font-weight:900}
+  .seg{flex:1;padding:11px;border-radius:12px;border:1px solid var(--border);background:var(--bg);color:var(--muted);font-weight:700;cursor:pointer}
+  .pick{width:100%;border:1.5px dashed var(--border);background:var(--bg);border-radius:16px;padding:34px 16px;display:flex;flex-direction:column;align-items:center;gap:10px;cursor:pointer;color:var(--muted)}
+  h2{font-size:18px;font-weight:700}
+</style>
+</head>
+<body>
+<div class="wrap fade" id="view"></div>
+
+<div class="nav"><div class="navin" id="nav"></div></div>
+<button class="fab" id="fab" onclick="toggleMenu()">+</button>
+<div id="menu"></div>
+<div id="modal"></div>
+<input id="file" type="file" accept="image/*" style="display:none" onchange="onFile(event)" />
+
+<script>
+/* ----------------------------- state ----------------------------- */
+const C={orange:'#FF7A1A',green:'#22D39A',red:'#FF4D6D',border:'#2A2A34',muted:'#8A8A96'};
+const state={snaps:[],orders:[],settings:{sym:'$'},tab:'home',tf:30,cursor:{y:new Date().getFullYear(),m:new Date().getMonth()},menu:false};
+let importState={url:null,result:null,busy:false,err:''};
+let editId=null;
+
+function save(){try{localStorage.setItem('pt_state',JSON.stringify({snaps:state.snaps,orders:state.orders,settings:state.settings}))}catch(e){}}
+function load(){try{const s=JSON.parse(localStorage.getItem('pt_state')||'{}');if(s.snaps)state.snaps=s.snaps;if(s.orders)state.orders=s.orders;if(s.settings)Object.assign(state.settings,s.settings)}catch(e){}}
+
+/* ----------------------------- helpers --------------------------- */
+const sym=()=>state.settings.sym||'$';
+const nf=(n,d=2)=>(Number.isFinite(+n)?+n:0).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
+const num=s=>{const v=parseFloat(String(s).replace(/,/g,'').replace(/[^0-9.\-]/g,''));return isNaN(v)?0:v};
+const pad2=n=>String(n).padStart(2,'0');
+const fmtD=d=>`${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+const todayStr=()=>fmtD(new Date());
+const parseD=s=>{const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)};
+const shortDate=s=>{const d=parseD(s);return `${d.getDate()}/${d.getMonth()+1}`};
+const pc=v=>v>0?C.green:v<0?C.red:C.muted;
+const sgn=v=>`${v>=0?'+':'−'}${sym()}${nf(Math.abs(v))}`;
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const AR_MONTHS=['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+const AR_DOW=['إثنين','ثلاثاء','أربعاء','خميس','جمعة','سبت','أحد'];
+const COINS=['BTC','ETH','SOL','BNB','XRP','DOGE','ADA','AVAX','LINK','TRX','TON','DOT','NEAR','SUI','HYPE','PEPE','WIF','FET','ENA','ONDO','JUP','TIA','INJ','SEI','ARB','OP','MEGA','KAS','TAO'];
+
+/* ----------------------------- analytics ------------------------- */
+function analytics(){
+  const s=[...state.snaps].sort((a,b)=>a.date.localeCompare(b.date)||a.id-b.id);
+  const cur=s[s.length-1]||null;
+  const firstV=s[0]?s[0].value:0;
+  const valBefore=d=>{let v=null;for(const x of s){if(x.date<d)v=x.value;else break;}return v;};
+  const startOf=k=>{const d=new Date();d.setHours(0,0,0,0);if(k==='week')d.setDate(d.getDate()-((d.getDay()+6)%7));else if(k==='month')d.setDate(1);else if(k==='year')d.setMonth(0,1);return fmtD(d);};
+  const period=k=>{if(!cur)return 0;const b=valBefore(startOf(k));return cur.value-(b==null?firstV:b);};
+  let today=0;
+  if(cur){if(cur.dayPnl!=null&&cur.date===todayStr())today=cur.dayPnl;else if(s.length>=2)today=cur.value-s[s.length-2].value;else if(cur.dayPnl!=null)today=cur.dayPnl;}
+  const daily=[];for(let i=1;i<s.length;i++)daily.push({date:s[i].date,pnl:s[i].value-s[i-1].value});
+  const dailyMap={};daily.forEach(d=>dailyMap[d.date]=(dailyMap[d.date]||0)+d.pnl);
+  return {s,cur,daily,dailyMap,today:period('day')||today,week:period('week'),month:period('month'),year:period('year')};
+}
+
+/* ----------------------------- svg charts ------------------------ */
+function fmtNice(s){const d=parseD(s);return d.getDate()+' '+AR_MONTHS[d.getMonth()];}
+const RH_UP='#1FD16B', RH_DN='#FF5A5F';
+function smoothPath(pts){
+  if(pts.length<2)return '';
+  let d=`M ${pts[0].x} ${pts[0].y}`;
+  for(let i=0;i<pts.length-1;i++){
+    const p0=pts[i-1]||pts[i],p1=pts[i],p2=pts[i+1],p3=pts[i+2]||p2;
+    const c1x=p1.x+(p2.x-p0.x)/6,c1y=p1.y+(p2.y-p0.y)/6;
+    const c2x=p2.x-(p3.x-p1.x)/6,c2y=p2.y-(p3.y-p1.y)/6;
+    d+=` C ${c1x.toFixed(2)} ${c1y.toFixed(2)}, ${c2x.toFixed(2)} ${c2y.toFixed(2)}, ${p2.x} ${p2.y}`;
+  }
+  return d;
+}
+function lineChartHTML(series){
+  window._chartPts=null;
+  if(series.length<2)return '<div class="empty">سجّل قيمتين على الأقل لرسم المنحنى</div>';
+  const w=320,h=176,p=9,vals=series.map(s=>s.value),min=Math.min(...vals),max=Math.max(...vals),rng=(max-min)||1;
+  const pts=series.map((s,i)=>({x:+(p+i*(w-2*p)/(series.length-1)).toFixed(2),y:+(p+(h-2*p)*(1-(s.value-min)/rng)).toFixed(2),value:s.value,date:s.date}));
+  const up=pts[pts.length-1].value>=pts[0].value, col=up?RH_UP:RH_DN;
+  window._chartPts={pts,w,h,col,baseline:pts[0].value};
+  const dPath=smoothPath(pts);
+  const baseY=(p+(h-2*p)*(1-(pts[0].value-min)/rng)).toFixed(2);
+  return `<div id="chartWrap" style="position:relative;height:184px;touch-action:none;-webkit-user-select:none;user-select:none">
+    <svg id="chartSvg" viewBox="0 0 ${w} ${h}" width="100%" height="184" preserveAspectRatio="none" style="display:block">
+      <line x1="0" y1="${baseY}" x2="${w}" y2="${baseY}" stroke="${C.border}" stroke-width="1" stroke-dasharray="2 4" vector-effect="non-scaling-stroke"/>
+      <path d="${dPath}" fill="none" stroke="${col}" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/>
+      <line id="crossLine" x1="0" y1="0" x2="0" y2="${h}" stroke="${C.muted}" stroke-width="1" vector-effect="non-scaling-stroke" style="opacity:0"/>
+    </svg>
+    <div id="endDot" style="position:absolute;width:9px;height:9px;border-radius:99px;background:${col};transform:translate(-50%,-50%);box-shadow:0 0 0 4px ${col}33;pointer-events:none"></div>
+    <div id="scrubDot" style="position:absolute;width:12px;height:12px;border-radius:99px;background:var(--bg);border:2.5px solid ${col};transform:translate(-50%,-50%);opacity:0;pointer-events:none;z-index:6"></div>
+    <div id="chartTip" style="position:absolute;top:0;left:0;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:3px 8px;pointer-events:none;opacity:0;white-space:nowrap;z-index:5;font-size:10.5px;color:var(--muted);transition:opacity .1s" class="num"></div>
+  </div>`;
+}
+function bindChartCursor(){
+  const wrap=document.getElementById('chartWrap');if(!wrap||!window._chartPts)return;
+  const{pts,w,h,col,baseline}=window._chartPts;
+  const line=document.getElementById('crossLine'),tip=document.getElementById('chartTip'),scrub=document.getElementById('scrubDot'),endDot=document.getElementById('endDot');
+  const hv=document.getElementById('homeVal'),hd=document.getElementById('homeDelta');
+  const defV=hv?hv.textContent:'',defD=hd?hd.innerHTML:'',defC=hd?hd.style.color:'';
+  const last=pts[pts.length-1];
+  const r0=wrap.getBoundingClientRect();
+  if(endDot){endDot.style.left=(last.x/w*r0.width)+'px';endDot.style.top=(last.y/h*r0.height)+'px';}
+  const move=(clientX)=>{
+    const r=wrap.getBoundingClientRect();let f=(clientX-r.left)/r.width;f=Math.max(0,Math.min(1,f));
+    const q=pts[Math.round(f*(pts.length-1))];
+    const px=q.x/w*r.width, py=q.y/h*r.height;
+    line.setAttribute('x1',q.x);line.setAttribute('x2',q.x);line.style.opacity='1';
+    scrub.style.left=px+'px';scrub.style.top=py+'px';scrub.style.opacity='1';
+    tip.textContent=fmtNice(q.date);tip.style.opacity='1';
+    tip.style.left=Math.max(28,Math.min(r.width-28,px))+'px';tip.style.top=Math.max(0,py-28)+'px';
+    if(hv)hv.textContent=sym()+nf(q.value);
+    if(hd){const dv=q.value-baseline,pct=baseline?dv/baseline*100:0,c=dv>0?RH_UP:dv<0?RH_DN:C.muted;
+      hd.style.color=c;hd.innerHTML=`${dv>=0?'▲':'▼'} ${dv>=0?'+':'−'}${sym()}${nf(Math.abs(dv))} (${dv>=0?'+':'−'}${nf(Math.abs(pct))}%)`;}
+  };
+  const reset=()=>{line.style.opacity='0';scrub.style.opacity='0';tip.style.opacity='0';if(hv)hv.textContent=defV;if(hd){hd.innerHTML=defD;hd.style.color=defC;}};
+  wrap.onpointerdown=e=>{try{wrap.setPointerCapture(e.pointerId)}catch(_){}move(e.clientX);};
+  wrap.onpointermove=e=>{if(e.pointerType!=='mouse'||e.buttons)move(e.clientX);};
+  wrap.onpointerup=reset;wrap.onpointercancel=reset;wrap.onpointerleave=reset;
+}
+function svgBars(items){
+  if(!items.length)return '<div class="empty">لا توجد بيانات كافية بعد</div>';
+  const w=320,h=150,p=6,n=items.length,maxAbs=Math.max(...items.map(d=>Math.abs(d.pnl)))||1,zero=p+(h-2*p)/2,bw=(w-2*p)/n;
+  let bars='';items.forEach((d,i)=>{const x=p+i*bw+bw*.15,bwi=bw*.7,bh=Math.abs(d.pnl)/maxAbs*((h-2*p)/2),y=d.pnl>=0?zero-bh:zero;
+    bars+=`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bwi.toFixed(1)}" height="${Math.max(1,bh).toFixed(1)}" rx="1.5" fill="${d.pnl>=0?C.green:C.red}"/>`;});
+  return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="150" preserveAspectRatio="none"><line x1="${p}" y1="${zero}" x2="${w-p}" y2="${zero}" stroke="${C.border}"/>${bars}</svg>`;
+}
+
+/* ----------------------------- render ---------------------------- */
+function header(){
+  return `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+    <div style="display:flex;align-items:center;gap:9px">
+      <div style="width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--orange),var(--orange2));display:flex;align-items:center;justify-content:center;color:#1a0d00;font-weight:900">₿</div>
+      <span style="font-size:17px;font-weight:800">محفظتي</span>
+    </div>
+    <button class="ibtn" style="background:rgba(255,122,26,.12);border-color:var(--orange);color:var(--orange);gap:6px" onclick="openImport()">📷 استيراد</button>
+  </div>`;
+}
+function render(){
+  load._done||(load(),load._done=true);
+  document.getElementById('view').innerHTML=header()+({home:viewHome,cal:viewCal,ord:viewOrd,set:viewSet}[state.tab]());
+  document.getElementById('nav').innerHTML=[['home','التحليل','📊'],['cal','التقويم','🗓️'],['ord','الأوامر','📋'],['set','إعدادات','⚙️']]
+    .map(([k,t,i])=>`<button class="navb ${state.tab===k?'on':''}" onclick="setTab('${k}')"><span style="font-size:20px">${i}</span>${t}</button>`).join('');
+  document.getElementById('fab').className='fab'+(state.menu?' open':'');
+  document.getElementById('menu').innerHTML=state.menu?`<div class="menu">
+     <button onclick="closeMenu();openImport()"><span class="dot">📷</span> استيراد من صورة</button>
+     <button onclick="closeMenu();openSnap()"><span class="dot">💼</span> تسجيل قيمة المحفظة</button>
+     <button onclick="closeMenu();openOrder()"><span class="dot">📋</span> إضافة أمر</button></div>`:'';
+  if(state.tab==='home')bindChartCursor();
+}
+function viewHome(){
+  const A=analytics();
+  const cut=new Date();cut.setDate(cut.getDate()-state.tf);const cutStr=fmtD(cut);
+  const inR=d=>state.tf>=9999||d>=cutStr;
+  const series=A.s.filter(x=>inR(x.date));
+  const bars=A.daily.filter(x=>inR(x.date)).map(x=>({pnl:x.pnl}));
+  const TF=[[7,'٧ أيام'],[30,'شهر'],[90,'٣ شهور'],[365,'سنة'],[9999,'الكل']];
+  return `<div class="fade" style="display:flex;flex-direction:column;gap:14px">
+    <div class="card" style="padding:18px;background:radial-gradient(120% 90% at 80% 0%,rgba(255,122,26,.10),var(--surface))">
+      <span style="color:var(--muted);font-size:13px">القيمة التقديرية للأصول</span>
+      <div id="homeVal" class="num" style="color:var(--orange);font-size:40px;font-weight:800;letter-spacing:-1px;margin-top:4px;text-shadow:0 0 30px rgba(255,122,26,.25)">${sym()}${nf(A.cur?A.cur.value:0)}</div>
+      <div id="homeDelta" class="num" style="margin-top:6px;color:${pc(A.today)};font-size:14px;font-weight:600">${A.today>=0?'▲':'▼'} ربح اليوم ${sgn(A.today)}</div>
+    </div>
+    <div style="display:flex;gap:10px">
+      ${[['الأسبوع',A.week],['الشهر',A.month],['السنة',A.year]].map(([l,v])=>`<div class="card" style="padding:12px;flex:1;display:flex;flex-direction:column;gap:4px">
+        <span style="color:var(--muted);font-size:11px">${l}</span><span class="num" style="color:${pc(v)};font-size:15px;font-weight:700">${sgn(v)}</span></div>`).join('')}
+    </div>
+    <div class="card" style="padding:14px">
+      <div style="display:flex;gap:6px;overflow-x:auto;margin-bottom:8px">
+        ${TF.map(([v,t])=>`<button class="chip ${state.tf===v?'on':''}" onclick="setTf(${v})">${t}</button>`).join('')}
+      </div>
+      <span style="color:var(--muted);font-size:12px">قيمة المحفظة</span>
+      <div style="margin-top:8px;margin-inline:-6px">${lineChartHTML(series)}</div>
+    </div>
+    <div class="card" style="padding:14px">
+      <span style="color:var(--muted);font-size:12px">الربح اليومي</span>
+      <div style="margin-top:8px;margin-inline:-6px">${svgBars(bars)}</div>
+    </div>
+    ${!A.s.length?`<div class="card" style="padding:20px;text-align:center;color:var(--muted);font-size:14px">ابدأ: اضغط <b style="color:var(--orange)">استيراد</b> وأعطِ التطبيق لقطة شاشة، أو سجّل القيمة يدوياً من زر <b style="color:var(--orange)">+</b>.</div>`:''}
+  </div>`;
+}
+function viewCal(){
+  const A=analytics();const{y,m}=state.cursor;
+  const first=new Date(y,m,1),offset=(first.getDay()+6)%7,days=new Date(y,m+1,0).getDate();
+  const cells=[];for(let i=0;i<offset;i++)cells.push(null);
+  for(let d=1;d<=days;d++)cells.push(`${y}-${pad2(m+1)}-${pad2(d)}`);
+  const ordDays={};state.orders.forEach(o=>ordDays[o.date]=true);
+  const maxAbs=Math.max(1,...cells.filter(Boolean).map(d=>Math.abs(A.dailyMap[d]||0)));
+  const monthPnl=cells.filter(Boolean).reduce((t,d)=>t+(A.dailyMap[d]||0),0);
+  return `<div class="fade card" style="padding:14px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <button class="ibtn" onclick="shiftMonth(-1)">‹</button>
+      <div style="text-align:center"><div style="font-weight:700;font-size:15px">${AR_MONTHS[m]} ${y}</div><div class="num" style="color:${pc(monthPnl)};font-size:12px;font-weight:600">${sgn(monthPnl)}</div></div>
+      <button class="ibtn" onclick="shiftMonth(1)">›</button>
+    </div>
+    <div class="grid7" style="margin-bottom:6px">${AR_DOW.map(d=>`<div style="text-align:center;color:var(--muted);font-size:10px">${d}</div>`).join('')}</div>
+    <div class="grid7">${cells.map(d=>{
+      if(!d)return '<div></div>';
+      const p=A.dailyMap[d],has=p!==undefined,isT=d===todayStr();
+      const a=has?Math.min(.85,.18+Math.abs(p)/maxAbs*.6):0;
+      const bg=has?(p>0?`rgba(34,211,154,${a})`:p<0?`rgba(255,77,109,${a})`:'var(--surface2)'):'var(--bg)';
+      return `<button class="day" onclick="openDay('${d}')" style="background:${bg};${isT?'border-color:var(--orange)':''}">
+        <span class="num" style="${has?'font-weight:700':'opacity:.55'}">${parseD(d).getDate()}</span>
+        ${has?`<span class="num" style="font-size:8.5px;opacity:.9">${p>=0?'+':''}${nf(p,0)}</span>`:''}
+        ${ordDays[d]?'<span style="position:absolute;top:4px;inset-inline-end:4px;width:5px;height:5px;border-radius:99px;background:var(--orange)"></span>':''}</button>`;
+    }).join('')}</div></div>`;
+}
+function viewOrd(){
+  if(!state.orders.length)return `<div class="fade card" style="padding:22px;text-align:center;color:var(--muted)">لا توجد أوامر. أضِف يدوياً أو استورد من صورة.</div>`;
+  const list=[...state.orders].sort((a,b)=>(b.date+(b.time||'')).localeCompare(a.date+(a.time||'')));
+  return `<div class="fade" style="display:flex;flex-direction:column;gap:10px">${list.map(o=>`
+    <div class="card" style="padding:14px"><div style="display:flex;justify-content:space-between;align-items:flex-start">
+      <div><div style="display:flex;align-items:center;gap:8px">
+        <span style="color:${o.side==='sell'?'var(--red)':'var(--green)'};font-weight:700;font-size:14px">${o.side==='sell'?'▲ بيع':'▼ شراء'}</span>
+        <span style="font-weight:700;font-size:15px">${esc(o.coin)}</span>
+        <span class="num" style="color:var(--muted);font-size:11px">${esc(o.date)}${o.time?' '+esc(o.time):''}</span></div>
+        <div class="num" style="color:var(--muted);font-size:11px;margin-top:4px">${nf(o.qty,6)} @ ${sym()}${nf(o.price)}${o.fee?` · رسوم ${nf(o.fee)}`:''}</div></div>
+      <div style="text-align:left;display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+        <span class="num" style="font-weight:700;font-size:15px">${sym()}${nf(o.value)}</span>
+        <div style="display:flex;gap:6px"><button class="ibtn" onclick="openOrder('${o.id}')">تعديل</button><button class="ibtn" onclick="delOrder('${o.id}')" style="color:var(--red)">🗑</button></div>
+      </div></div></div>`).join('')}</div>`;
+}
+function viewSet(){
+  return `<div class="fade" style="display:flex;flex-direction:column;gap:14px">
+    <div class="card" style="padding:16px"><label class="lab"><span class="labt">رمز العملة</span>
+      <input id="symIn" maxlength="4" value="${esc(sym())}" style="width:110px" oninput="state.settings.sym=this.value;save()"></label></div>
+    <div class="card" style="padding:16px;display:flex;flex-direction:column;gap:12px">
+      <span style="font-weight:700;font-size:14px">النسخ الاحتياطي</span>
+      <span style="color:var(--muted);font-size:12px">كل البيانات محفوظة على جهازك فقط.</span>
+      <div style="display:flex;gap:10px"><button class="ibtn" style="flex:1;height:auto;padding:12px" onclick="exportData()">⬇ تصدير</button>
+        <button class="ibtn" style="flex:1;height:auto;padding:12px;color:var(--orange)" onclick="importData()">⬆ استيراد</button></div>
+      <textarea id="ioBox" placeholder="الصق نسخة احتياطية هنا…" style="min-height:70px;font-family:monospace;font-size:12px;direction:ltr"></textarea>
+    </div>
+    <div class="card" style="padding:16px"><button onclick="clearData()" style="width:100%;background:none;border:1px solid var(--red);color:var(--red);border-radius:12px;padding:12px;font-weight:700;cursor:pointer">مسح كل البيانات</button></div>
+  </div>`;
+}
+
+/* ----------------------------- modals ---------------------------- */
+function showModal(html){document.getElementById('modal').innerHTML=`<div class="overlay" onclick="if(event.target===this)closeModal()"><div class="sheetbox sheet">${html}</div></div>`;}
+function closeModal(){document.getElementById('modal').innerHTML='';importState={url:null,result:null,busy:false,err:''};editId=null;}
+const head=t=>`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px"><h2>${t}</h2><button class="ibtn" onclick="closeModal()">✕</button></div>`;
+
+function setTab(t){state.tab=t;state.menu=false;render();}
+function setTf(v){state.tf=v;render();}
+function toggleMenu(){state.menu=!state.menu;render();}
+function closeMenu(){state.menu=false;render();}
+function shiftMonth(d){const x=new Date(state.cursor.y,state.cursor.m+d,1);state.cursor={y:x.getFullYear(),m:x.getMonth()};render();}
+
+/* snapshot */
+function openSnap(v){
+  v=v||{date:todayStr(),value:'',dayPnl:''};
+  showModal(head('تسجيل قيمة المحفظة')+`<div style="display:flex;flex-direction:column;gap:14px">
+    <label class="lab"><span class="labt">التاريخ</span><input id="sDate" type="date" value="${esc(v.date)}"></label>
+    <label class="lab"><span class="labt">القيمة الإجمالية (${esc(sym())})</span><input id="sVal" class="num" type="number" inputmode="decimal" step="any" value="${esc(v.value)}" placeholder="3629.67"></label>
+    <label class="lab"><span class="labt">ربح اليوم (${esc(sym())}) — اختياري</span><input id="sPnl" class="num" type="number" inputmode="decimal" step="any" value="${esc(v.dayPnl)}" placeholder="95.17"></label>
+    <button class="primary" onclick="saveSnap()">حفظ</button></div>`);
+}
+function saveSnap(){
+  const date=document.getElementById('sDate').value,value=num(document.getElementById('sVal').value),pnl=document.getElementById('sPnl').value;
+  if(!(value>0))return alert('أدخل قيمة صحيحة.');
+  state.snaps=state.snaps.filter(x=>x.date!==date);
+  state.snaps.push({id:Date.now(),date,value,dayPnl:pnl===''?null:num(pnl)});
+  save();closeModal();render();
+}
+
+/* order */
+function openOrder(id){
+  let o={coin:'',side:'buy',price:'',qty:'',fee:'',date:todayStr(),time:'',note:''};
+  if(id){const f=state.orders.find(x=>String(x.id)===String(id));if(f){o=f;editId=id;}}
+  showModal(head(id?'تعديل أمر':'أمر جديد')+`<div style="display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;gap:10px">
+      <button id="bBuy" class="seg" onclick="setSide('buy')">شراء</button>
+      <button id="bSell" class="seg" onclick="setSide('sell')">بيع</button></div>
+    <div style="display:flex;gap:12px">
+      <div style="position:relative;flex:1"><label class="lab"><span class="labt">العملة</span>
+        <input id="oCoin" autocapitalize="characters" value="${esc(o.coin)}" placeholder="ابحث أو اكتب…" oninput="coinList(this.value)" onfocus="coinList(this.value)" onblur="setTimeout(()=>{var d=document.getElementById('coinDD');if(d)d.style.display='none'},170)"></label>
+        <div id="coinDD" style="display:none;position:absolute;top:100%;inset-inline-start:0;inset-inline-end:0;z-index:10;background:var(--surface2);border:1px solid var(--border);border-radius:12px;margin-top:4px;max-height:168px;overflow-y:auto"></div></div>
+      <label class="lab"><span class="labt">التاريخ</span><input id="oDate" type="date" value="${esc(o.date)}"></label></div>
+    <div style="display:flex;gap:12px">
+      <label class="lab"><span class="labt">السعر</span><input id="oPrice" class="num" type="number" inputmode="decimal" step="any" value="${esc(o.price)}" placeholder="0.00" oninput="ordVal()"></label>
+      <label class="lab"><span class="labt">الكمية</span><input id="oQty" class="num" type="number" inputmode="decimal" step="any" value="${esc(o.qty)}" placeholder="0.00" oninput="ordVal()"></label></div>
+    <label class="lab"><span class="labt">الرسوم (${esc(sym())}) — اختياري</span><input id="oFee" class="num" type="number" inputmode="decimal" step="any" value="${esc(o.fee)}" placeholder="0"></label>
+    <div class="card" style="background:var(--bg);padding:14px;display:flex;justify-content:space-between;align-items:center"><span style="color:var(--muted);font-size:12px">قيمة الأمر</span><span id="oVal" class="num" style="font-size:18px;font-weight:700">${sym()}0.00</span></div>
+    <button class="primary" onclick="saveOrder()">${id?'حفظ التعديل':'إضافة'}</button></div>`);
+  window._side=o.side;setSide(o.side);ordVal();
+}
+function setSide(s){window._side=s;
+  const b=document.getElementById('bBuy'),sl=document.getElementById('bSell');if(!b)return;
+  b.style.cssText='flex:1;padding:11px;border-radius:12px;cursor:pointer;font-weight:700;'+(s==='buy'?'border:1px solid var(--green);background:rgba(34,211,154,.12);color:var(--green)':'border:1px solid var(--border);background:var(--bg);color:var(--muted)');
+  sl.style.cssText='flex:1;padding:11px;border-radius:12px;cursor:pointer;font-weight:700;'+(s==='sell'?'border:1px solid var(--red);background:rgba(255,77,109,.12);color:var(--red)':'border:1px solid var(--border);background:var(--bg);color:var(--muted)');
+}
+function coinList(q){const dd=document.getElementById('coinDD');if(!dd)return;q=(q||'').toUpperCase().trim();
+  const l=COINS.filter(x=>x.includes(q)).slice(0,40);
+  dd.innerHTML=l.map(x=>`<button type="button" class="num" onmousedown="event.preventDefault();document.getElementById('oCoin').value='${x}';document.getElementById('coinDD').style.display='none'" style="display:block;width:100%;text-align:start;background:none;border:none;color:var(--text);padding:10px 14px;cursor:pointer;font-size:14px;font-weight:600">${x}</button>`).join('');
+  dd.style.display=l.length?'block':'none';
+}
+function ordVal(){const v=num(document.getElementById('oPrice').value)*num(document.getElementById('oQty').value);const e=document.getElementById('oVal');if(e)e.textContent=sym()+nf(v);}
+function saveOrder(){
+  const coin=document.getElementById('oCoin').value.trim().toUpperCase(),price=num(document.getElementById('oPrice').value),qty=num(document.getElementById('oQty').value);
+  if(!coin||!(price>0)||!(qty>0))return alert('أدخل العملة والسعر والكمية.');
+  const o={coin,side:window._side||'buy',price,qty,fee:num(document.getElementById('oFee').value),date:document.getElementById('oDate').value,time:'',value:price*qty};
+  if(editId){state.orders=state.orders.map(x=>String(x.id)===String(editId)?{...o,id:x.id}:x);}else{state.orders.push({...o,id:Date.now()});}
+  save();closeModal();render();
+}
+function delOrder(id){if(confirm('حذف الأمر؟')){state.orders=state.orders.filter(x=>String(x.id)!==String(id));save();render();}}
+
+function openDay(d){
+  const A=analytics();const ords=state.orders.filter(o=>o.date===d);const p=A.dailyMap[d];
+  showModal(head(`<span class="num">${d}</span>`)+
+    (p!==undefined?`<div class="num" style="color:${pc(p)};font-size:13px;margin-top:-8px;margin-bottom:12px">ربح اليوم ${sgn(p)}</div>`:'')+
+    (!ords.length&&p===undefined?`<div style="color:var(--muted);font-size:13px">لا يوجد نشاط في هذا اليوم.</div>`:'')+
+    `<div style="display:flex;flex-direction:column;gap:8px">${ords.map(o=>`<div class="row"><span style="color:${o.side==='sell'?'var(--red)':'var(--green)'};font-weight:600">${o.side==='sell'?'بيع':'شراء'} ${esc(o.coin)}</span><span class="num" style="color:var(--muted)">${sym()}${nf(o.value)}</span></div>`).join('')}</div>`);
+}
+
+/* ----------------------- snapshot via image / manual --------------- */
+function openImport(){importState={url:null,busy:false,err:'',val:'',pnl:'',date:todayStr()};renderImport();}
+function renderImport(){
+  const i=importState;
+  const top = !i.url
+    ? `<button class="pick" onclick="document.getElementById('file').click()">
+         <span style="font-size:28px">📷</span><span style="color:var(--text);font-weight:600">اختر لقطة شاشة (اختياري)</span>
+         <span style="font-size:12px">القراءة التلقائية تشتغل بعد نشر التطبيق على الإنترنت</span></button>`
+    : `<img src="${i.url}" style="width:100%;max-height:170px;object-fit:contain;border-radius:12px;border:1px solid var(--border);background:#000">
+       <div style="display:flex;gap:10px;margin-top:10px">
+         <button class="ibtn" style="padding:0 14px" onclick="document.getElementById('file').click()">تغيير</button>
+         <button class="primary" style="flex:1" ${i.busy?'disabled':''} onclick="runImport()">${i.busy?'<span class="spin">◠</span> جارٍ القراءة…':'✨ اقرأ الصورة تلقائياً'}</button>
+       </div>`;
+  const note = i.err ? `<div style="color:var(--orange);font-size:12.5px;margin-top:12px;line-height:1.7;background:rgba(255,122,26,.08);border:1px solid var(--border);border-radius:12px;padding:10px 12px">${esc(i.err)}</div>` : '';
+  const fields = `<div style="display:flex;flex-direction:column;gap:12px;margin-top:14px">
+      <label class="lab"><span class="labt">القيمة الإجمالية (${esc(sym())})</span>
+        <input id="impVal" class="num" type="number" inputmode="decimal" step="any" value="${esc(i.val)}" placeholder="3629.67" oninput="importState.val=this.value"></label>
+      <div style="display:flex;gap:12px">
+        <label class="lab"><span class="labt">ربح اليوم — اختياري</span>
+          <input id="impPnl" class="num" type="number" inputmode="decimal" step="any" value="${esc(i.pnl)}" placeholder="95.17" oninput="importState.pnl=this.value"></label>
+        <label class="lab"><span class="labt">التاريخ</span>
+          <input id="impDate" type="date" value="${esc(i.date)}" oninput="importState.date=this.value"></label>
+      </div>
+      <button class="primary" onclick="saveImport()">حفظ القيمة</button>
+    </div>`;
+  showModal(`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><h2>✨ تسجيل قيمة المحفظة</h2><button class="ibtn" onclick="closeModal()">✕</button></div>
+    <div style="color:var(--muted);font-size:12px;margin-bottom:14px">صوّر شاشة محفظتك واقرأها تلقائياً، أو اكتب القيمة يدوياً — الطريقتان مجانيتان وبدون مفتاح.</div>
+    ${top}${note}${fields}`);
+}
+function onFile(e){const f=e.target.files&&e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{importState.url=r.result;importState.err='';renderImport();};r.readAsDataURL(f);e.target.value='';}
+function loadTesseract(){return new Promise((res,rej)=>{if(window.Tesseract)return res();const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.1.0/tesseract.min.js';s.onload=()=>res();s.onerror=()=>rej(new Error('load'));document.head.appendChild(s);});}
+async function runImport(){
+  importState.busy=true;importState.err='';renderImport();
+  try{
+    await loadTesseract();
+    const worker=await Tesseract.createWorker('eng');
+    const{data:{text}}=await worker.recognize(importState.url);
+    await worker.terminate();
+    const r=parseOCR(text);
+    if(r.value){importState.val=String(r.value);if(r.dayPnl!=null)importState.pnl=String(r.dayPnl);importState.err='';}
+    else importState.err='قرأت الصورة بس ما لقيت رقم القيمة بوضوح. اكتبه يدوياً تحت.';
+  }catch(err){
+    importState.err='القراءة التلقائية معطّلة داخل معاينة Claude (ما بتسمح بتحميل المحرّك). افتح التطبيق بعد نشره على GitHub Pages أو من Safari لتشتغل القراءة المجانية. الآن اكتب القيمة يدوياً تحت — بتنحفظ عادي.';
+  }
+  importState.busy=false;renderImport();
+}
+function parseOCR(text){
+  let value=0,dayPnl=null;
+  let m=text.match(/asset value[^0-9]*([0-9][0-9,]*\.?[0-9]*)/i);
+  if(m)value=num(m[1]);
+  if(!value){const big=text.match(/([0-9]{1,3}(?:,[0-9]{3})+\.[0-9]{2})/);if(big)value=num(big[1]);}
+  if(!value){const any=text.match(/([0-9]+\.[0-9]{2})(?!\d)/);if(any)value=num(any[1]);}
+  const t=text.match(/today'?s pnl[^0-9+\-]*([+\-]?[0-9][0-9,]*\.?[0-9]*)/i);
+  if(t)dayPnl=num(t[1]);
+  return {value,dayPnl};
+}
+function saveImport(){
+  const value=num(importState.val);
+  if(!(value>0))return alert('اكتب قيمة صحيحة أكبر من صفر.');
+  const date=importState.date||todayStr();
+  state.snaps=state.snaps.filter(x=>x.date!==date);
+  state.snaps.push({id:Date.now(),date,value,dayPnl:(importState.pnl===''||importState.pnl==null)?null:num(importState.pnl)});
+  save();closeModal();render();
+}
+
+/* ----------------------------- backup ---------------------------- */
+function exportData(){const d=JSON.stringify({snaps:state.snaps,orders:state.orders,settings:state.settings});
+  if(navigator.clipboard)navigator.clipboard.writeText(d).then(()=>alert('تم النسخ.')).catch(()=>{document.getElementById('ioBox').value=d;});else document.getElementById('ioBox').value=d;}
+function importData(){try{const o=JSON.parse(document.getElementById('ioBox').value);if(o.snaps)state.snaps=o.snaps;if(o.orders)state.orders=o.orders;if(o.settings)Object.assign(state.settings,o.settings);save();render();alert('تم الاستيراد.');}catch(e){alert('صيغة غير صحيحة.');}}
+function clearData(){if(confirm('مسح كل البيانات نهائياً؟')){state.snaps=[];state.orders=[];save();render();}}
+
+render();
+</script>
+</body>
+</html>
