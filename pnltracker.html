@@ -56,7 +56,8 @@
 <script>
 const C={orange:'#FF7A1A',green:'#22D39A',red:'#FF4D6D',border:'#2A2A34',muted:'#8A8A96'};
 const RH_UP='#1FD16B',RH_DN='#FF5A5F';
-const state={trades:[],settings:{sym:'$'},tab:'home',tf:30,cursor:{y:new Date().getFullYear(),m:new Date().getMonth()},menu:false};
+const TR_GREEN='#8FCB3A';
+const state={trades:[],settings:{sym:'$'},tab:'home',tf:180,cursor:{y:new Date().getFullYear(),m:new Date().getMonth()},menu:false};
 let importState={};let editId=null;
 
 function save(){try{localStorage.setItem('pt_state',JSON.stringify({trades:state.trades,settings:state.settings}))}catch(e){}}
@@ -91,29 +92,37 @@ function analytics(){
 
 /* charts */
 function smoothPath(pts){if(pts.length<2)return '';let d=`M ${pts[0].x} ${pts[0].y}`;for(let i=0;i<pts.length-1;i++){const p0=pts[i-1]||pts[i],p1=pts[i],p2=pts[i+1],p3=pts[i+2]||p2;const c1x=p1.x+(p2.x-p0.x)/6,c1y=p1.y+(p2.y-p0.y)/6,c2x=p2.x-(p3.x-p1.x)/6,c2y=p2.y-(p3.y-p1.y)/6;d+=` C ${c1x.toFixed(2)} ${c1y.toFixed(2)}, ${c2x.toFixed(2)} ${c2y.toFixed(2)}, ${p2.x} ${p2.y}`}return d}
-function lineChartHTML(series){
+function lineChartHTML(series,tfLabel){
   window._chartPts=null;
   if(series.length<2)return '<div class="empty">سجّل صفقتين على الأقل ليظهر المنحنى</div>';
-  const w=320,h=176,p=9,vals=series.map(s=>s.value),min=Math.min(...vals),max=Math.max(...vals),rng=(max-min)||1;
-  const pts=series.map((s,i)=>({x:+(p+i*(w-2*p)/(series.length-1)).toFixed(2),y:+(p+(h-2*p)*(1-(s.value-min)/rng)).toFixed(2),value:s.value,date:s.date}));
-  const up=pts[pts.length-1].value>=pts[0].value,col=up?RH_UP:RH_DN;
-  window._chartPts={pts,w,h,col};
+  const w=320,h=176,p=10,top=20,bot=24,vals=series.map(s=>s.value),min=Math.min(...vals),max=Math.max(...vals),rng=(max-min)||1;
+  const X=i=>p+i*(w-2*p)/(series.length-1), Y=v=>top+(h-top-bot)*(1-(v-min)/rng);
+  const pts=series.map((s,i)=>({x:+X(i).toFixed(2),y:+Y(s.value).toFixed(2),value:s.value,date:s.date}));
+  const up=pts[pts.length-1].value>=pts[0].value,col=up?TR_GREEN:RH_DN,start=pts[0].value;
+  window._chartPts={pts,w,h,col,start,tfLabel:tfLabel||''};
   const dPath=smoothPath(pts);
-  const baseY=(p+(h-2*p)*(1-(pts[0].value-min)/rng)).toFixed(2);
-  return `<div id="chartWrap" style="position:relative;height:184px;touch-action:none;-webkit-user-select:none;user-select:none">
-    <svg viewBox="0 0 ${w} ${h}" width="100%" height="184" preserveAspectRatio="none" style="display:block">
+  const area=dPath+` L ${pts[pts.length-1].x} ${(h-bot).toFixed(1)} L ${pts[0].x} ${(h-bot).toFixed(1)} Z`;
+  const maskSvg=`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 ${w} ${h}' preserveAspectRatio='none'><path d='${area}' fill='white'/></svg>`;
+  const maskUrl='data:image/svg+xml,'+encodeURIComponent(maskSvg);
+  let maxI=0,minI=0;vals.forEach((v,i)=>{if(v>vals[maxI])maxI=i;if(v<vals[minI])minI=i});
+  const baseY=Y(start).toFixed(1);
+  return `<div id="chartWrap" style="position:relative;height:188px;touch-action:none;-webkit-user-select:none;user-select:none">
+    <div style="position:absolute;inset:0;background-image:radial-gradient(${col} 0.9px,transparent 0.9px);background-size:7px 7px;opacity:.32;-webkit-mask:url('${maskUrl}') no-repeat;mask:url('${maskUrl}') no-repeat;-webkit-mask-size:100% 100%;mask-size:100% 100%"></div>
+    <svg viewBox="0 0 ${w} ${h}" width="100%" height="188" preserveAspectRatio="none" style="display:block;position:relative">
       <line x1="0" y1="${baseY}" x2="${w}" y2="${baseY}" stroke="${C.border}" stroke-width="1" stroke-dasharray="2 4" vector-effect="non-scaling-stroke"/>
-      <path d="${dPath}" fill="none" stroke="${col}" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/>
+      <path d="${dPath}" fill="none" stroke="${col}" stroke-width="2.2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round" style="filter:drop-shadow(0 0 3px ${col})"/>
       <line id="crossLine" x1="0" y1="0" x2="0" y2="${h}" stroke="${C.muted}" stroke-width="1" vector-effect="non-scaling-stroke" style="opacity:0"/>
     </svg>
-    <div id="endDot" style="position:absolute;width:9px;height:9px;border-radius:99px;background:${col};transform:translate(-50%,-50%);box-shadow:0 0 0 4px ${col}33;pointer-events:none"></div>
+    <div class="num" style="position:absolute;left:${(pts[maxI].x/w*100).toFixed(1)}%;top:0;transform:translateX(-50%);font-size:11px;color:var(--muted);white-space:nowrap">${sym()}${nf(max)}</div>
+    <div class="num" style="position:absolute;left:${(pts[minI].x/w*100).toFixed(1)}%;bottom:1px;transform:translateX(-50%);font-size:11px;color:var(--muted);white-space:nowrap">${sym()}${nf(min)}</div>
+    <div id="endDot" style="position:absolute;width:9px;height:9px;border-radius:99px;background:${col};transform:translate(-50%,-50%);box-shadow:0 0 9px ${col};pointer-events:none"></div>
     <div id="scrubDot" style="position:absolute;width:12px;height:12px;border-radius:99px;background:var(--bg);border:2.5px solid ${col};transform:translate(-50%,-50%);opacity:0;pointer-events:none;z-index:6"></div>
-    <div id="chartTip" class="num" style="position:absolute;top:0;left:0;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:3px 8px;pointer-events:none;opacity:0;white-space:nowrap;z-index:5;font-size:10.5px;color:var(--muted);transition:opacity .1s"></div>
+    <div id="chartTip" class="num" style="position:absolute;top:0;left:0;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:3px 8px;pointer-events:none;opacity:0;white-space:nowrap;z-index:7;font-size:10.5px;color:var(--text);transition:opacity .1s"></div>
   </div>`;
 }
 function bindChartCursor(){
   const wrap=document.getElementById('chartWrap');if(!wrap||!window._chartPts)return;
-  const{pts,w,h}=window._chartPts;
+  const{pts,w,h,start,tfLabel}=window._chartPts;
   const line=document.getElementById('crossLine'),tip=document.getElementById('chartTip'),scrub=document.getElementById('scrubDot'),endDot=document.getElementById('endDot');
   const hv=document.getElementById('homeVal'),hd=document.getElementById('homeDelta');
   const dVT=hv?hv.textContent:'',dVC=hv?hv.style.color:'',dDT=hd?hd.innerHTML:'',dDC=hd?hd.style.color:'';
@@ -125,9 +134,9 @@ function bindChartCursor(){
     line.setAttribute('x1',q.x);line.setAttribute('x2',q.x);line.style.opacity='1';
     scrub.style.left=px+'px';scrub.style.top=py+'px';scrub.style.opacity='1';
     tip.textContent=fmtNice(q.date);tip.style.opacity='1';
-    tip.style.left=Math.max(28,Math.min(r.width-28,px))+'px';tip.style.top=Math.max(0,py-28)+'px';
-    if(hv){hv.textContent=(q.value>=0?'+':'−')+sym()+nf(Math.abs(q.value));hv.style.color=q.value>0?RH_UP:q.value<0?RH_DN:C.muted}
-    if(hd){hd.textContent='حتى '+fmtNice(q.date);hd.style.color=C.muted}
+    tip.style.left=Math.max(28,Math.min(r.width-28,px))+'px';tip.style.top=Math.max(0,py-30)+'px';
+    if(hv){hv.textContent=(q.value>=0?'+':'−')+sym()+nf(Math.abs(q.value));hv.style.color=q.value>0?TR_GREEN:q.value<0?RH_DN:C.muted}
+    if(hd){const ch=q.value-start,pct=Math.abs(start)>1?` (${ch>=0?'+':'−'}${nf(Math.abs(ch/start*100))}%)`:'';hd.textContent=`${ch>=0?'+':'−'}${sym()}${nf(Math.abs(ch))}${pct} · ${fmtNice(q.date)}`;hd.style.color=ch>0?TR_GREEN:ch<0?RH_DN:C.muted}
   };
   const reset=()=>{line.style.opacity='0';scrub.style.opacity='0';tip.style.opacity='0';if(hv){hv.textContent=dVT;hv.style.color=dVC}if(hd){hd.innerHTML=dDT;hd.style.color=dDC}};
   wrap.onpointerdown=e=>{try{wrap.setPointerCapture(e.pointerId)}catch(_){}move(e.clientX)};
@@ -158,24 +167,29 @@ function render(){
 }
 function viewHome(){
   const A=analytics();
+  const TF=[[1,'يوم'],[7,'أسبوع'],[30,'شهر'],[180,'٦ أشهر'],[365,'سنة']];
+  const tfLabel=(TF.find(x=>x[0]===state.tf)||[,''])[1];
   const cut=new Date();cut.setDate(cut.getDate()-state.tf);const cutStr=fmtD(cut);
-  const inR=d=>state.tf>=9999||d>=cutStr;
+  const inR=d=>d>=cutStr;
   const series=A.curve.filter(x=>inR(x.date));
   const bars=A.dailyArr.filter(x=>inR(x.date));
-  const TF=[[7,'٧ أيام'],[30,'شهر'],[90,'٣ شهور'],[365,'سنة'],[9999,'الكل']];
+  const start=series.length?series[0].value:0, ch=A.total-start;
+  const pct=Math.abs(start)>1?` (${ch>=0?'+':'−'}${nf(Math.abs(ch/start*100))}%)`:'';
+  const deltaTxt=`${ch>=0?'+':'−'}${sym()}${nf(Math.abs(ch))}${pct} · ${tfLabel}`;
   return `<div class="fade" style="display:flex;flex-direction:column;gap:14px">
-    <div class="card" style="padding:18px;background:radial-gradient(120% 90% at 80% 0%,rgba(255,122,26,.10),var(--surface))">
+    <div class="card" style="padding:18px;background:radial-gradient(120% 90% at 80% 0%,rgba(143,203,58,.08),var(--surface))">
       <span style="color:var(--muted);font-size:13px">إجمالي الأرباح المحقّقة</span>
-      <div id="homeVal" class="num" style="color:${pc(A.total)};font-size:40px;font-weight:800;letter-spacing:-1px;margin-top:4px">${A.total>=0?'+':'−'}${sym()}${nf(Math.abs(A.total))}</div>
-      <div id="homeDelta" style="margin-top:6px;color:var(--muted);font-size:13px;font-weight:600">${A.count} صفقة · ${nf(A.winRate,0)}% رابحة</div>
+      <div id="homeVal" class="num" style="color:${A.total>0?TR_GREEN:A.total<0?RH_DN:C.muted};font-size:40px;font-weight:800;letter-spacing:-1px;margin-top:4px">${A.total>=0?'+':'−'}${sym()}${nf(Math.abs(A.total))}</div>
+      <div id="homeDelta" class="num" style="margin-top:6px;color:${ch>0?TR_GREEN:ch<0?RH_DN:C.muted};font-size:13px;font-weight:600">${deltaTxt}</div>
     </div>
     <div style="display:flex;gap:10px">
       ${[['اليوم',A.today],['الأسبوع',A.week],['الشهر',A.month],['السنة',A.year]].map(([l,v])=>`<div class="card" style="padding:10px 8px;flex:1;display:flex;flex-direction:column;gap:4px;text-align:center"><span style="color:var(--muted);font-size:11px">${l}</span><span class="num" style="color:${pc(v)};font-size:13px;font-weight:700">${sg(v)}</span></div>`).join('')}
     </div>
-    <div class="card" style="padding:14px">
-      <div style="display:flex;gap:6px;overflow-x:auto;margin-bottom:8px">${TF.map(([v,t])=>`<button class="chip ${state.tf===v?'on':''}" onclick="setTf(${v})">${t}</button>`).join('')}</div>
-      <span style="color:var(--muted);font-size:12px">الأرباح المتراكمة</span>
-      <div style="margin-top:8px;margin-inline:-6px">${lineChartHTML(series)}</div>
+    <div class="card" style="padding:14px 14px 6px">
+      <div style="margin-inline:-6px">${lineChartHTML(series,tfLabel)}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding:0 4px">
+        ${TF.map(([v,t])=>`<button onclick="setTf(${v})" style="background:${state.tf===v?'var(--surface2)':'transparent'};border:none;color:${state.tf===v?'var(--text)':'var(--muted)'};font-weight:${state.tf===v?'800':'500'};font-size:12.5px;padding:7px 12px;border-radius:99px;cursor:pointer">${t}</button>`).join('')}
+      </div>
     </div>
     <div class="card" style="padding:14px"><span style="color:var(--muted);font-size:12px">الربح اليومي</span><div style="margin-top:8px;margin-inline:-6px">${svgBars(bars)}</div></div>
     ${!A.count?`<div class="card" style="padding:20px;text-align:center;color:var(--muted);font-size:14px">ابدأ: اضغط <b style="color:var(--orange)">استيراد صفقة</b> وأعطِ صورة الشراء وصورة البيع، أو أضِف صفقة يدوياً من زر <b style="color:var(--orange)">+</b>.</div>`:''}
