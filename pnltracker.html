@@ -36,8 +36,8 @@
   .grid7{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
   .day{aspect-ratio:1;border-radius:10px;border:1px solid var(--border);background:var(--bg);color:var(--text);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:2px;position:relative;font-size:12px}
   .nav{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);z-index:35}
-  .navin{max-width:480px;margin:0 auto;display:grid;grid-template-columns:repeat(5,1fr);padding:8px 4px calc(8px + env(safe-area-inset-bottom))}
-  .navb{background:none;border:none;display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 0;cursor:pointer;color:var(--muted);font-size:10.5px;font-weight:500}
+  .navin{max-width:480px;margin:0 auto;display:grid;grid-template-columns:repeat(6,1fr);padding:8px 2px calc(8px + env(safe-area-inset-bottom))}
+  .navb{background:none;border:none;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 0;cursor:pointer;color:var(--muted);font-size:9.5px;font-weight:500}
   .navb.on{color:var(--orange);font-weight:700}
   .fab{position:fixed;bottom:calc(82px + env(safe-area-inset-bottom));inset-inline-start:max(16px,calc(50% - 224px));width:56px;height:56px;border-radius:18px;border:none;background:linear-gradient(135deg,var(--orange),var(--orange2));display:flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(255,122,26,.4);cursor:pointer;z-index:40;color:#1a0d00;font-size:30px;line-height:1;transition:transform .2s}
   .fab.open{transform:rotate(45deg)}
@@ -61,7 +61,7 @@
 const C={orange:'#FF7A1A',green:'#22D39A',red:'#FF4D6D',border:'#2A2A34',muted:'#8A8A96'};
 const RH_UP='#1FD16B',RH_DN='#FF5A5F';
 const TR_GREEN='#8FCB3A';
-const state={trades:[],accounts:[],balances:[],settings:{sym:'$'},tab:'home',tf:180,acct:'all',cursor:{y:new Date().getFullYear(),m:new Date().getMonth()},menu:false};
+const state={trades:[],accounts:[],balances:[],settings:{sym:'$'},tab:'home',tf:180,acct:'all',plan:{},cursor:{y:new Date().getFullYear(),m:new Date().getMonth()},menu:false};
 let importState={};let editId=null;
 
 function save(){try{localStorage.setItem('pt_state',JSON.stringify({trades:state.trades,accounts:state.accounts,balances:state.balances,settings:state.settings}))}catch(e){}}
@@ -163,8 +163,9 @@ function header(){return `<div style="display:flex;align-items:center;justify-co
 function render(){
   load._done||(load(),load._done=true);
   document.getElementById('coinDL').innerHTML=COINS.map(c=>`<option value="${c}">`).join('');
-  document.getElementById('view').innerHTML=header()+({home:viewHome,trd:viewTrades,stats:viewStats,cal:viewCal,set:viewSet}[state.tab]());
-  document.getElementById('nav').innerHTML=[['home','تحليل','📊'],['trd','الصفقات','📋'],['stats','إحصائيات','📈'],['cal','التقويم','🗓️'],['set','إعدادات','⚙️']].map(([k,t,i])=>`<button class="navb ${state.tab===k?'on':''}" onclick="setTab('${k}')"><span style="font-size:20px">${i}</span>${t}</button>`).join('');
+  document.getElementById('view').innerHTML=header()+({home:viewHome,trd:viewTrades,plan:viewPlan,stats:viewStats,cal:viewCal,set:viewSet}[state.tab]());
+  document.getElementById('nav').innerHTML=[['home','تحليل','📊'],['trd','صفقات','📋'],['plan','المخطِّط','🎯'],['stats','إحصاء','📈'],['cal','تقويم','🗓️'],['set','إعداد','⚙️']].map(([k,t,i])=>`<button class="navb ${state.tab===k?'on':''}" onclick="setTab('${k}')"><span style="font-size:19px">${i}</span>${t}</button>`).join('');
+  if(state.tab==='plan')setTimeout(planCalc,0);
   document.getElementById('fab').className='fab'+(state.menu?' open':'');
   document.getElementById('menu').innerHTML=state.menu?`<div class="menu">
     <button onclick="closeMenu();openTradeImg()"><span class="dot">📷</span> استيراد صفقة (شراء + بيع)</button>
@@ -414,25 +415,8 @@ function viewStats(){
         </div>`).join('')}
       </div>
     </div>
-    <div class="card" style="padding:16px;display:flex;flex-direction:column;gap:12px">
-      <div style="display:flex;align-items:center;gap:8px"><span style="font-weight:700;font-size:14px">🎯 حاسبة حجم الصفقة</span></div>
-      <span style="color:var(--muted);font-size:12px">احسب كم تشتري حسب المخاطرة ووقف الخسارة.</span>
-      <div style="display:flex;gap:10px"><label class="lab"><span class="labt">رأس المال (${esc(sym())})</span><input id="rkCap" class="num" type="number" step="any" value="${esc(A.value||A.capital||'')}" oninput="calcRisk()"></label><label class="lab"><span class="labt">المخاطرة %</span><input id="rkRisk" class="num" type="number" step="any" value="1" oninput="calcRisk()"></label></div>
-      <div style="display:flex;gap:10px"><label class="lab"><span class="labt">سعر الدخول</span><input id="rkEntry" class="num" type="number" step="any" placeholder="0.00" oninput="calcRisk()"></label><label class="lab"><span class="labt">وقف الخسارة</span><input id="rkStop" class="num" type="number" step="any" placeholder="0.00" oninput="calcRisk()"></label></div>
-      <div class="card" style="background:var(--bg);padding:12px;display:flex;flex-direction:column;gap:8px">
-        <div style="display:flex;justify-content:space-between"><span style="color:var(--muted);font-size:12px">المبلغ المخاطَر به</span><span id="rkRA" class="num" style="font-weight:700">${sym()}0.00</span></div>
-        <div style="display:flex;justify-content:space-between"><span style="color:var(--muted);font-size:12px">حجم الصفقة</span><span id="rkPos" class="num" style="font-weight:700;color:var(--orange)">${sym()}0.00</span></div>
-        <div style="display:flex;justify-content:space-between"><span style="color:var(--muted);font-size:12px">الكمية</span><span id="rkQty" class="num" style="font-weight:700">0</span></div>
-      </div>
-    </div>
+    <button class="ibtn" style="height:auto;padding:14px;justify-content:center;color:#1FD16B;border:1px solid rgba(31,209,107,.3);font-weight:700" onclick="setTab('plan')">🎯 خطّط صفقتك القادمة في المخطِّط</button>
   </div>`;
-}
-function calcRisk(){
-  const cap=num(val('rkCap')),risk=num(val('rkRisk')),entry=num(val('rkEntry')),stop=num(val('rkStop'));
-  const ra=cap*risk/100;let pos=0,qty=0;
-  if(entry>0&&stop>0&&entry>stop){qty=ra/(entry-stop);pos=qty*entry}
-  const setT=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v};
-  setT('rkRA',sym()+nf(ra));setT('rkPos',sym()+nf(pos));setT('rkQty',nf(qty,6));
 }
 
 /* ===== share trade card (canvas) ===== */
@@ -535,6 +519,81 @@ function saveBalance(){
   const date=val('balDate')||todayStr();let n=0;
   state.accounts.forEach(a=>{const raw=val('bal_'+a.id);if(raw!==''){const v=num(raw);state.balances=state.balances.filter(b=>!(b.acc===a.id&&b.date===date));state.balances.push({id:Date.now()+n,acc:a.id,date,value:v});n++}});
   save();closeModal();render();
+}
+
+/* ===== pre-trade planner ===== */
+function viewPlan(){
+  const p=state.plan||{};
+  const cap=p.cap!==undefined?p.cap:nf(balanceSeries('all').current||'');
+  const fld=(id,lab,ph,val,extra='')=>`<label class="lab"><span class="labt">${lab}</span><input id="${id}" class="num" type="number" inputmode="decimal" step="any" placeholder="${ph}" value="${esc(val==null?'':val)}" oninput="planCalc()" ${extra}></label>`;
+  return `<div class="fade" style="display:flex;flex-direction:column;gap:14px">
+    <div class="card" style="padding:16px;background:linear-gradient(135deg,rgba(31,209,107,.10),rgba(56,189,248,.06),var(--surface));border:1px solid rgba(31,209,107,.25)">
+      <div style="display:flex;align-items:center;gap:8px"><span style="font-size:20px">🎯</span><span style="font-weight:800;font-size:16px">تحليل الصفقة قبل الدخول</span></div>
+      <span style="color:var(--muted);font-size:12px">أدخل بيانات الصفقة، ويحسبلك الخطورة وكم تحط من رأس مالك.</span>
+    </div>
+    <div class="card" style="padding:16px;display:flex;flex-direction:column;gap:12px">
+      <label class="lab"><span class="labt">العملة</span><input id="pCoin" list="coinDL" autocapitalize="characters" placeholder="BTC" value="${esc(p.coin||'')}" oninput="planCalc()"></label>
+      <div style="display:flex;gap:10px">${fld('pEntry','سعر الدخول','0.00',p.entry)}${fld('pStop','وقف الخسارة','0.00',p.stop)}</div>
+      <div style="display:flex;gap:10px">${fld('pTarget','الهدف (اختياري)','0.00',p.target)}${fld('pQty','كمية العملة (اختياري)','0',p.qty)}</div>
+      <div style="display:flex;gap:10px">${fld('pCap','رأس المال ('+esc(sym())+')','0',cap)}${fld('pRisk','المخاطرة القصوى %','1',p.risk==null?1:p.risk)}</div>
+      <div style="height:1px;background:var(--border);margin:2px 0"></div>
+      <span style="color:var(--muted);font-size:12px">مؤشرات (اختياري — تحسّن دقّة الخطورة)</span>
+      <div style="display:flex;gap:10px">${fld('pRsi','RSI (0-100)','55',p.rsi)}${fld('pSmi','SMI (-100..100)','0',p.smi)}</div>
+      <div style="display:flex;gap:10px">${fld('p24','تغيّر 24 ساعة %','0',p.c24)}${fld('p7','تغيّر 7 أيام %','0',p.c7)}</div>
+    </div>
+    <div id="planOut"></div>
+  </div>`;
+}
+function planCalc(){
+  const g=id=>document.getElementById(id),v=id=>{const e=g(id);return e?e.value:''},nv=id=>num(v(id));
+  state.plan={coin:v('pCoin'),entry:v('pEntry'),stop:v('pStop'),target:v('pTarget'),qty:v('pQty'),cap:v('pCap'),risk:v('pRisk'),rsi:v('pRsi'),smi:v('pSmi'),c24:v('p24'),c7:v('p7')};
+  const out=g('planOut');if(!out)return;
+  const entry=nv('pEntry'),stop=nv('pStop'),target=nv('pTarget'),cap=nv('pCap'),maxR=nv('pRisk')||1;
+  if(!(entry>0)||!(stop>0)||entry===stop){out.innerHTML='<div class="card" style="padding:20px;text-align:center;color:var(--muted)">أدخل سعر الدخول ووقف الخسارة لحساب الخطورة.</div>';return}
+  const isLong=stop<entry,lossFrac=Math.abs(entry-stop)/entry;
+  let score=0;const R=[];const add=(pts,txt,bad)=>{score+=pts;R.push([txt,bad])};
+  if(v('pRsi')!==''){const rsi=nv('pRsi');if(isLong){if(rsi>=75)add(25,'RSI '+rsi+' تشبّع شرائي',1);else if(rsi>=65)add(12,'RSI '+rsi+' مرتفع',1);else if(rsi<=30)add(-10,'RSI '+rsi+' تشبّع بيعي (فرصة)',0);else add(0,'RSI '+rsi+' متوازن',2);}else{if(rsi<=25)add(25,'RSI '+rsi+' تشبّع بيعي',1);else if(rsi>=70)add(-8,'RSI '+rsi+' مرتفع (فرصة بيع)',0);else add(0,'RSI '+rsi,2);}}
+  if(v('pSmi')!==''){const smi=nv('pSmi');if(smi>=40)add(15,'SMI '+smi+' زخم مرتفع',1);else if(smi<=-40)add(-8,'SMI '+smi+' زخم منخفض (فرصة)',0);else add(0,'SMI '+smi+' متعادل',2)}
+  if(v('p24')!==''){const c=nv('p24');if(c>=15)add(20,'+'+c+'% خلال 24س — مطاردة قمة',1);else if(c>=8)add(10,'+'+c+'% خلال 24س',1);else if(c<=-15)add(10,c+'% خلال 24س — هبوط حاد',1);else add(0,(c>=0?'+':'')+c+'% خلال 24س',2)}
+  if(v('p7')!==''){const c=nv('p7');if(c>=40)add(15,'+'+c+'% خلال 7أيام — مبالغ',1);else if(c>=20)add(8,'+'+c+'% خلال 7أيام',1);else if(c<=-30)add(8,c+'% خلال 7أيام',1);else add(0,(c>=0?'+':'')+c+'% خلال 7أيام',2)}
+  if(lossFrac<0.01)add(12,'وقف ضيّق جداً ('+nf(lossFrac*100)+'%) — قابل للضرب',1);
+  else if(lossFrac>0.15)add(10,'وقف واسع ('+nf(lossFrac*100)+'%)',1);
+  else add(0,'مسافة الوقف '+nf(lossFrac*100)+'%',0);
+  let rr=null;if(target>0){const reward=Math.abs(target-entry),rk=Math.abs(entry-stop);rr=rk>0?reward/rk:0;if((isLong&&target<=entry)||(!isLong&&target>=entry))add(15,'الهدف بالاتجاه الخطأ',1);else if(rr<1)add(20,'R:R '+nf(rr,2)+' ضعيف',1);else if(rr<1.5)add(8,'R:R '+nf(rr,2)+' مقبول',2);else add(-10,'R:R '+nf(rr,2)+' جيد',0)}
+  score=Math.max(0,Math.min(100,Math.round(score)));
+  const effR=Math.max(0.1,maxR*(1-score/100*0.7));
+  const riskAmt=cap*effR/100;let size=lossFrac>0?riskAmt/lossFrac:0;if(size>cap)size=cap;
+  const qty=entry>0?size/entry:0,potLoss=size*lossFrac,potGain=target>0?qty*Math.abs(target-entry):0;
+  const lvl=score<25?['منخفضة',RH_UP]:score<50?['متوسطة','#E0B341']:score<75?['مرتفعة','#FF8A3D']:['مرتفعة جداً',RH_DN];
+  const pctCap=cap>0?size/cap*100:0;
+  const cell=(l,val,col)=>`<div class="card" style="padding:12px;display:flex;flex-direction:column;gap:3px;background:var(--bg)"><span style="color:var(--muted);font-size:11px">${l}</span><span class="num" style="font-weight:800;font-size:15px;color:${col||'var(--text)'}">${val}</span></div>`;
+  out.innerHTML=`<div style="display:flex;flex-direction:column;gap:14px">
+    <div class="card" style="padding:16px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="color:var(--muted);font-size:13px">درجة خطورة الصفقة</span><span class="num" style="font-weight:800;color:${lvl[1]}">${lvl[0]} · ${score}/100</span></div>
+      <div style="height:12px;border-radius:99px;margin-top:10px;background:linear-gradient(90deg,#1FD16B,#E0B341,#FF5A5F);position:relative">
+        <div style="position:absolute;top:-3px;${'left'}:calc(${score}% - 3px);width:6px;height:18px;border-radius:3px;background:#fff;box-shadow:0 0 6px rgba(0,0,0,.6)"></div></div>
+    </div>
+    <div class="card" style="padding:18px;background:radial-gradient(120% 90% at 80% 0%,rgba(31,209,107,.10),var(--surface))">
+      <span style="color:var(--muted);font-size:13px">المبلغ المقترح للدخول (${isLong?'شراء':'بيع'})</span>
+      <div class="num" style="font-size:34px;font-weight:800;color:var(--text);margin-top:2px">${sym()}${nf(size)}</div>
+      <div class="num" style="color:var(--muted);font-size:13px;margin-top:2px">${nf(pctCap)}% من رأس مالك · كمية ≈ ${nf(qty,6)}</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      ${cell('المبلغ المخاطَر به','−'+sym()+nf(potLoss),RH_DN)}
+      ${cell('لو ضرب الهدف',target>0?'+'+sym()+nf(potGain):'—',target>0?RH_UP:'var(--muted)')}
+      ${cell('نسبة المخاطرة الفعلية',nf(effR)+'%')}
+      ${cell('نسبة المخاطرة/العائد',rr!=null?nf(rr,2)+' : 1':'—',rr!=null?(rr>=1.5?RH_UP:rr>=1?'#E0B341':RH_DN):'var(--muted)')}
+    </div>
+    <div class="card" style="padding:14px">
+      <span style="font-weight:700;font-size:13px">الإشارات</span>
+      <div style="display:flex;flex-direction:column;gap:7px;margin-top:10px">
+        ${R.map(([t,b])=>`<div style="display:flex;align-items:center;gap:8px;font-size:12.5px"><span style="width:8px;height:8px;border-radius:99px;flex:0 0 auto;background:${b===1?RH_DN:b===0?RH_UP:C.muted}"></span><span style="color:${b===2?'var(--muted)':'var(--text)'}">${t}</span></div>`).join('')}
+      </div>
+    </div>
+    <div class="card" style="padding:13px;background:rgba(255,122,26,.06);border:1px solid rgba(255,122,26,.2)">
+      <span style="font-size:12px;color:var(--muted);line-height:1.6">💡 كلما زادت الخطورة، قلّ المبلغ المقترح تلقائياً (لتحمي رأس مالك). هذا اجتهاد حسابي مش نصيحة استثمارية — القرار قرارك.</span>
+    </div>
+  </div>`;
 }
 
 function boot(){load();load._done=true;setAppIcon();if(state.settings.pin)showLock();else render()}
