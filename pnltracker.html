@@ -100,7 +100,7 @@ function analytics(){
 function smoothPath(pts){if(pts.length<2)return '';let d=`M ${pts[0].x} ${pts[0].y}`;for(let i=0;i<pts.length-1;i++){const p0=pts[i-1]||pts[i],p1=pts[i],p2=pts[i+1],p3=pts[i+2]||p2;const c1x=p1.x+(p2.x-p0.x)/6,c1y=p1.y+(p2.y-p0.y)/6,c2x=p2.x-(p3.x-p1.x)/6,c2y=p2.y-(p3.y-p1.y)/6;d+=` C ${c1x.toFixed(2)} ${c1y.toFixed(2)}, ${c2x.toFixed(2)} ${c2y.toFixed(2)}, ${p2.x} ${p2.y}`}return d}
 function lineChartHTML(series,tfLabel){
   window._chartPts=null;
-  if(series.length<2)return '<div class="empty">سجّل صفقتين على الأقل ليظهر المنحنى</div>';
+  if(series.length<2)return '<div class="empty">حدّث الرصيد بتاريخين مختلفين (مثلاً اليوم وأمس) ليظهر المنحنى</div>';
   const w=320,h=176,p=10,top=20,bot=24,vals=series.map(s=>s.value),min=Math.min(...vals),max=Math.max(...vals),rng=(max-min)||1;
   const X=i=>p+i*(w-2*p)/(series.length-1), Y=v=>top+(h-top-bot)*(1-(v-min)/rng);
   const pts=series.map((s,i)=>({x:+X(i).toFixed(2),y:+Y(s.value).toFixed(2),value:s.value,date:s.date}));
@@ -167,9 +167,9 @@ function render(){
   document.getElementById('nav').innerHTML=[['home','تحليل','📊'],['trd','الصفقات','📋'],['stats','إحصائيات','📈'],['cal','التقويم','🗓️'],['set','إعدادات','⚙️']].map(([k,t,i])=>`<button class="navb ${state.tab===k?'on':''}" onclick="setTab('${k}')"><span style="font-size:20px">${i}</span>${t}</button>`).join('');
   document.getElementById('fab').className='fab'+(state.menu?' open':'');
   document.getElementById('menu').innerHTML=state.menu?`<div class="menu">
-    <button onclick="closeMenu();openBalance()"><span class="dot">↻</span> تحديث الرصيد</button>
     <button onclick="closeMenu();openTradeImg()"><span class="dot">📷</span> استيراد صفقة (شراء + بيع)</button>
-    <button onclick="closeMenu();openTrade()"><span class="dot">✍️</span> إضافة صفقة يدوياً</button></div>`:'';
+    <button onclick="closeMenu();openTrade()"><span class="dot">✍️</span> إضافة صفقة يدوياً</button>
+    <button onclick="closeMenu();openBalance()"><span class="dot">⚖️</span> ضبط الرصيد (بداية/تصحيح)</button></div>`:'';
   if(state.tab==='home')bindChartCursor();
 }
 function viewHome(){
@@ -186,7 +186,7 @@ function viewHome(){
   const bars=dailyBars.filter(x=>inR(x.date));
   const start=series.length?series[0].value:0, ch=B.current-start;
   const pct=Math.abs(start)>0.01?` (${ch>=0?'+':'−'}${nf(Math.abs(ch/start*100))}%)`:'';
-  const deltaTxt=series.length>1?`${ch>=0?'+':'−'}${sym()}${nf(Math.abs(ch))}${pct} · ${tfLabel}`:'حدّث رصيدك ليظهر النمو';
+  const deltaTxt=series.length>1?`${ch>=0?'+':'−'}${sym()}${nf(Math.abs(ch))}${pct} · ${tfLabel}`:'سجّل صفقاتك ليظهر النمو';
   const acctChips=state.accounts.length?`<div style="display:flex;gap:6px;overflow-x:auto;margin-bottom:4px">
      <button class="chip ${state.acct==='all'?'on':''}" onclick="setAcct('all')">الكل</button>
      ${state.accounts.map(a=>`<button class="chip ${state.acct===a.id?'on':''}" onclick="setAcct('${a.id}')">${esc(a.name)}</button>`).join('')}</div>`:'';
@@ -194,7 +194,7 @@ function viewHome(){
   return `<div class="fade" style="display:flex;flex-direction:column;gap:14px">
     ${acctChips}
     <div class="card" style="padding:18px;background:radial-gradient(120% 90% at 80% 0%,rgba(143,203,58,.07),var(--surface))">
-      <div style="display:flex;align-items:center;justify-content:space-between"><span style="color:var(--muted);font-size:13px">${state.acct==='all'?'إجمالي رصيد الحسابات':esc(accName(state.acct))+' — الرصيد'}</span><button onclick="openBalance()" style="background:rgba(255,122,26,.14);border:1px solid var(--orange);color:var(--orange);font-size:11px;cursor:pointer;padding:4px 9px;border-radius:8px;font-weight:700">↻ تحديث الرصيد</button></div>
+      <div style="display:flex;align-items:center;justify-content:space-between"><span style="color:var(--muted);font-size:13px">${state.acct==='all'?'إجمالي رصيد الحسابات':esc(accName(state.acct))+' — الرصيد'}</span><button onclick="openBalance()" style="background:rgba(255,122,26,.14);border:1px solid var(--orange);color:var(--orange);font-size:11px;cursor:pointer;padding:4px 9px;border-radius:8px;font-weight:700">⚖️ ضبط الرصيد</button></div>
       <div id="homeVal" class="num" style="color:var(--text);font-size:40px;font-weight:800;letter-spacing:-1px;margin-top:4px">${sym()}${nf(B.current)}</div>
       <div id="homeDelta" class="num" style="margin-top:6px;color:${ch>0?TR_GREEN:ch<0?RH_DN:C.muted};font-size:14px;font-weight:700">${deltaTxt}</div>
       ${accLines}
@@ -209,7 +209,7 @@ function viewHome(){
       </div>
     </div>
     <div class="card" style="padding:14px"><span style="color:var(--muted);font-size:12px">التغيّر اليومي للرصيد</span><div style="margin-top:8px;margin-inline:-6px">${svgBars(bars)}</div></div>
-    ${!state.accounts.length?`<div class="card" style="padding:20px;text-align:center;color:var(--muted);font-size:14px">ابدأ: اضغط <b style="color:var(--orange)">↻ تحديث الرصيد</b> فوق لإضافة حساباتك (Bitget، MEXC) وأرصدتها.</div>`:(!state.balances.length?`<div class="card" style="padding:18px;text-align:center;color:var(--muted);font-size:13px">حدّث رصيد حساباتك ليظهر المنحنى والإجمالي.</div>`:'')}
+    ${!state.accounts.length?`<div class="card" style="padding:20px;text-align:center;color:var(--muted);font-size:14px">ابدأ: اضغط <b style="color:var(--orange)">⚖️ ضبط الرصيد</b> لإضافة حساباتك (Bitget، MEXC). بعدها سجّل صفقاتك وهي تبني المنحنى تلقائياً.</div>`:''}
   </div>`;
 }
 function viewCal(){
@@ -246,8 +246,9 @@ function viewSet(){return `<div class="fade" style="display:flex;flex-direction:
     <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-weight:700;font-size:14px">الحسابات</span><button class="ibtn" style="color:var(--orange);padding:0 12px" onclick="openAccounts()">إدارة</button></div>
     <span style="color:var(--muted);font-size:12px">${state.accounts.length?state.accounts.map(a=>esc(a.name)).join(' · '):'لا توجد حسابات — أضِف Bitget و MEXC.'}</span>
     <label class="lab"><span class="labt">رمز العملة</span><input maxlength="4" value="${esc(sym())}" style="width:110px" oninput="state.settings.sym=this.value;save()"></label></div>
-  <div class="card" style="padding:16px;display:flex;flex-direction:column;gap:12px"><span style="font-weight:700;font-size:14px">النسخ الاحتياطي</span><span style="color:var(--muted);font-size:12px">نزّل ملف نسخة احتياطية بكل بياناتك، واستعدها وقت ما بدك.</span>
-    <div style="display:flex;gap:10px"><button class="ibtn" style="flex:1;height:auto;padding:12px" onclick="exportData()">⬇ تنزيل نسخة</button><button class="ibtn" style="flex:1;height:auto;padding:12px;color:var(--orange)" onclick="importFile()">⬆ استعادة من ملف</button></div></div>
+  <div class="card" style="padding:16px;display:flex;flex-direction:column;gap:12px"><span style="font-weight:700;font-size:14px">النسخ الاحتياطي</span><span style="color:var(--muted);font-size:12px">بياناتك تبقى محفوظة تلقائياً عند تحديث الإصدار على نفس الرابط. للأمان (أو لنقلها لجهاز آخر): نزّل ملف نسخة واستعده وقت ما بدك. الملف يشمل الصفقات + الحسابات + الأرصدة.</span>
+    <div style="display:flex;gap:10px"><button class="ibtn" style="flex:1;height:auto;padding:13px;font-weight:700" onclick="exportData()">⬇ تنزيل نسخة احتياطية</button></div>
+    <button class="ibtn" style="height:auto;padding:13px;color:var(--orange);font-weight:700" onclick="importFile()">⬆ استعادة من ملف</button></div>
   <div class="card" style="padding:16px;display:flex;flex-direction:column;gap:10px"><span style="font-weight:700;font-size:14px">القفل برمز PIN</span><span style="color:var(--muted);font-size:12px">${state.settings.pin?'القفل مُفعّل — يُطلب الرمز عند فتح التطبيق.':'احمِ بياناتك برمز من ٤ أرقام عند الفتح.'}</span>
     <div style="display:flex;gap:10px">${state.settings.pin?`<button class="ibtn" style="flex:1;height:auto;padding:12px;color:var(--red)" onclick="removePin()">إزالة القفل</button>`:`<button class="ibtn" style="flex:1;height:auto;padding:12px;color:var(--orange)" onclick="setPinModal()">تفعيل القفل</button>`}</div></div>
   <div class="card" style="padding:16px"><button onclick="clearData()" style="width:100%;background:none;border:1px solid var(--red);color:var(--red);border-radius:12px;padding:12px;font-weight:700;cursor:pointer">مسح كل الصفقات</button></div></div>`}
@@ -474,21 +475,39 @@ function savePin(){const v=val('newPin');if(!/^[0-9]{4}$/.test(v))return alert('
 function removePin(){if(confirm('إزالة القفل؟')){delete state.settings.pin;save();render()}}
 
 /* backup */
-function exportData(){const d=JSON.stringify({trades:state.trades,settings:state.settings});const b=new Blob([d],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='mahfazti-backup-'+todayStr()+'.json';document.body.appendChild(a);a.click();a.remove()}
+function exportData(){const d=JSON.stringify({v:2,trades:state.trades,accounts:state.accounts,balances:state.balances,settings:state.settings});const b=new Blob([d],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='mahfazti-backup-'+todayStr()+'.json';document.body.appendChild(a);a.click();a.remove()}
 function importFile(){document.getElementById('backupFile').click()}
-function onBackup(e){const f=e.target.files&&e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const o=JSON.parse(r.result);if(o.trades)state.trades=o.trades;if(o.settings)Object.assign(state.settings,o.settings);save();render();alert('تم الاستيراد.')}catch(err){alert('ملف غير صالح.')}};r.readAsText(f);e.target.value=''}
+function onBackup(e){const f=e.target.files&&e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const o=JSON.parse(r.result);if(o.trades)state.trades=o.trades;if(o.accounts)state.accounts=o.accounts;if(o.balances)state.balances=o.balances;if(o.settings)Object.assign(state.settings,o.settings);save();render();alert('تم الاستيراد بنجاح ✓\nالصفقات: '+state.trades.length+' · الحسابات: '+state.accounts.length+' · الأرصدة: '+state.balances.length)}catch(err){alert('ملف غير صالح.')}};r.readAsText(f);e.target.value=''}
 function clearData(){if(confirm('مسح كل الصفقات نهائياً؟')){state.trades=[];save();render()}}
 
 /* ===== accounts & balances ===== */
 const accName=id=>{const a=state.accounts.find(x=>x.id===id);return a?a.name:'—'};
+/* Per-account value over time: trades accumulate; manual balances are anchors (with backward projection before the first anchor). */
+function acctCurve(acc){
+  const trades=state.trades.filter(t=>(t.acc||'')===acc).map(t=>({date:t.sellDate||t.buyDate,p:(+t.proceeds||0)-(+t.cost||0)-(+t.fee||0)})).filter(t=>t.date);
+  const anchors=state.balances.filter(b=>(b.acc||'')===acc).map(b=>({date:b.date,value:+b.value||0})).sort((a,b)=>a.date.localeCompare(b.date));
+  const dates=[...new Set([...trades.map(t=>t.date),...anchors.map(a=>a.date)])].sort();
+  if(!dates.length)return [];
+  const sumP=(lo,hi)=>trades.reduce((s,t)=>s+((t.date>lo&&t.date<=hi)?t.p:0),0);
+  const val=d=>{
+    if(!anchors.length)return trades.reduce((s,t)=>s+(t.date<=d?t.p:0),0);
+    let A=null;for(const a of anchors){if(a.date<=d)A=a;else break}
+    if(A)return A.value+sumP(A.date,d);
+    return anchors[0].value-sumP(d,anchors[0].date);
+  };
+  return dates.map(d=>({date:d,value:val(d)}));
+}
 function balanceSeries(filter){
-  const bs=[...state.balances].sort((a,b)=>a.date.localeCompare(b.date)||a.id-b.id);
-  const accs=filter==='all'?state.accounts.map(a=>a.id):[filter];
-  const dates=[...new Set(bs.filter(b=>accs.includes(b.acc)).map(b=>b.date))].sort();
-  const latestUpTo=(acc,d)=>{let v=0,f=false;for(const b of bs){if(b.acc===acc&&b.date<=d){v=b.value;f=true}}return f?v:0};
-  const curve=dates.map(d=>({date:d,value:accs.reduce((s,a)=>s+latestUpTo(a,d),0)}));
-  const byAcct={};state.accounts.forEach(a=>{const e=bs.filter(b=>b.acc===a.id);byAcct[a.id]=e.length?e[e.length-1].value:0});
-  const current=accs.reduce((s,a)=>s+(byAcct[a]||0),0);
+  let accs;
+  if(filter==='all'){accs=state.accounts.map(a=>a.id);if(state.trades.some(t=>!t.acc)||state.balances.some(b=>!b.acc))accs=[...accs,''];}
+  else accs=[filter];
+  const curves={},allDates=new Set();
+  accs.forEach(a=>{const c=acctCurve(a);curves[a]=c;c.forEach(p=>allDates.add(p.date))});
+  const dates=[...allDates].sort();
+  const fwd=(c,d)=>{let v=0,f=false;for(const p of c){if(p.date<=d){v=p.value;f=true}else break}return f?v:0};
+  const curve=dates.map(d=>({date:d,value:accs.reduce((s,a)=>s+fwd(curves[a],d),0)}));
+  const byAcct={};state.accounts.forEach(a=>{const c=curves[a.id]!==undefined?curves[a.id]:acctCurve(a.id);byAcct[a.id]=c.length?c[c.length-1].value:0});
+  const current=curve.length?curve[curve.length-1].value:0;
   return {curve,current,byAcct};
 }
 function setAcct(a){state.acct=a;render()}
@@ -505,8 +524,8 @@ function openBalance(){
   if(!state.accounts.length){openAccounts();return}
   const bs=[...state.balances].sort((a,b)=>a.date.localeCompare(b.date));
   const latest=id=>{const e=bs.filter(b=>b.acc===id);return e.length?e[e.length-1].value:''};
-  showModal(head('تحديث الرصيد')+`<div style="display:flex;flex-direction:column;gap:14px">
-    <div style="color:var(--muted);font-size:12px">حدّث رصيد كل حساب. الإجمالي = مجموع الحسابات، والمنحنى يُبنى من تحديثاتك.</div>
+  showModal(head('ضبط الرصيد')+`<div style="display:flex;flex-direction:column;gap:14px">
+    <div style="color:var(--muted);font-size:12px;line-height:1.6">صفقاتك تبني المنحنى تلقائياً. هون بس تثبّت <b>رصيد البداية</b> (مرة وحدة بتاريخ ما بدأت)، أو <b>تصحّح</b> الرصيد لو حسّيت فيه فرق. المنحنى يلتصق بالقيمة يلي تحطها عند تاريخها ويكمّل بصفقاتك.</div>
     <label class="lab"><span class="labt">التاريخ</span><input id="balDate" type="date" value="${todayStr()}"></label>
     ${state.accounts.map(a=>`<label class="lab"><span class="labt">${esc(a.name)} (${esc(sym())})</span><input id="bal_${a.id}" class="num" type="number" inputmode="decimal" step="any" value="${esc(latest(a.id))}" placeholder="0.00"></label>`).join('')}
     <button class="primary" onclick="saveBalance()">حفظ</button>
