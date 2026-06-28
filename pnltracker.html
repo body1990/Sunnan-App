@@ -61,11 +61,11 @@
 const C={orange:'#FF7A1A',green:'#22D39A',red:'#FF4D6D',border:'#2A2A34',muted:'#8A8A96'};
 const RH_UP='#1FD16B',RH_DN='#FF5A5F';
 const TR_GREEN='#8FCB3A';
-const state={trades:[],settings:{sym:'$'},tab:'home',tf:180,cursor:{y:new Date().getFullYear(),m:new Date().getMonth()},menu:false};
+const state={trades:[],accounts:[],balances:[],settings:{sym:'$'},tab:'home',tf:180,acct:'all',cursor:{y:new Date().getFullYear(),m:new Date().getMonth()},menu:false};
 let importState={};let editId=null;
 
-function save(){try{localStorage.setItem('pt_state',JSON.stringify({trades:state.trades,settings:state.settings}))}catch(e){}}
-function load(){try{const s=JSON.parse(localStorage.getItem('pt_state')||'{}');if(s.trades)state.trades=s.trades;if(s.settings)Object.assign(state.settings,s.settings)}catch(e){}}
+function save(){try{localStorage.setItem('pt_state',JSON.stringify({trades:state.trades,accounts:state.accounts,balances:state.balances,settings:state.settings}))}catch(e){}}
+function load(){try{const s=JSON.parse(localStorage.getItem('pt_state')||'{}');if(s.trades)state.trades=s.trades;if(s.accounts)state.accounts=s.accounts;if(s.balances)state.balances=s.balances;if(s.settings)Object.assign(state.settings,s.settings)}catch(e){}}
 
 const sym=()=>state.settings.sym||'$';
 const nf=(n,d=2)=>(Number.isFinite(+n)?+n:0).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
@@ -86,7 +86,8 @@ const COINS=['BTC','ETH','SOL','BNB','XRP','DOGE','ADA','AVAX','LINK','TRX','TON
 function startOf(k){const d=new Date();d.setHours(0,0,0,0);if(k==='week')d.setDate(d.getDate()-((d.getDay()+6)%7));else if(k==='month')d.setDate(1);else if(k==='year')d.setMonth(0,1);return fmtD(d)}
 function analytics(){
   const cap=+state.settings.capital||0;
-  const t=[...state.trades].map(x=>({...x,profit:(+x.proceeds||0)-(+x.cost||0)-(+x.fee||0)})).sort((a,b)=>(a.sellDate||'').localeCompare(b.sellDate||'')||a.id-b.id);
+  const src=state.acct==='all'?state.trades:state.trades.filter(x=>x.acc===state.acct);
+  const t=[...src].map(x=>({...x,profit:(+x.proceeds||0)-(+x.cost||0)-(+x.fee||0)})).sort((a,b)=>(a.sellDate||'').localeCompare(b.sellDate||'')||a.id-b.id);
   let cum=0;const curve=[],dailyMap={};
   t.forEach(x=>{cum+=x.profit;curve.push({date:x.sellDate||x.buyDate||todayStr(),value:cap+cum});const d=x.sellDate||x.buyDate||todayStr();dailyMap[d]=(dailyMap[d]||0)+x.profit});
   const dailyArr=Object.keys(dailyMap).sort().map(d=>({date:d,pnl:dailyMap[d]}));
@@ -166,30 +167,40 @@ function render(){
   document.getElementById('nav').innerHTML=[['home','تحليل','📊'],['trd','الصفقات','📋'],['stats','إحصائيات','📈'],['cal','التقويم','🗓️'],['set','إعدادات','⚙️']].map(([k,t,i])=>`<button class="navb ${state.tab===k?'on':''}" onclick="setTab('${k}')"><span style="font-size:20px">${i}</span>${t}</button>`).join('');
   document.getElementById('fab').className='fab'+(state.menu?' open':'');
   document.getElementById('menu').innerHTML=state.menu?`<div class="menu">
+    <button onclick="closeMenu();openBalance()"><span class="dot">↻</span> تحديث الرصيد</button>
     <button onclick="closeMenu();openTradeImg()"><span class="dot">📷</span> استيراد صفقة (شراء + بيع)</button>
     <button onclick="closeMenu();openTrade()"><span class="dot">✍️</span> إضافة صفقة يدوياً</button></div>`:'';
   if(state.tab==='home')bindChartCursor();
 }
 function viewHome(){
   const A=analytics();
+  const B=balanceSeries(state.acct);
   const TF=[[1,'يوم'],[7,'أسبوع'],[30,'شهر'],[180,'٦ أشهر'],[365,'سنة']];
   const tfLabel=(TF.find(x=>x[0]===state.tf)||[,''])[1];
   const cut=new Date();cut.setDate(cut.getDate()-state.tf);const cutStr=fmtD(cut);
   const inR=d=>d>=cutStr;
-  const series=A.curve.filter(x=>inR(x.date));
-  const bars=A.dailyArr.filter(x=>inR(x.date));
-  const start=series.length?series[0].value:A.capital, ch=A.value-start;
+  const series=B.curve.filter(x=>inR(x.date));
+  const valBefore=d=>{let v=null;for(const p of B.curve){if(p.date<d)v=p.value;else break}return v};
+  const pChange=k=>{const s=startOf(k);const b=valBefore(s);return B.current-(b==null?(B.curve[0]?B.curve[0].value:0):b)};
+  const dailyBars=[];for(let i=1;i<B.curve.length;i++)dailyBars.push({date:B.curve[i].date,pnl:B.curve[i].value-B.curve[i-1].value});
+  const bars=dailyBars.filter(x=>inR(x.date));
+  const start=series.length?series[0].value:0, ch=B.current-start;
   const pct=Math.abs(start)>0.01?` (${ch>=0?'+':'−'}${nf(Math.abs(ch/start*100))}%)`:'';
-  const deltaTxt=`${ch>=0?'+':'−'}${sym()}${nf(Math.abs(ch))}${pct} · ${tfLabel}`;
-  const capBtn=A.capital?`<button onclick="openCapital()" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;padding:0 4px">✎</button>`:`<button onclick="openCapital()" style="background:rgba(255,122,26,.14);border:1px solid var(--orange);color:var(--orange);font-size:11px;cursor:pointer;padding:3px 8px;border-radius:8px;font-weight:700">+ رأس المال</button>`;
+  const deltaTxt=series.length>1?`${ch>=0?'+':'−'}${sym()}${nf(Math.abs(ch))}${pct} · ${tfLabel}`:'حدّث رصيدك ليظهر النمو';
+  const acctChips=state.accounts.length?`<div style="display:flex;gap:6px;overflow-x:auto;margin-bottom:4px">
+     <button class="chip ${state.acct==='all'?'on':''}" onclick="setAcct('all')">الكل</button>
+     ${state.accounts.map(a=>`<button class="chip ${state.acct===a.id?'on':''}" onclick="setAcct('${a.id}')">${esc(a.name)}</button>`).join('')}</div>`:'';
+  const accLines=state.accounts.length>1&&state.acct==='all'?`<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">${state.accounts.map(a=>`<div style="background:var(--bg);border-radius:10px;padding:6px 10px;font-size:11px;color:var(--muted)">${esc(a.name)} <span class="num" style="color:var(--text);font-weight:700">${sym()}${nf(B.byAcct[a.id]||0)}</span></div>`).join('')}</div>`:'';
   return `<div class="fade" style="display:flex;flex-direction:column;gap:14px">
+    ${acctChips}
     <div class="card" style="padding:18px;background:radial-gradient(120% 90% at 80% 0%,rgba(143,203,58,.07),var(--surface))">
-      <div style="display:flex;align-items:center;justify-content:space-between"><span style="color:var(--muted);font-size:13px">إجمالي قيمة الحساب</span>${capBtn}</div>
-      <div id="homeVal" class="num" style="color:var(--text);font-size:40px;font-weight:800;letter-spacing:-1px;margin-top:4px">${sym()}${nf(A.value)}</div>
+      <div style="display:flex;align-items:center;justify-content:space-between"><span style="color:var(--muted);font-size:13px">${state.acct==='all'?'إجمالي رصيد الحسابات':esc(accName(state.acct))+' — الرصيد'}</span><button onclick="openBalance()" style="background:rgba(255,122,26,.14);border:1px solid var(--orange);color:var(--orange);font-size:11px;cursor:pointer;padding:4px 9px;border-radius:8px;font-weight:700">↻ تحديث الرصيد</button></div>
+      <div id="homeVal" class="num" style="color:var(--text);font-size:40px;font-weight:800;letter-spacing:-1px;margin-top:4px">${sym()}${nf(B.current)}</div>
       <div id="homeDelta" class="num" style="margin-top:6px;color:${ch>0?TR_GREEN:ch<0?RH_DN:C.muted};font-size:14px;font-weight:700">${deltaTxt}</div>
+      ${accLines}
     </div>
     <div style="display:flex;gap:10px">
-      ${[['اليوم',A.today],['الأسبوع',A.week],['الشهر',A.month],['السنة',A.year]].map(([l,v])=>`<div class="card" style="padding:10px 8px;flex:1;display:flex;flex-direction:column;gap:4px;text-align:center"><span style="color:var(--muted);font-size:11px">${l}</span><span class="num" style="color:${pc(v)};font-size:13px;font-weight:700">${sg(v)}</span></div>`).join('')}
+      ${[['اليوم',pChange('day')],['الأسبوع',pChange('week')],['الشهر',pChange('month')],['السنة',pChange('year')]].map(([l,v])=>`<div class="card" style="padding:10px 8px;flex:1;display:flex;flex-direction:column;gap:4px;text-align:center"><span style="color:var(--muted);font-size:11px">${l}</span><span class="num" style="color:${pc(v)};font-size:13px;font-weight:700">${sg(v)}</span></div>`).join('')}
     </div>
     <div class="card" style="padding:14px 14px 6px">
       <div style="margin-inline:-6px">${lineChartHTML(series,tfLabel)}</div>
@@ -197,8 +208,8 @@ function viewHome(){
         ${TF.map(([v,t])=>`<button onclick="setTf(${v})" style="background:${state.tf===v?'var(--surface2)':'transparent'};border:none;color:${state.tf===v?'var(--text)':'var(--muted)'};font-weight:${state.tf===v?'800':'500'};font-size:12.5px;padding:7px 12px;border-radius:99px;cursor:pointer">${t}</button>`).join('')}
       </div>
     </div>
-    <div class="card" style="padding:14px"><span style="color:var(--muted);font-size:12px">الربح اليومي</span><div style="margin-top:8px;margin-inline:-6px">${svgBars(bars)}</div></div>
-    ${!A.count?`<div class="card" style="padding:20px;text-align:center;color:var(--muted);font-size:14px">ابدأ: اضغط <b style="color:var(--orange)">استيراد صفقة</b> وأعطِ صورة الشراء وصورة البيع، أو أضِف صفقة يدوياً من زر <b style="color:var(--orange)">+</b>.</div>`:''}
+    <div class="card" style="padding:14px"><span style="color:var(--muted);font-size:12px">التغيّر اليومي للرصيد</span><div style="margin-top:8px;margin-inline:-6px">${svgBars(bars)}</div></div>
+    ${!state.accounts.length?`<div class="card" style="padding:20px;text-align:center;color:var(--muted);font-size:14px">ابدأ: اضغط <b style="color:var(--orange)">↻ تحديث الرصيد</b> فوق لإضافة حساباتك (Bitget، MEXC) وأرصدتها.</div>`:(!state.balances.length?`<div class="card" style="padding:18px;text-align:center;color:var(--muted);font-size:13px">حدّث رصيد حساباتك ليظهر المنحنى والإجمالي.</div>`:'')}
   </div>`;
 }
 function viewCal(){
@@ -221,7 +232,7 @@ function viewTrades(){
   const list=[...A.t].sort((a,b)=>(b.sellDate||'').localeCompare(a.sellDate||''));
   return `<div class="fade" style="display:flex;flex-direction:column;gap:10px">${list.map(x=>{const pct=x.cost?x.profit/x.cost*100:0;return `
     <div class="card" style="padding:14px"><div style="display:flex;justify-content:space-between;align-items:flex-start">
-      <div><div style="font-weight:700;font-size:15px">${esc(x.coin)}</div>
+      <div><div style="font-weight:700;font-size:15px">${esc(x.coin)}${x.acc?` <span style="color:var(--muted);font-weight:400;font-size:11px">· ${esc(accName(x.acc))}</span>`:''}</div>
         <div class="num" style="color:var(--muted);font-size:11px;margin-top:4px">${esc(x.buyDate||'—')} ← ${esc(x.sellDate||'—')}</div>
         <div class="num" style="color:var(--muted);font-size:11px;margin-top:2px">${sym()}${nf(x.cost)} ← ${sym()}${nf(x.proceeds)}${x.fee?` · رسوم ${nf(x.fee)}`:''}</div></div>
       <div style="text-align:left;display:flex;flex-direction:column;align-items:flex-end;gap:8px">
@@ -232,7 +243,8 @@ function viewTrades(){
 }
 function viewSet(){return `<div class="fade" style="display:flex;flex-direction:column;gap:14px">
   <div class="card" style="padding:16px;display:flex;flex-direction:column;gap:12px">
-    <label class="lab"><span class="labt">رأس المال / الرصيد الأساسي (${esc(sym())})</span><input class="num" type="number" inputmode="decimal" step="any" value="${esc(state.settings.capital||'')}" placeholder="1000" oninput="state.settings.capital=num(this.value);save()"></label>
+    <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-weight:700;font-size:14px">الحسابات</span><button class="ibtn" style="color:var(--orange);padding:0 12px" onclick="openAccounts()">إدارة</button></div>
+    <span style="color:var(--muted);font-size:12px">${state.accounts.length?state.accounts.map(a=>esc(a.name)).join(' · '):'لا توجد حسابات — أضِف Bitget و MEXC.'}</span>
     <label class="lab"><span class="labt">رمز العملة</span><input maxlength="4" value="${esc(sym())}" style="width:110px" oninput="state.settings.sym=this.value;save()"></label></div>
   <div class="card" style="padding:16px;display:flex;flex-direction:column;gap:12px"><span style="font-weight:700;font-size:14px">النسخ الاحتياطي</span><span style="color:var(--muted);font-size:12px">نزّل ملف نسخة احتياطية بكل بياناتك، واستعدها وقت ما بدك.</span>
     <div style="display:flex;gap:10px"><button class="ibtn" style="flex:1;height:auto;padding:12px" onclick="exportData()">⬇ تنزيل نسخة</button><button class="ibtn" style="flex:1;height:auto;padding:12px;color:var(--orange)" onclick="importFile()">⬆ استعادة من ملف</button></div></div>
@@ -252,10 +264,12 @@ function shiftMonth(d){const x=new Date(state.cursor.y,state.cursor.m+d,1);state
 
 /* manual trade */
 function openTrade(id){
-  let tr={coin:'',buyDate:todayStr(),sellDate:todayStr(),cost:'',proceeds:'',fee:''};
+  let tr={coin:'',buyDate:todayStr(),sellDate:todayStr(),cost:'',proceeds:'',fee:'',acc:(state.acct!=='all'?state.acct:(state.accounts[0]&&state.accounts[0].id||''))};
   if(id){const f=state.trades.find(x=>String(x.id)===String(id));if(f){tr={...f};editId=id}}
+  const accSel=state.accounts.length?`<label class="lab"><span class="labt">الحساب</span><select id="mAcc" style="background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:12px;padding:12px 14px;font-size:15px;outline:none;width:100%">${state.accounts.map(a=>`<option value="${a.id}" ${tr.acc===a.id?'selected':''}>${esc(a.name)}</option>`).join('')}</select></label>`:'';
   showModal(head(id?'تعديل صفقة':'صفقة يدوية')+`<div style="display:flex;flex-direction:column;gap:14px">
     <label class="lab"><span class="labt">العملة</span><input id="mCoin" list="coinDL" autocapitalize="characters" value="${esc(tr.coin)}" placeholder="BTC"></label>
+    ${accSel}
     <div style="display:flex;gap:12px"><label class="lab"><span class="labt">تاريخ الشراء</span><input id="mBuyDate" type="date" value="${esc(tr.buyDate)}"></label><label class="lab"><span class="labt">تاريخ البيع</span><input id="mSellDate" type="date" value="${esc(tr.sellDate)}"></label></div>
     <div style="display:flex;gap:12px"><label class="lab"><span class="labt">مبلغ الشراء (${esc(sym())})</span><input id="mCost" class="num" type="number" inputmode="decimal" step="any" value="${esc(tr.cost)}" placeholder="3520.40" oninput="updMP()"></label><label class="lab"><span class="labt">مبلغ البيع (${esc(sym())})</span><input id="mProceeds" class="num" type="number" inputmode="decimal" step="any" value="${esc(tr.proceeds)}" placeholder="3611.63" oninput="updMP()"></label></div>
     <label class="lab"><span class="labt">الرسوم (${esc(sym())}) — اختياري</span><input id="mFee" class="num" type="number" inputmode="decimal" step="any" value="${esc(tr.fee)}" placeholder="0" oninput="updMP()"></label>
@@ -267,7 +281,7 @@ function updMP(){const p=num(val('mProceeds'))-num(val('mCost'))-num(val('mFee')
 function saveTradeManual(){
   const coin=val('mCoin').trim().toUpperCase(),cost=num(val('mCost')),proceeds=num(val('mProceeds'));
   if(!coin||!(cost>0)||!(proceeds>0))return alert('أدخل العملة ومبلغ الشراء ومبلغ البيع.');
-  const o={coin,buyDate:val('mBuyDate'),sellDate:val('mSellDate'),cost,proceeds,fee:num(val('mFee'))};
+  const o={coin,acc:val('mAcc'),buyDate:val('mBuyDate'),sellDate:val('mSellDate'),cost,proceeds,fee:num(val('mFee'))};
   if(editId)state.trades=state.trades.map(x=>String(x.id)===String(editId)?{...o,id:x.id}:x);else state.trades.push({...o,id:Date.now()});
   save();closeModal();render();
 }
@@ -316,7 +330,7 @@ function slotHTML(which,label,color){
 }
 function buildDraft(){
   if(!importState.draft){const b=(importState.buy&&importState.buy.data)||{},s=(importState.sell&&importState.sell.data)||{};
-    importState.draft={coin:s.coin||b.coin||'',buyDate:b.date||'',sellDate:s.date||'',cost:b.value||'',proceeds:s.value||'',fee:''}}
+    importState.draft={coin:s.coin||b.coin||'',buyDate:b.date||'',sellDate:s.date||'',cost:b.value||'',proceeds:s.value||'',fee:'',acc:(state.acct!=='all'?state.acct:(state.accounts[0]&&state.accounts[0].id||''))}}
   return importState.draft;
 }
 function renderTradeImg(){
@@ -326,6 +340,7 @@ function renderTradeImg(){
   if(both){const d=buildDraft();
     review=`<div style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px;display:flex;flex-direction:column;gap:12px">
       <span style="font-weight:700;font-size:14px">راجع وعدّل</span>
+      ${state.accounts.length?`<label class="lab"><span class="labt">الحساب</span><select onchange="importState.draft.acc=this.value" style="background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:12px;padding:12px 14px;font-size:15px;outline:none;width:100%">${state.accounts.map(a=>`<option value="${a.id}" ${d.acc===a.id?'selected':''}>${esc(a.name)}</option>`).join('')}</select></label>`:''}
       <label class="lab"><span class="labt">العملة</span><input list="coinDL" value="${esc(d.coin)}" oninput="importState.draft.coin=this.value"></label>
       <div style="display:flex;gap:12px"><label class="lab"><span class="labt">تاريخ الشراء</span><input type="date" value="${esc(d.buyDate)}" oninput="importState.draft.buyDate=this.value"></label><label class="lab"><span class="labt">تاريخ البيع</span><input type="date" value="${esc(d.sellDate)}" oninput="importState.draft.sellDate=this.value"></label></div>
       <div style="display:flex;gap:12px"><label class="lab"><span class="labt">مبلغ الشراء</span><input class="num" type="number" step="any" value="${esc(d.cost)}" oninput="importState.draft.cost=this.value;updTP()"></label><label class="lab"><span class="labt">مبلغ البيع</span><input class="num" type="number" step="any" value="${esc(d.proceeds)}" oninput="importState.draft.proceeds=this.value;updTP()"></label></div>
@@ -342,7 +357,7 @@ function renderTradeImg(){
 function updTP(){const d=importState.draft;if(!d)return;const p=num(d.proceeds)-num(d.cost)-num(d.fee);const pct=num(d.cost)?p/num(d.cost)*100:0;const e=document.getElementById('tradeProfit');if(e){e.textContent=(p>=0?'+':'−')+sym()+nf(Math.abs(p))+' ('+(p>=0?'+':'−')+nf(Math.abs(pct))+'%)';e.style.color=p>0?RH_UP:p<0?RH_DN:C.muted}}
 function saveDraft(){
   const d=importState.draft;if(!d||!d.coin||!(num(d.cost)>0)||!(num(d.proceeds)>0))return alert('تأكد من العملة ومبلغ الشراء والبيع.');
-  state.trades.push({id:Date.now(),coin:d.coin.toUpperCase(),buyDate:d.buyDate||todayStr(),sellDate:d.sellDate||d.buyDate||todayStr(),cost:num(d.cost),proceeds:num(d.proceeds),fee:num(d.fee)});
+  state.trades.push({id:Date.now(),coin:d.coin.toUpperCase(),acc:d.acc||'',buyDate:d.buyDate||todayStr(),sellDate:d.sellDate||d.buyDate||todayStr(),cost:num(d.cost),proceeds:num(d.proceeds),fee:num(d.fee)});
   save();render();
   importState={mode:'trade',target:'buy',buy:null,sell:null,busy:'',err:'',draft:null,ok:'تم حفظ الصفقة ✓ — إجمالي الصفقات: '+state.trades.length};
   renderTradeImg();
@@ -463,6 +478,45 @@ function exportData(){const d=JSON.stringify({trades:state.trades,settings:state
 function importFile(){document.getElementById('backupFile').click()}
 function onBackup(e){const f=e.target.files&&e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const o=JSON.parse(r.result);if(o.trades)state.trades=o.trades;if(o.settings)Object.assign(state.settings,o.settings);save();render();alert('تم الاستيراد.')}catch(err){alert('ملف غير صالح.')}};r.readAsText(f);e.target.value=''}
 function clearData(){if(confirm('مسح كل الصفقات نهائياً؟')){state.trades=[];save();render()}}
+
+/* ===== accounts & balances ===== */
+const accName=id=>{const a=state.accounts.find(x=>x.id===id);return a?a.name:'—'};
+function balanceSeries(filter){
+  const bs=[...state.balances].sort((a,b)=>a.date.localeCompare(b.date)||a.id-b.id);
+  const accs=filter==='all'?state.accounts.map(a=>a.id):[filter];
+  const dates=[...new Set(bs.filter(b=>accs.includes(b.acc)).map(b=>b.date))].sort();
+  const latestUpTo=(acc,d)=>{let v=0,f=false;for(const b of bs){if(b.acc===acc&&b.date<=d){v=b.value;f=true}}return f?v:0};
+  const curve=dates.map(d=>({date:d,value:accs.reduce((s,a)=>s+latestUpTo(a,d),0)}));
+  const byAcct={};state.accounts.forEach(a=>{const e=bs.filter(b=>b.acc===a.id);byAcct[a.id]=e.length?e[e.length-1].value:0});
+  const current=accs.reduce((s,a)=>s+(byAcct[a]||0),0);
+  return {curve,current,byAcct};
+}
+function setAcct(a){state.acct=a;render()}
+function openAccounts(){
+  showModal(head('الحسابات')+`<div style="display:flex;flex-direction:column;gap:10px">
+    ${state.accounts.length?state.accounts.map(a=>`<div class="row"><input value="${esc(a.name)}" style="background:none;border:none;font-weight:600;padding:0;flex:1" onchange="renAccount('${a.id}',this.value)"><button class="ibtn" style="color:var(--red)" onclick="delAccount('${a.id}')">🗑</button></div>`).join(''):'<div style="color:var(--muted);font-size:13px">لا توجد حسابات بعد.</div>'}
+    <div style="display:flex;gap:8px;margin-top:6px"><input id="newAcc" placeholder="اسم الحساب (مثلاً Bitget)" style="flex:1"><button class="ibtn" style="color:var(--orange);padding:0 14px" onclick="addAccount()">+ إضافة</button></div>
+    <button class="primary" style="margin-top:8px" onclick="closeModal()">تم</button></div>`);
+}
+function addAccount(){const n=val('newAcc').trim();if(!n)return;state.accounts.push({id:'a'+Date.now(),name:n});save();openAccounts();render()}
+function renAccount(id,n){const a=state.accounts.find(x=>x.id===id);if(a){a.name=n.trim()||a.name;save();render()}}
+function delAccount(id){if(confirm('حذف الحساب؟ (الصفقات والأرصدة المرتبطة تبقى بدون حساب)')){state.accounts=state.accounts.filter(x=>x.id!==id);if(state.acct===id)state.acct='all';save();openAccounts();render()}}
+function openBalance(){
+  if(!state.accounts.length){openAccounts();return}
+  const bs=[...state.balances].sort((a,b)=>a.date.localeCompare(b.date));
+  const latest=id=>{const e=bs.filter(b=>b.acc===id);return e.length?e[e.length-1].value:''};
+  showModal(head('تحديث الرصيد')+`<div style="display:flex;flex-direction:column;gap:14px">
+    <div style="color:var(--muted);font-size:12px">حدّث رصيد كل حساب. الإجمالي = مجموع الحسابات، والمنحنى يُبنى من تحديثاتك.</div>
+    <label class="lab"><span class="labt">التاريخ</span><input id="balDate" type="date" value="${todayStr()}"></label>
+    ${state.accounts.map(a=>`<label class="lab"><span class="labt">${esc(a.name)} (${esc(sym())})</span><input id="bal_${a.id}" class="num" type="number" inputmode="decimal" step="any" value="${esc(latest(a.id))}" placeholder="0.00"></label>`).join('')}
+    <button class="primary" onclick="saveBalance()">حفظ</button>
+    <button class="ibtn" style="height:auto;padding:10px" onclick="openAccounts()">⚙️ إدارة الحسابات</button></div>`);
+}
+function saveBalance(){
+  const date=val('balDate')||todayStr();let n=0;
+  state.accounts.forEach(a=>{const raw=val('bal_'+a.id);if(raw!==''){const v=num(raw);state.balances=state.balances.filter(b=>!(b.acc===a.id&&b.date===date));state.balances.push({id:Date.now()+n,acc:a.id,date,value:v});n++}});
+  save();closeModal();render();
+}
 
 function boot(){load();load._done=true;setAppIcon();if(state.settings.pin)showLock();else render()}
 boot();
