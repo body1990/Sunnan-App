@@ -435,6 +435,12 @@ function viewStats(){
         </div>`).join('')}
       </div>
     </div>
+    <div class="card" style="padding:16px;background:linear-gradient(135deg,rgba(120,120,255,.10),var(--surface));border:1px solid rgba(120,120,255,.18)">
+      <div style="display:flex;align-items:center;gap:8px"><span style="font-size:18px">🧠</span><span style="font-weight:800;font-size:15px">المدرّب — تقييم وتحسين</span></div>
+      ${(()=>{const Co=coachInsights();const sc=Co.score!=null?`<div style="margin-top:12px"><div style="display:flex;justify-content:space-between;align-items:baseline"><span style="color:var(--muted);font-size:12px">درجة الانضباط</span><span class="num" style="font-weight:800;color:${Co.score>=70?RH_UP:Co.score>=45?'#E0B341':RH_DN}">${Co.score}/100</span></div><div style="height:8px;border-radius:99px;margin-top:6px;background:var(--surface2);overflow:hidden"><div style="height:100%;width:${Co.score}%;background:${Co.score>=70?RH_UP:Co.score>=45?'#E0B341':RH_DN}"></div></div></div>`:'';
+        const items=Co.items.map(it=>{const col=it.type==='bad'?RH_DN:it.type==='warn'?'#E0B341':it.type==='good'?RH_UP:C.muted;const ic=it.type==='bad'?'⚠️':it.type==='warn'?'🔸':it.type==='good'?'✅':'ℹ️';return `<div class="card" style="padding:13px;background:var(--bg);border-right:3px solid ${col}"><div style="display:flex;gap:7px;align-items:center"><span>${ic}</span><span style="font-weight:700;font-size:13px">${it.title}</span></div><div style="color:var(--muted);font-size:12px;line-height:1.7;margin-top:5px">${it.body}</div></div>`}).join('');
+        return sc+`<div style="display:flex;flex-direction:column;gap:9px;margin-top:12px">${items}</div>`;})()}
+    </div>
     <button class="ibtn" style="height:auto;padding:14px;justify-content:center;color:#1FD16B;border:1px solid rgba(31,209,107,.3);font-weight:700" onclick="setTab('plan')">🎯 خطّط صفقتك القادمة في المخطِّط</button>
   </div>`;
 }
@@ -617,6 +623,56 @@ function planCalc(){
 }
 
 function applyURLPrefill(){try{const q=new URLSearchParams(location.search);const coin=q.get('coin');if(!coin)return false;state._prefill={coin:(coin||'').toUpperCase(),cost:q.get('cost')||q.get('buy')||'',proceeds:q.get('proceeds')||q.get('sell')||'',buyDate:q.get('bd')||todayStr(),sellDate:q.get('sd')||todayStr()};history.replaceState(null,'',location.pathname);return true}catch(e){return false}}
+/* ===== trade coach: detect mistakes & strengths ===== */
+function coachInsights(){
+  const A=analytics();const t=A.t;const out=[];
+  if(t.length<2)return {score:null,items:[{type:'info',title:'سجّل صفقات أكثر',body:'كل ما زادت صفقاتك صار التحليل أدق. بعد عدّة صفقات رح تظهر هنا ملاحظات مخصّصة لتحسين أدائك.'}],good:0,warn:0,bad:0};
+  const wins=t.filter(x=>x.profit>0),losses=t.filter(x=>x.profit<0);
+  const pctOf=x=>x.cost?x.profit/x.cost*100:0;
+  const avgWinPct=wins.length?wins.reduce((a,b)=>a+pctOf(b),0)/wins.length:0;
+  const avgLossPct=losses.length?Math.abs(losses.reduce((a,b)=>a+pctOf(b),0)/losses.length):0;
+  const hold=x=>(x.buyDate&&x.sellDate)?Math.max(0,(parseD(x.sellDate)-parseD(x.buyDate))/86400000):null;
+  const hw=wins.map(hold).filter(v=>v!=null),hl=losses.map(hold).filter(v=>v!=null);
+  const avgHW=hw.length?hw.reduce((a,b)=>a+b,0)/hw.length:0,avgHL=hl.length?hl.reduce((a,b)=>a+b,0)/hl.length:0;
+  const worstPct=Math.min(...t.map(pctOf));
+  const costs=t.map(x=>+x.cost||0).filter(c=>c>0),avgCost=costs.length?costs.reduce((a,b)=>a+b,0)/costs.length:0,maxCost=costs.length?Math.max(...costs):0;
+  const sd=costs.length?Math.sqrt(costs.reduce((a,b)=>a+(b-avgCost)**2,0)/costs.length):0;
+  const bal=balanceSeries('all').current||0;
+  const feeTot=t.reduce((a,b)=>a+(+b.fee||0),0),grossWin=wins.reduce((a,b)=>a+b.profit,0),grossLoss=Math.abs(losses.reduce((a,b)=>a+b.profit,0));
+  const pf=grossLoss>0?grossWin/grossLoss:(grossWin>0?Infinity:0);
+  const topTrade=wins.length?Math.max(...wins.map(x=>x.profit)):0;
+  const byDay={};t.forEach(x=>{const d=x.sellDate||x.buyDate;byDay[d]=(byDay[d]||0)+1});const maxPerDay=Math.max(...Object.values(byDay));
+  let streak=0,maxStreak=0;t.forEach(x=>{if(x.profit<0){streak++;maxStreak=Math.max(maxStreak,streak)}else streak=0});
+  let revenge=0;for(let i=1;i<t.length;i++){if(t[i-1].profit<0&&(+t[i-1].cost||0)>0&&(+t[i].cost||0)>1.6*(+t[i-1].cost||0))revenge++}
+  const coin={};t.forEach(x=>{const c=x.coin||'—';(coin[c]=coin[c]||{p:0,n:0});coin[c].p+=x.profit;coin[c].n++});
+  const cArr=Object.entries(coin).map(([c,v])=>({c,...v}));
+  const worstCoin=cArr.slice().sort((a,b)=>a.p-b.p)[0],bestCoin=cArr.slice().sort((a,b)=>b.p-a.p)[0];
+  const G=(t1,b)=>out.push({type:'good',title:t1,body:b}),W=(t1,b)=>out.push({type:'warn',title:t1,body:b}),B=(t1,b)=>out.push({type:'bad',title:t1,body:b});
+  if(wins.length&&losses.length){
+    if(avgLossPct>avgWinPct*1.3)B('بتقطع أرباحك وتترك خسائرك تكبر',`متوسط ربحك +${nf(avgWinPct)}% مقابل خسارة −${nf(avgLossPct)}%. تبيع الرابح بدري وتصبر على الخاسر. حدّد هدفاً ووقف خسارة بنسبة مخاطرة/عائد ≥ 1.5، واستعمل المخطِّط قبل الدخول.`);
+    else if(avgWinPct>avgLossPct*1.2)G('إدارة جيدة للربح مقابل الخسارة',`متوسط ربحك +${nf(avgWinPct)}% أكبر من خسارتك −${nf(avgLossPct)}%. استمر بنفس الانضباط.`);
+  }
+  if(avgHL>avgHW*1.5&&avgHL>0)W('تمسك الصفقة الخاسرة أطول من الرابحة',`تحتفظ بالخاسرة ~${nf(avgHL,1)} يوم مقابل ${nf(avgHW,1)} يوم للرابحة (تأثير التخلّص). حدّد الخروج مسبقاً ولا تؤجّل قطع الخسارة أملاً بالرجوع.`);
+  if(worstPct<=-12)B('خسارة كبيرة بدون حماية',`أكبر خسارة −${nf(Math.abs(worstPct))}% بصفقة وحدة — غالباً بلا وقف خسارة. ضع دائماً وقفاً (−5% إلى −8%) لحماية رأس مالك.`);
+  else if(worstPct>-8&&losses.length)G('خسائرك مضبوطة',`أكبر خسارة −${nf(Math.abs(worstPct))}% فقط — انضباط ممتاز في قطع الخسارة.`);
+  if(bal>0&&maxCost>0.4*bal)B('دخلت بمبلغ كبير في صفقة',`أكبر صفقة = ${nf(maxCost/bal*100)}% من رصيدك. التركيز العالي خطر — حُدّ الصفقة الواحدة بـ10–20% كحدّ أقصى.`);
+  if(avgCost>0&&sd/avgCost>0.6)W('أحجام صفقاتك متفاوتة',`أحجام دخولك غير منتظمة. وحّد المخاطرة (نسبة ثابتة من رأس المال) لكل صفقة لنتائج أكثر اتساقاً.`);
+  if(maxPerDay>=4)W('تداول مكثّف',`سجّلت ${maxPerDay} صفقات بيوم واحد. الإفراط بالتداول يرفع الرسوم والأخطاء — ركّز على الإعدادات الأعلى جودة.`);
+  if(revenge>0)B('احذر تداول الانتقام',`في ${revenge} ${revenge===1?'حالة':'حالات'} كبّرت الحجم مباشرة بعد خسارة. التعويض بتكبير الحجم يضخّم المخاطر — التزم بحجمك الثابت.`);
+  if(wins.length>=4&&grossWin>0&&topTrade/grossWin>0.5)W('أرباحك معتمدة على صفقة واحدة',`أكثر من نصف أرباحك من صفقة واحدة. تأكد أن منهجك قابل للتكرار وليس حظاً.`);
+  if(worstCoin&&worstCoin.p<-Math.max(20,avgCost*0.05))W(`${esc(worstCoin.c)} تكلّفك`,`صافي ${esc(worstCoin.c)} = −${sym()}${nf(Math.abs(worstCoin.p))} عبر ${worstCoin.n} صفقة. أعد تقييم تعاملك بهذه العملة.`);
+  if(bestCoin&&bestCoin.p>0)G(`أفضل أداء: ${esc(bestCoin.c)}`,`صافي +${sym()}${nf(bestCoin.p)} من ${esc(bestCoin.c)} عبر ${bestCoin.n} صفقة. ابنِ على نقطة قوتك.`);
+  if(A.winRate>=55)G('نسبة فوز عالية',`${nf(A.winRate)}% من صفقاتك رابحة — اختيارك للإعدادات جيد.`);
+  else if(A.winRate<40&&pf<1)B('نسبة الفوز وعامل الربح منخفضان',`فوز ${nf(A.winRate)}% وعامل ربح ${pf===Infinity?'∞':nf(pf,2)}. قلّل عدد الصفقات وركّز على الجودة والمخطِّط قبل كل دخول.`);
+  if(grossWin>0&&feeTot/grossWin>0.1)W('الرسوم تأكل أرباحك',`دفعت ${sym()}${nf(feeTot)} رسوم = ${nf(feeTot/grossWin*100)}% من أرباحك. قلّل التداول الزائد أو استخدم أوامر Maker.`);
+  if(maxStreak>=4)W('سلسلة خسائر طويلة',`أطول سلسلة خسائر ${maxStreak} متتالية. بعد ٣ خسائر متتالية خذ استراحة وراجع منهجك.`);
+  if(!out.length)G('أداء متوازن',`ما في أنماط خطيرة واضحة بصفقاتك حتى الآن. استمر بالتسجيل والانضباط.`);
+  const good=out.filter(x=>x.type==='good').length,warn=out.filter(x=>x.type==='warn').length,bad=out.filter(x=>x.type==='bad').length;
+  const score=Math.round(Math.max(5,Math.min(98,60+good*9-warn*6-bad*12)));
+  const ord={bad:0,warn:1,good:2,info:3};out.sort((a,b)=>ord[a.type]-ord[b.type]);
+  return {score,items:out,good,warn,bad};
+}
+
 function boot(){load();load._done=true;setAppIcon();if(state.settings.pin){showLock()}else{render();if(applyURLPrefill())openTrade()}}
 boot();
 </script>
