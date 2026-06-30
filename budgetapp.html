@@ -313,10 +313,10 @@ const CATEGORIES = [
  {id:'versicherung', name:'التأمين', icon:'🛡️', color:'#3B6FE0', type:'fixed', kw:['huk24','adac','envivas','allianz','versicherung','ergo','axa']},
  {id:'kita', name:'رعاية الأطفال', icon:'🧸', color:'#F472B6', type:'fixed', kw:['kita','kindergarten','fuchse','kinderbetreuung']},
  {id:'rundfunk', name:'رسوم البث', icon:'📺', color:'#9794B5', type:'fixed', kw:['ard zdf','rundfunk','deutschlandradio']},
- {id:'food', name:'بقالة', icon:'🛒', color:'#2EAD6B', type:'dynamic', kw:['edeka','penny','rewe','aldi','lidl','kaufland','backerei','bäckerei','baeckerei','markt']},
+ {id:'food', name:'بقالة', icon:'🛒', color:'#2EAD6B', type:'dynamic', kw:['edeka','penny','rewe','aldi','lidl','kaufland','backerei','bäckerei','baeckerei','markt','esselunga']},
  {id:'restaurant', name:'مطاعم ومقاهي', icon:'🍔', color:'#FB923C', type:'dynamic', kw:['restaurant','popeyes','hassan amer','cafe','café','bistro','imbiss','hagenbeck']},
  {id:'shopping', name:'تسوق', icon:'🛍️', color:'#A855F7', type:'dynamic', kw:['amazon','tiktok shop','temu','ebay','zalando']},
- {id:'gesundheit', name:'صحة وصيدلية', icon:'💊', color:'#14B8A6', type:'dynamic', kw:['apotheke','arzt','praxis']},
+ {id:'gesundheit', name:'صحة وصيدلية', icon:'💊', color:'#14B8A6', type:'dynamic', kw:['apotheke','arzt','praxis','drogerie']},
  {id:'transport', name:'مواصلات ووقود', icon:'🚗', color:'#64748B', type:'dynamic', kw:['aral','shell','esso','tankstelle','moia','uber','hvv','bahn','transport','ticket atm','trip.com']},
  {id:'abo', name:'اشتراكات رقمية', icon:'📦', color:'#6366F1', type:'fixed', kw:['apple.com','spotify','netflix','google','disney']},
  {id:'finanzierung', name:'تقسيط وتمويل', icon:'💳', color:'#F0A93B', type:'fixed', riba:true, kw:['paypal','logpay','klarna','bsh hausger','ratenzahlung']},
@@ -357,7 +357,7 @@ function categorize(merchant){
   const k = normKey(merchant);
   if(state.overrides[k]) return state.overrides[k];
   for(const c of CATEGORIES){
-    for(const kw of c.kw){ if(k.includes(kw.trim())) return c.id; }
+    for(const kw of c.kw){ if(k.includes(normKey(kw))) return c.id; }
   }
   return 'other';
 }
@@ -405,23 +405,40 @@ function guessMerchant(block, typeLabel){
   }
   return typeLabel;
 }
+function normalizeKerningArtifacts(text){
+  // pdf.js sometimes splits one word into two text items because of font
+  // kerning adjustments in the PDF (e.g. "SEPA" -> "SEP A", "Wasserwerke" ->
+  // "W asserwerke"). Empirically, genuine word/cell boundaries in our joined
+  // text get 2-3 spaces (because the item's own string already had a
+  // leading/trailing space before we add another), while these kerning-split
+  // artifacts get exactly 1 space. So: merge lone single spaces, then
+  // collapse the real multi-space runs down to one normal space.
+  text = text.replace(/(?<!\s)\s(?!\s)/g, '');
+  text = text.replace(/[ \t]{2,}/g, ' ');
+  return text;
+}
+// Matches transactions in EITHER order: "amount then SEPA/Kartenzahlung"
+// (this is the raw order pdf.js's content stream gives us) or
+// "SEPA/Kartenzahlung then amount" (the order a human gets when they
+// copy-paste text out of a PDF reader, which uses visual reading order).
 function parseTextToTransactions(text){
   text = (text||'').replace(/\r/g,' ');
-  const markerRe = /(SEPA[^\n+\-]{0,45}?(?:von|an)|Kartenzahlung)[ \t\n]*([+\-])[ \t]*([\d.,]+)/g;
+  const markerRe = /(?:([+\-])\s*([\d.,]+)\s*(SEPA[^+\-\n]{0,60}?(?:von|an)|Kartenzahlung))|(?:(SEPA[^+\-\n]{0,60}?(?:von|an)|Kartenzahlung)\s*([+\-])\s*([\d.,]+))/g;
   const matches = [...text.matchAll(markerRe)];
   const results = [];
   for(let i=0;i<matches.length;i++){
     const m = matches[i];
+    let sign, amtStr, typeLabel;
+    if(m[1]!==undefined){ sign=m[1]; amtStr=m[2]; typeLabel=m[3]; }
+    else { typeLabel=m[4]; sign=m[5]; amtStr=m[6]; }
     const start = m.index + m[0].length;
     const end = i+1<matches.length ? matches[i+1].index : text.length;
     const block = text.slice(start, Math.min(end, start+700));
-    const typeLabel = m[1].trim();
-    const sign = m[2]==='-' ? -1 : 1;
-    const amt = sign*parseAmountStr(m[3]);
+    const amt = (sign==='-'?-1:1)*parseAmountStr(amtStr);
     if(isNaN(amt)) continue;
     const dm = block.match(/(\d{1,2})[.\-](\d{1,2})[.\-]\s*(\d{4})/);
     const date = dm ? `${dm[3]}-${dm[2].padStart(2,'0')}-${dm[1].padStart(2,'0')}` : '';
-    const merchant = guessMerchant(block, typeLabel);
+    const merchant = guessMerchant(block, typeLabel.trim());
     results.push({ id: uid(), date, merchant, amount: amt, source:'pdf' });
   }
   return results.filter(r=>r.date);
@@ -462,13 +479,15 @@ async function pdfToText(arrayBuffer){
   for(let p=1;p<=pdf.numPages;p++){
     const page = await pdf.getPage(p);
     const content = await page.getTextContent();
-    // IMPORTANT: keep the original item order from pdf.js as-is. Re-sorting by
-    // x/y coordinates scrambles multi-column statement layouts (date columns
-    // get interleaved into the middle of merchant names). The natural content
-    // stream order already matches the visual reading order for this format.
+    // Keep the original item order from pdf.js as-is — re-sorting by x/y
+    // scrambles multi-column statement layouts. The content stream order
+    // already matches a usable reading order for this format.
     fullText += content.items.map(it=>it.str).join(' ') + '\n\n';
   }
-  return fullText;
+  // Only the auto-extracted PDF path needs the kerning-artifact fix —
+  // manually pasted text from a PDF reader doesn't have this issue, and
+  // applying it there would wrongly merge normal single-spaced words.
+  return normalizeKerningArtifacts(fullText);
 }
 
 /* ===================== CONTRACT DETECTION ===================== */
