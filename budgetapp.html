@@ -380,21 +380,34 @@ function parseAmountStr(s){
   if(/,\d{2}$/.test(s) && s.includes('.')) return parseFloat(s.replace(/\./g,'').replace(',','.'));
   return parseFloat(s.replace(/,/g,''));
 }
+function cleanMerchant(s){
+  const boiler = /^(Payment|Reference\/E2E-Ref\.?|E2E-Ref\.?|Reference|IBAN|BIC|Creditor-ID|Mand-ID|Konto\S*|RCUR|OTHR|ULTD|\d{1,2}[.\-]\d{1,2}[.\-]?|\d{4})$/i;
+  let words = (s||'').trim().split(/\s+/).filter(Boolean);
+  while(words.length && boiler.test(words[0])) words.shift();
+  return words.join(' ');
+}
 function guessMerchant(block, typeLabel){
-  const skip = /^(Payment Reference|E2E-Ref|Creditor-ID|Mand-ID|RCUR|OTHR|ULTD|Kartennr|Statement|Page|IBAN|BIC|0000000|Konto|Vertragsnummer)/i;
-  const lines = block.split('\n').map(l=>l.trim()).filter(Boolean);
-  for(const l of lines){
-    if(skip.test(l)) continue;
-    if(/^\d{1,2}[.\-]\d{1,2}[.\-]?$/.test(l)) continue;
-    if(/^\d{4}$/.test(l)) continue;
-    if(l.includes('//')) return l.split('//')[0].trim().slice(0,60);
-    return l.replace(/\s{2,}/g,' ').slice(0,60);
+  // Card payments look like: "...words... Merchant Name//City/CC dd-mm-yyyy..."
+  // capture a bounded window of words right before "//" then strip any
+  // boilerplate words (dates, "Payment", "Reference", IDs...) from the front.
+  const cardRe = /((?:\S+\s+){0,8}\S+)\s*\/\/[A-Za-zÄÖÜäöüß.\-\s]+\/[A-Z]{2}/;
+  const cm = block.match(cardRe);
+  if(cm){
+    const cleaned = cleanMerchant(cm[1]);
+    if(cleaned) return cleaned.slice(0,60);
+  }
+  // SEPA: the creditor/debtor name is whatever comes right after the marker,
+  // up until the next recognizable boilerplate token or a date.
+  const m = block.match(/^\s*(.*?)(?=\d{1,2}[.\-]\d{1,2}[.\-]\s*\d{4}|Payment Reference|IBAN|Creditor-ID|Mand-ID|Konto\d|$)/s);
+  if(m){
+    const cleaned = cleanMerchant(m[1]);
+    if(cleaned) return cleaned.slice(0,60);
   }
   return typeLabel;
 }
 function parseTextToTransactions(text){
-  text = (text||'').replace(/\r/g,'');
-  const markerRe = /(SEPA[^\n+\-]{0,45}?(?:von|an)|Kartenzahlung)[ \t]*\n?[ \t]*([+\-])[ \t]*([\d.,]+)/g;
+  text = (text||'').replace(/\r/g,' ');
+  const markerRe = /(SEPA[^\n+\-]{0,45}?(?:von|an)|Kartenzahlung)[ \t\n]*([+\-])[ \t]*([\d.,]+)/g;
   const matches = [...text.matchAll(markerRe)];
   const results = [];
   for(let i=0;i<matches.length;i++){
@@ -406,8 +419,8 @@ function parseTextToTransactions(text){
     const sign = m[2]==='-' ? -1 : 1;
     const amt = sign*parseAmountStr(m[3]);
     if(isNaN(amt)) continue;
-    const dm = block.match(/(\d{2})[.\-](\d{2})[.\-]\s*\n?\s*(\d{4})/);
-    const date = dm ? `${dm[3]}-${dm[2]}-${dm[1]}` : '';
+    const dm = block.match(/(\d{1,2})[.\-](\d{1,2})[.\-]\s*(\d{4})/);
+    const date = dm ? `${dm[3]}-${dm[2].padStart(2,'0')}-${dm[1].padStart(2,'0')}` : '';
     const merchant = guessMerchant(block, typeLabel);
     results.push({ id: uid(), date, merchant, amount: amt, source:'pdf' });
   }
@@ -449,17 +462,11 @@ async function pdfToText(arrayBuffer){
   for(let p=1;p<=pdf.numPages;p++){
     const page = await pdf.getPage(p);
     const content = await page.getTextContent();
-    const items = content.items.map(it=>({str:it.str, x:it.transform[4], y:it.transform[5]}));
-    items.sort((a,b)=> (b.y-a.y) || (a.x-b.x));
-    let lines=[], curY=null, curLine=[];
-    for(const it of items){
-      if(curY===null || Math.abs(it.y-curY)>2){
-        if(curLine.length) lines.push(curLine.map(i=>i.str).join(' '));
-        curLine=[it]; curY=it.y;
-      } else { curLine.push(it); }
-    }
-    if(curLine.length) lines.push(curLine.map(i=>i.str).join(' '));
-    fullText += lines.join('\n') + '\n';
+    // IMPORTANT: keep the original item order from pdf.js as-is. Re-sorting by
+    // x/y coordinates scrambles multi-column statement layouts (date columns
+    // get interleaved into the middle of merchant names). The natural content
+    // stream order already matches the visual reading order for this format.
+    fullText += content.items.map(it=>it.str).join(' ') + '\n\n';
   }
   return fullText;
 }
