@@ -103,6 +103,11 @@
 
   .legend{display:flex; flex-wrap:wrap; gap:8px; padding:14px; justify-content:center;}
   .leg-chip{display:flex; align-items:center; gap:6px; font-size:12px; font-weight:700; background:var(--bg); padding:5px 10px; border-radius:999px; cursor:pointer;}
+  .cat-filter-row{display:flex; gap:7px; overflow-x:auto; padding:2px 2px 10px; scrollbar-width:none;}
+  .cat-filter-row::-webkit-scrollbar{display:none;}
+  .cat-chip{flex-shrink:0; display:flex; align-items:center; gap:5px; font-size:12px; font-weight:700; background:var(--card); color:var(--ink-soft); padding:7px 12px; border-radius:999px; cursor:pointer; border:1.5px solid var(--line); white-space:nowrap;}
+  .cat-chip.active{background:var(--ink); color:#fff; border-color:var(--ink);}
+  .cat-chip .n{opacity:.65; font-weight:800; font-size:10.5px;}
   .leg-dot{width:9px; height:9px; border-radius:50%;}
 
   .chart-card{padding:16px 14px;}
@@ -177,6 +182,7 @@
       </div>
 
       <div class="section-title"><h2>الحركات</h2><span class="more" id="txCount"></span></div>
+      <div id="categoryFilterRow" class="cat-filter-row"></div>
       <div id="txList"></div>
     </section>
 
@@ -212,6 +218,14 @@
         </div>
         <div class="progress"><div id="savingsBar" style="width:0%; background:var(--accent);"></div></div>
       </div>
+
+      <div class="section-title"><h2>📈 المحفظة (ادخار واستثمار)</h2></div>
+      <div class="card" style="padding:14px;">
+        <div class="hero-row" style="margin-top:0;">
+          <div class="hero-stat"><div class="t">🐷 ادخار</div><div class="v" id="statSavings" style="color:var(--info)">0 €</div></div>
+          <div class="hero-stat"><div class="t">📈 استثمار</div><div class="v" id="statInvest" style="color:#7C3AED">0 €</div></div>
+        </div>
+      </div>
     </section>
   </main>
 </div>
@@ -242,7 +256,13 @@
         <button data-v="income">دخل</button>
       </div>
     </div>
-    <div class="field"><label>الفئة</label><select id="fCategory"></select></div>
+    <div class="field">
+      <label>الفئة</label>
+      <div style="display:flex; gap:8px;">
+        <select id="fCategory" style="flex:1;"></select>
+        <button type="button" class="btn btn-ghost" id="btnNewCategory" style="padding:0 14px; white-space:nowrap;">+ فئة</button>
+      </div>
+    </div>
     <div class="field">
       <label>تصنيف الميزانية</label>
       <div class="seg" id="segType">
@@ -300,6 +320,60 @@
   </div>
 </div>
 
+<!-- NEW CATEGORY SHEET -->
+<div class="overlay" id="overlayCategory">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h2>فئة جديدة</h2>
+    <div class="field"><label>اسم الفئة</label><input id="ncName" placeholder="مثلاً: هدايا، صيانة سيارة..."></div>
+    <div class="field"><label>أيقونة (إيموجي)</label><input id="ncIcon" maxlength="4" value="🔹" style="width:74px; text-align:center; font-size:19px;"></div>
+    <div class="field"><label>اللون</label><div id="ncColorRow" style="display:flex; flex-wrap:wrap; gap:8px;"></div></div>
+    <div class="field">
+      <label>النوع</label>
+      <div class="seg" id="segNcType">
+        <button data-v="fixed">ثابت</button>
+        <button data-v="dynamic" class="on">متغير</button>
+        <button data-v="transfer">تحويل</button>
+        <button data-v="income">دخل</button>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="btnCancelCategory" style="flex:1;">إلغاء</button>
+      <button class="btn btn-accent" id="btnSaveCategory" style="flex:2;">إنشاء الفئة</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONTRACT DETAIL / EDIT SHEET -->
+<div class="overlay" id="overlayContract">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h2 id="contractTitle">تفاصيل العقد</h2>
+    <div style="font-size:12.5px; color:var(--muted); margin-bottom:12px;" id="contractSub"></div>
+
+    <div class="field"><label>الفئة</label><select id="ctCategory"></select></div>
+    <div class="field">
+      <label>التكرار</label>
+      <select id="ctFreq">
+        <option value="auto">تلقائي (حسب البيانات)</option>
+        <option value="شهري">شهري</option>
+        <option value="ربعي">ربعي</option>
+        <option value="نصف سنوي">نصف سنوي</option>
+        <option value="سنوي">سنوي</option>
+      </select>
+    </div>
+
+    <div class="section-title" style="margin-top:10px;"><h2 style="font-size:13.5px;">من وين اجت الأرقام (الحركات المحسوبة)</h2></div>
+    <div id="contractTxList" class="card" style="margin-bottom:14px;"></div>
+
+    <div class="check-row"><input type="checkbox" id="ctIgnore"><label for="ctIgnore">هاد مش عقد متكرر — تجاهله من هاد التبويب</label></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="btnCancelContract" style="flex:1;">إلغاء</button>
+      <button class="btn btn-accent" id="btnSaveContract" style="flex:2;">حفظ</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -320,6 +394,8 @@ const CATEGORIES = [
  {id:'transport', name:'مواصلات ووقود', icon:'🚗', color:'#64748B', type:'dynamic', kw:['aral','shell','esso','tankstelle','moia','uber','hvv','bahn','transport','ticket atm','trip.com']},
  {id:'abo', name:'اشتراكات رقمية', icon:'📦', color:'#6366F1', type:'fixed', kw:['apple.com','spotify','netflix','google','disney']},
  {id:'finanzierung', name:'تقسيط وتمويل', icon:'💳', color:'#F0A93B', type:'fixed', riba:true, kw:['paypal','logpay','klarna','bsh hausger','ratenzahlung']},
+ {id:'invest', name:'استثمار', icon:'📈', color:'#7C3AED', type:'transfer', kw:['bitget','mexc','binance','etoro','trade republic','ibkr','interactive brokers','coinbase','kraken','degiro']},
+ {id:'savings', name:'ادخار', icon:'🐷', color:'#0EA5E9', type:'transfer', kw:['sparkonto','tagesgeld','sparen','savings','sparbuch']},
  {id:'transfer', name:'تحويلات شخصية', icon:'🔁', color:'#0891B2', type:'transfer', kw:['revolut','wirex','abdallah mteir','abdallah jamal yousef mteir','abdallah jamal yous']},
  {id:'remit', name:'حوالات للأهل', icon:'✈️', color:'#E6586B', type:'dynamic', kw:['taptap send','western union','moneygram']},
  {id:'travel', name:'سفر', icon:'🧳', color:'#0D9488', type:'dynamic', kw:['airbnb','booking.com','venice','milano','milan','seriate']},
@@ -327,13 +403,15 @@ const CATEGORIES = [
  {id:'kindergeld', name:'كيندرغيلد', icon:'👶', color:'#1FAE6E', type:'income', kw:['familienkasse','bundesagentur']},
  {id:'other', name:'أخرى', icon:'🔹', color:'#9CA3AF', type:'dynamic', kw:[]}
 ];
-function getCategory(id){ return CATEGORIES.find(c=>c.id===id) || CATEGORIES[CATEGORIES.length-1]; }
+function getAllCategories(){ return CATEGORIES.concat(state.customCategories||[]); }
+function getCategory(id){ return getAllCategories().find(c=>c.id===id) || CATEGORIES[CATEGORIES.length-1]; }
 
 const STORE_KEY = 'budget-data-v1';
-let state = { transactions: [], overrides: {}, dismissed: [] };
+let state = { transactions: [], overrides: {}, dismissed: [], customCategories: [], contractOverrides: {} };
 let editingId = null;
 let pendingReview = [];
 let currentMonth = 'all';
+let currentCategoryFilter = 'all';
 
 /* ===================== STORAGE =====================
    window.storage only exists inside Claude.ai's own artifact preview.
@@ -354,6 +432,8 @@ async function loadState(){
     state.transactions = state.transactions||[];
     state.overrides = state.overrides||{};
     state.dismissed = state.dismissed||[];
+    state.customCategories = state.customCategories||[];
+    state.contractOverrides = state.contractOverrides||{};
   }catch(e){ console.error('load failed', e); }
 }
 async function saveState(){
@@ -514,8 +594,9 @@ async function pdfToText(arrayBuffer){
 }
 
 /* ===================== CONTRACT DETECTION ===================== */
+const FREQ_DIVISOR = {'شهري':1, 'ربعي':3, 'نصف سنوي':6, 'سنوي':12};
 function detectContracts(){
-  const expenses = state.transactions.filter(t=>t.amount<0 && t.dir!=='transfer_in');
+  const expenses = state.transactions.filter(t=>t.amount<0);
   const groups = {};
   for(const t of expenses){
     const key = normKey(t.merchant);
@@ -524,29 +605,40 @@ function detectContracts(){
   }
   const out = [];
   for(const key in groups){
+    const override = state.contractOverrides[key];
+    if(override && override.ignored) continue;
     const arr = groups[key].slice().sort((a,b)=> new Date(a.date)-new Date(b.date));
-    const cat = getCategory(arr[0].catId);
+    const baseCatId = (override && override.catId) || arr[0].catId;
+    const cat = getCategory(baseCatId);
     const notOneTime = arr.filter(t=>!t.oneTime);
     if(notOneTime.length===0) continue;
-    if(arr.length===1){
-      if(cat.type==='fixed'){
-        out.push({merchant:arr[0].merchant, amount:Math.abs(arr[0].amount), freq:'شهري (تقديري)', count:1, catId:arr[0].catId, monthlyEq:Math.abs(arr[0].amount)});
-      }
-      continue;
+
+    let freq=null, divisor=1, autoDetected=false;
+    if(arr.length>=2){
+      const diffs=[];
+      for(let i=1;i<arr.length;i++) diffs.push((new Date(arr[i].date)-new Date(arr[i-1].date))/86400000);
+      diffs.sort((a,b)=>a-b);
+      const median = diffs[Math.floor(diffs.length/2)];
+      if(median>=20&&median<=40){freq='شهري'; divisor=1;}
+      else if(median>=75&&median<=105){freq='ربعي'; divisor=3;}
+      else if(median>=160&&median<=200){freq='نصف سنوي'; divisor=6;}
+      else if(median>=340&&median<=390){freq='سنوي'; divisor=12;}
+      autoDetected = !!freq;
     }
-    const diffs=[];
-    for(let i=1;i<arr.length;i++) diffs.push((new Date(arr[i].date)-new Date(arr[i-1].date))/86400000);
-    diffs.sort((a,b)=>a-b);
-    const median = diffs[Math.floor(diffs.length/2)];
-    let freq=null, divisor=1;
-    if(median>=20&&median<=40){freq='شهري'; divisor=1;}
-    else if(median>=75&&median<=105){freq='ربعي'; divisor=3;}
-    else if(median>=160&&median<=200){freq='نصف سنوي'; divisor=6;}
-    else if(median>=340&&median<=390){freq='سنوي'; divisor=12;}
+    if(override && override.freqOverride && override.freqOverride!=='auto'){
+      freq = override.freqOverride;
+      divisor = FREQ_DIVISOR[freq] || 1;
+    } else if(!freq){
+      if(arr.length===1 && cat.type!=='fixed') continue;
+      freq = 'شهري (تقديري)';
+      divisor = 1;
+    }
     const avg = notOneTime.reduce((s,t)=>s+Math.abs(t.amount),0)/notOneTime.length;
-    if(freq || cat.type==='fixed'){
-      out.push({merchant:arr[arr.length-1].merchant, amount:avg, freq: freq||'شهري (تقديري)', count:arr.length, catId:arr[0].catId, monthlyEq: avg/divisor});
-    }
+    out.push({
+      key, merchant:arr[arr.length-1].merchant, amount:avg, freq, count:arr.length,
+      catId: baseCatId, monthlyEq: avg/divisor, autoDetected,
+      txs: arr.map(t=>({id:t.id, date:t.date, amount:t.amount, oneTime:!!t.oneTime}))
+    });
   }
   return out.sort((a,b)=>b.monthlyEq-a.monthlyEq);
 }
@@ -599,35 +691,23 @@ function renderOverview(){
   document.getElementById('statFixed').textContent = fixed.toLocaleString('de-DE',{minimumFractionDigits:0}) + ' €';
   document.getElementById('statDynamic').textContent = dynamic.toLocaleString('de-DE',{minimumFractionDigits:0}) + ' €';
 
+  renderCategoryFilterRow(tx);
+  const filtered = currentCategoryFilter==='all' ? tx : tx.filter(t=>t.catId===currentCategoryFilter);
+
   const list = document.getElementById('txList');
-  document.getElementById('txCount').textContent = tx.length ? `${tx.length} حركة` : '';
+  document.getElementById('txCount').textContent = filtered.length ? `${filtered.length} حركة` : '';
   if(!tx.length){
     list.innerHTML = `<div class="card empty"><div class="e-ico">📭</div><div class="e-t">ولا حركة لسا</div>
       <div class="e-s">ارفع كشف PDF من فوق 📄 أو أضف بند يدوياً من زر +</div></div>`;
     return;
   }
-  const sorted = tx.slice().sort((a,b)=> new Date(b.date)-new Date(a.date));
-  let lastDay=null, html='';
-  for(const t of sorted){
-    if(t.date!==lastDay){
-      html += `<div class="day-sep">${new Date(t.date).toLocaleDateString('ar-EG',{day:'2-digit',month:'long',year:'numeric'})}</div><div class="card">`;
-      if(lastDay!==null) html = html; // noop, card opened fresh each day group
-      lastDay = t.date;
-    }
-    const cat = getCategory(t.catId);
-    html += `<div class="tx" data-id="${t.id}">
-      <div class="ico" style="background:${cat.color}22; color:${cat.color}">${cat.icon}</div>
-      <div class="mid">
-        <div class="name">${escapeHtml(t.merchant)}</div>
-        <div class="cat">${cat.name}${t.oneTime?' <span class="badge one">مرة وحدة</span>':''}${cat.riba?' <span class="badge warn">تحقق من الفائدة</span>':''}</div>
-      </div>
-      <div class="amt ${t.amount>=0?'pos':'neg'}">${fmtSigned(t.amount)}</div>
-    </div>`;
+  if(!filtered.length){
+    list.innerHTML = `<div class="card empty"><div class="e-ico">🔍</div><div class="e-t">ولا حركة بهاد الفئة</div>
+      <div class="e-s">جرب فئة تانية أو دوس "الكل".</div></div>`;
+    return;
   }
-  // close cards properly: rebuild with correct day grouping
-  html = '';
-  lastDay = null;
-  let openCard=false;
+  const sorted = filtered.slice().sort((a,b)=> new Date(b.date)-new Date(a.date));
+  let lastDay=null, html='', openCard=false;
   for(const t of sorted){
     if(t.date!==lastDay){
       if(openCard) html += `</div>`;
@@ -647,6 +727,22 @@ function renderOverview(){
   if(openCard) html += `</div>`;
   list.innerHTML = html;
   list.querySelectorAll('.tx').forEach(el=> el.addEventListener('click', ()=> openEdit(el.dataset.id)));
+}
+function renderCategoryFilterRow(tx){
+  const row = document.getElementById('categoryFilterRow');
+  if(!tx.length){ row.innerHTML=''; return; }
+  const counts = {};
+  for(const t of tx){ counts[t.catId] = (counts[t.catId]||0)+1; }
+  const present = Object.keys(counts)
+    .map(id=>getCategory(id))
+    .sort((a,b)=> counts[b.id]-counts[a.id]);
+  let html = `<div class="cat-chip${currentCategoryFilter==='all'?' active':''}" data-cat="all">الكل <span class="n">${tx.length}</span></div>`;
+  html += present.map(c=> `<div class="cat-chip${currentCategoryFilter===c.id?' active':''}" data-cat="${c.id}">${c.icon} ${c.name} <span class="n">${counts[c.id]}</span></div>`).join('');
+  row.innerHTML = html;
+  row.querySelectorAll('.cat-chip').forEach(chip=> chip.addEventListener('click', ()=>{
+    currentCategoryFilter = chip.dataset.cat;
+    renderOverview();
+  }));
 }
 function escapeHtml(s){ const d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
 
@@ -672,9 +768,9 @@ function renderContracts(){
     html += `<div class="freq-group"><div class="freq-head"><h3>${f} (${arr.length})</h3><div class="sum">${sum.toFixed(2)} €</div></div><div class="card">`;
     for(const c of arr){
       const cat = getCategory(c.catId);
-      html += `<div class="tx" style="cursor:default;">
+      html += `<div class="tx" data-key="${escapeHtml(c.key)}">
         <div class="ico" style="background:${cat.color}22; color:${cat.color}">${cat.icon}</div>
-        <div class="mid"><div class="name">${escapeHtml(c.merchant)}</div><div class="cat">${cat.name}${cat.riba?' <span class="badge warn">تحقق من الفائدة</span>':''}</div></div>
+        <div class="mid"><div class="name">${escapeHtml(c.merchant)}</div><div class="cat">${cat.name} · ${c.count} حركة${cat.riba?' <span class="badge warn">تحقق من الفائدة</span>':''}${!c.autoDetected && c.freq!=='شهري (تقديري)' ? ' <span class="badge one">يدوي</span>':''}</div></div>
         <div class="amt neg">${c.amount.toFixed(2)} €</div>
       </div>`;
     }
@@ -684,6 +780,7 @@ function renderContracts(){
       <div style="font-size:12px; opacity:.8; font-weight:700;">مجموع الالتزامات الثابتة شهرياً (معادل)</div>
       <div style="font-size:24px; font-weight:900; margin-top:2px;">${(totalMonthly + contracts.filter(c=>!c.freq.startsWith('شهري')).reduce((s,c)=>s+c.monthlyEq,0)).toFixed(2)} €</div>
     </div>` + html;
+  el.querySelectorAll('.tx[data-key]').forEach(elRow=> elRow.addEventListener('click', ()=> openContractDetail(elRow.dataset.key)));
 }
 
 /* ===================== RENDER: ANALYTICS ===================== */
@@ -776,6 +873,12 @@ function renderBudget(){
   document.getElementById('savingsPct').style.color = rate>=0.2?'var(--pos)': rate<0.1?'var(--danger)':'var(--ink)';
   document.getElementById('savingsBar').style.width = pct+'%';
   document.getElementById('savingsBar').style.background = rate>=0.2?'var(--pos)': rate<0.1?'var(--danger)':'var(--accent)';
+
+  const tx = periodTransactions();
+  const savingsTotal = tx.filter(t=>t.catId==='savings' && t.amount<0).reduce((s,t)=>s+Math.abs(t.amount),0);
+  const investTotal = tx.filter(t=>t.catId==='invest' && t.amount<0).reduce((s,t)=>s+Math.abs(t.amount),0);
+  document.getElementById('statSavings').textContent = savingsTotal.toLocaleString('de-DE',{minimumFractionDigits:0}) + ' €';
+  document.getElementById('statInvest').textContent = investTotal.toLocaleString('de-DE',{minimumFractionDigits:0}) + ' €';
 }
 
 /* ===================== RENDER ALL ===================== */
@@ -790,7 +893,7 @@ function renderAll(){
 /* ===================== CATEGORY SELECT FILL ===================== */
 function fillCategorySelect(){
   const sel = document.getElementById('fCategory');
-  sel.innerHTML = CATEGORIES.map(c=>`<option value="${c.id}">${c.icon} ${c.name}</option>`).join('');
+  sel.innerHTML = getAllCategories().map(c=>`<option value="${c.id}">${c.icon} ${c.name}</option>`).join('');
 }
 
 /* ===================== ADD / EDIT MODAL ===================== */
@@ -859,6 +962,81 @@ document.getElementById('btnSaveAdd').addEventListener('click', async ()=>{
   document.getElementById('overlayAdd').classList.remove('open');
   renderAll();
   toast('تم الحفظ ✅');
+});
+
+/* ===================== NEW CATEGORY ===================== */
+const CATEGORY_COLORS = ['#6C5CE7','#F0A93B','#E6586B','#3DC1D3','#4C7CF0','#2EAD6B','#FB923C','#A855F7','#14B8A6','#64748B','#7C3AED','#0EA5E9','#F472B6','#16A34A'];
+let ncSelectedColor = CATEGORY_COLORS[0];
+function renderColorSwatches(){
+  const row = document.getElementById('ncColorRow');
+  row.innerHTML = CATEGORY_COLORS.map(c=>`<span class="swatch" data-c="${c}" style="width:32px;height:32px;border-radius:50%;display:inline-block;cursor:pointer;background:${c};border:3px solid ${c===ncSelectedColor?'var(--ink)':'transparent'}"></span>`).join('');
+  row.querySelectorAll('.swatch').forEach(s=> s.addEventListener('click', ()=>{ ncSelectedColor = s.dataset.c; renderColorSwatches(); }));
+}
+function openNewCategory(){
+  document.getElementById('ncName').value='';
+  document.getElementById('ncIcon').value='🔹';
+  ncSelectedColor = CATEGORY_COLORS[Math.floor(Math.random()*CATEGORY_COLORS.length)];
+  renderColorSwatches();
+  setSeg('segNcType','dynamic');
+  document.getElementById('overlayCategory').classList.add('open');
+}
+document.getElementById('btnNewCategory').addEventListener('click', openNewCategory);
+document.getElementById('btnCancelCategory').addEventListener('click', ()=> document.getElementById('overlayCategory').classList.remove('open'));
+document.querySelectorAll('#segNcType button').forEach(b=> b.addEventListener('click', ()=> setSeg('segNcType', b.dataset.v)));
+document.getElementById('btnSaveCategory').addEventListener('click', async ()=>{
+  const name = document.getElementById('ncName').value.trim();
+  if(!name){ toast('اكتب اسم الفئة'); return; }
+  const icon = document.getElementById('ncIcon').value.trim() || '🔹';
+  const type = getSeg('segNcType');
+  const id = 'custom_' + Date.now().toString(36);
+  state.customCategories.push({ id, name, icon, color: ncSelectedColor, type, kw:[] });
+  await saveState();
+  fillCategorySelect();
+  document.getElementById('fCategory').value = id;
+  document.getElementById('overlayCategory').classList.remove('open');
+  renderAll();
+  toast('انشأنا الفئة ✅');
+});
+
+/* ===================== CONTRACT DETAIL / EDIT ===================== */
+let editingContractKey = null;
+function openContractDetail(key){
+  const contracts = detectContracts();
+  const c = contracts.find(x=>x.key===key);
+  if(!c) return;
+  editingContractKey = key;
+  document.getElementById('contractTitle').textContent = c.merchant;
+  document.getElementById('contractSub').textContent = `${c.count} حركة محسوبة · بمعدل ${c.amount.toFixed(2)} € لكل دفعة`;
+  const ctCat = document.getElementById('ctCategory');
+  ctCat.innerHTML = getAllCategories().map(cc=>`<option value="${cc.id}">${cc.icon} ${cc.name}</option>`).join('');
+  ctCat.value = c.catId;
+  const override = state.contractOverrides[key];
+  document.getElementById('ctFreq').value = (override && override.freqOverride) || 'auto';
+  document.getElementById('ctIgnore').checked = !!(override && override.ignored);
+  const list = document.getElementById('contractTxList');
+  list.innerHTML = c.txs.slice().sort((a,b)=> new Date(b.date)-new Date(a.date)).map(t=>`
+    <div class="tx" data-txid="${t.id}">
+      <div class="ico" style="background:var(--bg); color:var(--ink-soft); font-size:14px;">📅</div>
+      <div class="mid"><div class="name">${new Date(t.date).toLocaleDateString('ar-EG',{day:'2-digit',month:'short',year:'numeric'})}</div>${t.oneTime?'<div class="cat">مرة وحدة</div>':''}</div>
+      <div class="amt neg">${Math.abs(t.amount).toFixed(2)} €</div>
+    </div>`).join('');
+  list.querySelectorAll('.tx[data-txid]').forEach(row=> row.addEventListener('click', ()=>{
+    document.getElementById('overlayContract').classList.remove('open');
+    openEdit(row.dataset.txid);
+  }));
+  document.getElementById('overlayContract').classList.add('open');
+}
+document.getElementById('btnCancelContract').addEventListener('click', ()=> document.getElementById('overlayContract').classList.remove('open'));
+document.getElementById('btnSaveContract').addEventListener('click', async ()=>{
+  if(!editingContractKey) return;
+  const catId = document.getElementById('ctCategory').value;
+  const freqOverride = document.getElementById('ctFreq').value;
+  const ignored = document.getElementById('ctIgnore').checked;
+  state.contractOverrides[editingContractKey] = { catId, freqOverride, ignored };
+  await saveState();
+  document.getElementById('overlayContract').classList.remove('open');
+  renderAll();
+  toast('تم تحديث العقد ✅');
 });
 
 /* ===================== IMPORT FLOW ===================== */
@@ -932,7 +1110,7 @@ function renderReviewList(){
           <input class="r-date" type="date" value="${t.date}" style="flex:1;">
           <input class="r-amount" type="number" step="0.01" value="${t.amount}" style="flex:1;">
         </div>
-        <select class="r-cat">${CATEGORIES.map(c=>`<option value="${c.id}" ${c.id===t.catId?'selected':''}>${c.icon} ${c.name}</option>`).join('')}</select>
+        <select class="r-cat">${getAllCategories().map(c=>`<option value="${c.id}" ${c.id===t.catId?'selected':''}>${c.icon} ${c.name}</option>`).join('')}</select>
       </div>
       <button class="rm-del" data-i="${i}">✕</button>
     </div>`).join('');
@@ -969,7 +1147,7 @@ document.querySelectorAll('nav.bottom button').forEach(b=>{
     if(b.dataset.tab==='analytics') renderAnalytics();
   });
 });
-document.getElementById('monthSelect').addEventListener('change', (e)=>{ currentMonth = e.target.value; renderOverview(); renderAnalytics(); renderBudget(); });
+document.getElementById('monthSelect').addEventListener('change', (e)=>{ currentMonth = e.target.value; currentCategoryFilter='all'; renderOverview(); renderAnalytics(); renderBudget(); });
 document.getElementById('btnHelp').addEventListener('click', ()=>{
   toast('ميزانيتي: حلل كشفك الشهري، صنف مصاريفك، واكتشف العقود وفرص التوفير 💡');
 });
