@@ -159,6 +159,7 @@
       </div>
       <div style="display:flex; gap:8px;">
         <button class="icon-btn" id="btnImport" title="استيراد كشف">📄</button>
+        <button class="icon-btn" id="btnDeleteAll" title="حذف الكل">🗑️</button>
         <button class="icon-btn" id="btnHelp" title="عن التطبيق">ℹ️</button>
       </div>
     </div>
@@ -370,6 +371,21 @@
     <div class="modal-actions">
       <button class="btn btn-ghost" id="btnCancelContract" style="flex:1;">إلغاء</button>
       <button class="btn btn-accent" id="btnSaveContract" style="flex:2;">حفظ</button>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE ALL CONFIRM SHEET -->
+<div class="overlay" id="overlayDeleteAll">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <h2>🗑️ حذف كل المدخلات؟</h2>
+    <div style="font-size:13.5px; color:var(--ink-soft); line-height:1.7; margin-bottom:16px;">
+      هاد رح يمسح كل الحركات، الفئات المخصصة، وتعديلات العقود يلي ضفتها. ما إلها رجعة بعد الحذف.
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="btnCancelDeleteAll" style="flex:1;">إلغاء</button>
+      <button class="btn btn-danger" id="btnConfirmDeleteAll" style="flex:1;">احذف الكل</button>
     </div>
   </div>
 </div>
@@ -1150,6 +1166,20 @@ document.querySelectorAll('nav.bottom button').forEach(b=>{
 document.getElementById('monthSelect').addEventListener('change', (e)=>{ currentMonth = e.target.value; currentCategoryFilter='all'; renderOverview(); renderAnalytics(); renderBudget(); });
 document.getElementById('btnHelp').addEventListener('click', ()=>{
   toast('ميزانيتي: حلل كشفك الشهري، صنف مصاريفك، واكتشف العقود وفرص التوفير 💡');
+});
+document.getElementById('btnDeleteAll').addEventListener('click', ()=>{
+  if(!state.transactions.length && !(state.customCategories||[]).length){ toast('ما في شي تحذفه أصلاً'); return; }
+  document.getElementById('overlayDeleteAll').classList.add('open');
+});
+document.getElementById('btnCancelDeleteAll').addEventListener('click', ()=> document.getElementById('overlayDeleteAll').classList.remove('open'));
+document.getElementById('btnConfirmDeleteAll').addEventListener('click', async ()=>{
+  state = { transactions: [], overrides: {}, dismissed: [], customCategories: [], contractOverrides: {} };
+  currentMonth = 'all';
+  currentCategoryFilter = 'all';
+  await saveState();
+  document.getElementById('overlayDeleteAll').classList.remove('open');
+  renderAll();
+  toast('تم حذف كل شي 🗑️');
 });
 
 /* ===================== INIT ===================== */
