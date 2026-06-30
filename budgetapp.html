@@ -335,15 +335,38 @@ let editingId = null;
 let pendingReview = [];
 let currentMonth = 'all';
 
-/* ===================== STORAGE ===================== */
+/* ===================== STORAGE =====================
+   window.storage only exists inside Claude.ai's own artifact preview.
+   Once this file is deployed standalone (e.g. GitHub Pages), that API
+   doesn't exist at all — so we detect it once and fall back to the
+   browser's normal localStorage, which is what actually persists data
+   on a real deployed site. */
+const hasClaudeStorage = (typeof window !== 'undefined') && window.storage && typeof window.storage.get === 'function';
 async function loadState(){
   try{
-    const r = await window.storage.get(STORE_KEY, false);
-    if(r && r.value){ state = JSON.parse(r.value); state.overrides = state.overrides||{}; state.dismissed = state.dismissed||[]; }
-  }catch(e){ /* no data yet */ }
+    if(hasClaudeStorage){
+      const r = await window.storage.get(STORE_KEY, false);
+      if(r && r.value) state = JSON.parse(r.value);
+    } else {
+      const raw = localStorage.getItem(STORE_KEY);
+      if(raw) state = JSON.parse(raw);
+    }
+    state.transactions = state.transactions||[];
+    state.overrides = state.overrides||{};
+    state.dismissed = state.dismissed||[];
+  }catch(e){ console.error('load failed', e); }
 }
 async function saveState(){
-  try{ await window.storage.set(STORE_KEY, JSON.stringify(state), false); }catch(e){ console.error('save failed', e); }
+  try{
+    if(hasClaudeStorage){
+      await window.storage.set(STORE_KEY, JSON.stringify(state), false);
+    } else {
+      localStorage.setItem(STORE_KEY, JSON.stringify(state));
+    }
+  }catch(e){
+    console.error('save failed', e);
+    toast('⚠️ ما قدرنا نحفظ البيانات بهاد المتصفح (جرب تطفي وضع التصفح الخاص)');
+  }
 }
 
 /* ===================== HELPERS ===================== */
