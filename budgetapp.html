@@ -403,7 +403,7 @@ const CATEGORIES = [
  {id:'versicherung', name:'التأمين', icon:'🛡️', color:'#3B6FE0', type:'fixed', kw:['huk24','adac','envivas','allianz','versicherung','ergo','axa']},
  {id:'kita', name:'رعاية الأطفال', icon:'🧸', color:'#F472B6', type:'fixed', kw:['kita','kindergarten','fuchse','kinderbetreuung']},
  {id:'rundfunk', name:'رسوم البث', icon:'📺', color:'#9794B5', type:'fixed', kw:['ard zdf','rundfunk','deutschlandradio']},
- {id:'food', name:'بقالة', icon:'🛒', color:'#2EAD6B', type:'dynamic', kw:['edeka','penny','rewe','aldi','lidl','kaufland','backerei','bäckerei','baeckerei','markt','esselunga']},
+ {id:'food', name:'بقالة', icon:'🛒', color:'#2EAD6B', type:'dynamic', kw:['edeka','penny','rewe','aldi','lidl','kaufland','backerei','bäckerei','baeckerei','markt','esselunga','netto']},
  {id:'restaurant', name:'مطاعم ومقاهي', icon:'🍔', color:'#FB923C', type:'dynamic', kw:['restaurant','popeyes','hassan amer','cafe','café','bistro','imbiss','hagenbeck']},
  {id:'shopping', name:'تسوق', icon:'🛍️', color:'#A855F7', type:'dynamic', kw:['amazon','tiktok shop','temu','ebay','zalando','paypal','klarna']},
  {id:'gesundheit', name:'صحة وصيدلية', icon:'💊', color:'#14B8A6', type:'dynamic', kw:['apotheke','arzt','praxis','drogerie']},
@@ -412,7 +412,7 @@ const CATEGORIES = [
  {id:'finanzierung', name:'تقسيط وتمويل', icon:'💳', color:'#F0A93B', type:'fixed', riba:true, kw:['logpay','bsh hausger','ratenzahlung','ratenkauf','easycredit']},
  {id:'invest', name:'استثمار', icon:'📈', color:'#7C3AED', type:'transfer', kw:['bitget','mexc','binance','etoro','trade republic','ibkr','interactive brokers','coinbase','kraken','degiro']},
  {id:'savings', name:'ادخار', icon:'🐷', color:'#0EA5E9', type:'transfer', kw:['sparkonto','tagesgeld','sparen','savings','sparbuch']},
- {id:'transfer', name:'تحويلات شخصية', icon:'🔁', color:'#0891B2', type:'transfer', kw:['revolut','wirex','abdallah mteir','abdallah jamal yousef mteir','abdallah jamal yous']},
+ {id:'transfer', name:'تحويلات شخصية', icon:'🔁', color:'#0891B2', type:'transfer', kw:['revolut','wirex','fliz pay','abdallah mteir','abdallah jamal yousef mteir','abdallah jamal yous']},
  {id:'remit', name:'حوالات للأهل', icon:'✈️', color:'#E6586B', type:'dynamic', kw:['taptap send','western union','moneygram']},
  {id:'travel', name:'سفر', icon:'🧳', color:'#0D9488', type:'dynamic', kw:['airbnb','booking.com','venice','milano','milan','seriate']},
  {id:'income', name:'دخل وراتب', icon:'💰', color:'#1FAE6E', type:'income', kw:['lohn','gehalt',' sala ','eppendorf']},
@@ -495,29 +495,51 @@ function dkey(date,merchant,amount){ return `${date}|${Math.round(amount*100)}|$
 
 /* ===================== AMOUNT / TEXT PARSING ===================== */
 function parseAmountStr(s){
+  // Handles both "1,548.11" (comma=thousands, dot=decimal) and "10,58" /
+  // "3.000,00" (German: dot=thousands, comma=decimal) by checking which
+  // separator appears LAST in the string — that one is the decimal point.
   s = (s||'').trim();
-  if(/,\d{2}$/.test(s) && s.includes('.')) return parseFloat(s.replace(/\./g,'').replace(',','.'));
-  return parseFloat(s.replace(/,/g,''));
+  const lastComma = s.lastIndexOf(',');
+  const lastDot = s.lastIndexOf('.');
+  let decimalSep = null;
+  if(lastComma > lastDot) decimalSep = ',';
+  else if(lastDot > lastComma) decimalSep = '.';
+  if(decimalSep === ','){
+    s = s.replace(/\./g, '').replace(',', '.');
+  } else if(decimalSep === '.'){
+    s = s.replace(/,/g, '');
+  }
+  return parseFloat(s);
 }
 function cleanMerchant(s){
-  const boiler = /^(Payment|Reference\/E2E-Ref\.?|E2E-Ref\.?|Reference|IBAN|BIC|Creditor-ID|Mand-ID|Konto\S*|RCUR|OTHR|ULTD|\d{1,2}[.\-]\d{1,2}[.\-]?|\d{4})$/i;
-  let words = (s||'').trim().split(/\s+/).filter(Boolean);
+  s = (s||'').trim();
+  // strip one-or-more leading date tokens, even glued together with no
+  // separating space (e.g. "30.06.202630.06.2026 ALDI NORD" -> "ALDI NORD")
+  s = s.replace(/^(?:\d{1,2}[.\-]\d{1,2}[.\-]\d{4}\s*)+/, '');
+  const boiler = /^(Payment|Reference\/E2E-Ref\.?|E2E-Ref\.?|Reference|IBAN|BIC|Creditor-ID|Mand-ID|Konto\S*|RCUR|OTHR|ULTD|Verwendungszweck|Begünstigter\/Auftraggeber|Kundenreferenz|Mandatsreferenz|\d{1,2}[.\-]\d{1,2}[.\-]?\d*|\d{4})$/i;
+  let words = s.split(/\s+/).filter(Boolean);
   while(words.length && boiler.test(words[0])) words.shift();
   return words.join(' ');
 }
 function guessMerchant(block, typeLabel){
-  // Card payments look like: "...words... Merchant Name//City/CC dd-mm-yyyy..."
-  // capture a bounded window of words right before "//" then strip any
-  // boilerplate words (dates, "Payment", "Reference", IDs...) from the front.
-  const cardRe = /((?:\S+\s+){0,8}\S+)\s*\/\/[A-Za-zÄÖÜäöüß.\-\s]+\/[A-Z]{2}/;
+  // 1) Card payments: "...words... Merchant Name//City/CC dd-mm-yyyy..."
+  const cardRe = /((?:\S+\s+){0,8}\S+)\s*\/\/[A-Za-zÄÖÜäöüß0-9.\-\s]+\/[A-Z]{2}/;
   const cm = block.match(cardRe);
   if(cm){
     const cleaned = cleanMerchant(cm[1]);
-    if(cleaned) return cleaned.slice(0,60);
+    if(cleaned && cleaned!=='ABRECHNUNG KARTE') return cleaned.slice(0,60);
   }
-  // SEPA: the creditor/debtor name is whatever comes right after the marker,
-  // up until the next recognizable boilerplate token or a date.
-  const m = block.match(/^\s*(.*?)(?=\d{1,2}[.\-]\d{1,2}[.\-]\s*\d{4}|Payment Reference|IBAN|Creditor-ID|Mand-ID|Konto\d|$)/s);
+  // 2) Some statement layouts print fields value-before-label, so the
+  //    counterparty name sits between "Verwendungszweck" and the
+  //    "Begünstigter/Auftraggeber" label that follows it.
+  const begMatch = block.match(/Verwendungszweck\s+(.+?)\s*Begünstigter\/Auftraggeber/s);
+  if(begMatch){
+    const val = begMatch[1].trim().replace(/\s{2,}/g,' ');
+    if(val && val!=='ABRECHNUNG KARTE') return val.slice(0,60);
+  }
+  // 3) Generic fallback: text right after the marker, before the next
+  //    recognizable boilerplate token or a date.
+  const m = block.match(/^\s*(.*?)(?=\d{1,2}[.\-]\d{1,2}[.\-]\s*\d{4}|Payment Reference|Verwendungszweck|Begünstigter|IBAN|Creditor-ID|Mand-ID|Konto\d|$)/s);
   if(m){
     const cleaned = cleanMerchant(m[1]);
     if(cleaned) return cleaned.slice(0,60);
@@ -536,20 +558,39 @@ function normalizeKerningArtifacts(text){
   text = text.replace(/[ \t]{2,}/g, ' ');
   return text;
 }
-// Matches transactions in EITHER order: "amount then SEPA/Kartenzahlung"
-// (this is the raw order pdf.js's content stream gives us) or
-// "SEPA/Kartenzahlung then amount" (the order a human gets when they
-// copy-paste text out of a PDF reader, which uses visual reading order).
+function stripControlChars(text){
+  // Some PDF generators embed stray invisible control characters (e.g. U+0001)
+  // as spacing artifacts in the text stream.
+  return (text||'').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, ' ');
+}
+// Matches transactions across multiple Deutsche Bank statement layouts:
+// - "EUR <amount> LABEL" (one statement template, value-before-label)
+// - "<sign><amount> LABEL" / "LABEL <sign><amount>" (the other template,
+//   in either reading order depending on auto-extract vs. paste source)
+// LABEL covers SEPA Lastschrift(einzug)?, SEPA (Echtzeit)?Überweisung
+// (optionally with a "(Lohn, Gehalt, Rente)"-style suffix), Kartenzahlung,
+// and Auszahlung (ATM withdrawal).
 function parseTextToTransactions(text){
-  text = (text||'').replace(/\r/g,' ');
-  const markerRe = /(?:([+\-])\s*([\d.,]+)\s*(SEPA[^+\-\n]{0,60}?(?:von|an)|Kartenzahlung))|(?:(SEPA[^+\-\n]{0,60}?(?:von|an)|Kartenzahlung)\s*([+\-])\s*([\d.,]+))/g;
+  text = stripControlChars((text||'').replace(/\r/g,' '));
+  const LABEL = "(?:SEPA\\s+(?:Echtzeit)?[UÜuü]berweisung(?:\\s*\\([^)]*\\))?(?:\\s+(?:von|an))?|SEPA\\s+Lastschrift(?:einzug)?(?:\\s+(?:von|an))?|Kartenzahlung|Auszahlung)";
+  const markerRe = new RegExp(
+    `EUR\\s*(?<sign1>[+-]?)\\s*(?<amt1>[\\d.,]+)\\s*(?<lbl1>${LABEL})` +
+    `|(?<sign2>[+-])\\s*(?<amt2>[\\d.,]+)\\s*(?<lbl2>${LABEL})` +
+    `|(?<lbl3>${LABEL})\\s*(?<sign3>[+-])\\s*(?<amt3>[\\d.,]+)` +
+    `|(?<lbl4>${LABEL})\\s*(?<sign4>[+-]?)\\s*(?<amt4>[\\d.,]+)\\s*EUR`,
+    'g'
+  );
   const matches = [...text.matchAll(markerRe)];
   const results = [];
   for(let i=0;i<matches.length;i++){
     const m = matches[i];
+    const g = m.groups;
     let sign, amtStr, typeLabel;
-    if(m[1]!==undefined){ sign=m[1]; amtStr=m[2]; typeLabel=m[3]; }
-    else { typeLabel=m[4]; sign=m[5]; amtStr=m[6]; }
+    if(g.amt1 !== undefined){ sign=g.sign1||'+'; amtStr=g.amt1; typeLabel=g.lbl1; }
+    else if(g.amt2 !== undefined){ sign=g.sign2; amtStr=g.amt2; typeLabel=g.lbl2; }
+    else if(g.amt3 !== undefined){ sign=g.sign3; amtStr=g.amt3; typeLabel=g.lbl3; }
+    else if(g.amt4 !== undefined){ sign=g.sign4||'+'; amtStr=g.amt4; typeLabel=g.lbl4; }
+    else continue;
     const start = m.index + m[0].length;
     const end = i+1<matches.length ? matches[i+1].index : text.length;
     const block = text.slice(start, Math.min(end, start+700));
