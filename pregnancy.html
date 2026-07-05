@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#ec4899">
+    <meta name="description" content="تطبيق تتبع الحمل الشامل - معلومات أسبوعية مفصلة وتذكيرات وتمارين">
+    <title>🤰 تطبيق تتبع الحمل - Pregnancy Tracker</title>
+    <link rel="manifest" href="data:application/json,{\"name\":\"تطبيق تتبع الحمل\",\"short_name\":\"Pregnancy Tracker\",\"start_url\":\"/\",\"display\":\"standalone\",\"theme_color\":\"#ec4899\",\"background_color\":\"#ffffff\"}">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            direction: rtl;
+            scroll-behavior: smooth;
+        }
+
+        :root {
+            --primary: #ec4899;
+            --primary-dark: #db2777;
+            --secondary: #a855f7;
+            --light: #fdf2f8;
+            --border: #f3e8ff;
+            --text: #1f2937;
+            --text-light: #6b7280;
+        }
+
+        body.dark-mode {
+            --light: #1f2937;
+            --border: #374151;
+            --text: #f3f4f6;
+            --text-light: #d1d5db;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--light) 0%, #f5f3ff 100%);
+            color: var(--text);
+            min-height: 100vh;
+            transition: background 0.3s ease;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            padding: 2rem 1rem;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            border-radius: 20px;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 30px rgba(236, 72, 153, 0.3);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 2rem;
+        }
+
+        .date-input, .btn {
+            padding: 0.75rem 1.5rem;
+            border: 2px solid var(--primary);
+            border-radius: 10px;
+            background: white;
+            color: var(--text);
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .date-input {
+            border-color: var(--border);
+            background: var(--light);
+        }
+
+        .date-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(236, 72, 153, 0.4);
+        }
+
+        .btn-small {
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+            border: 2px solid var(--border);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-label {
+            color: var(--text-light);
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .stat-subtext {
+            color: var(--text-light);
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+        }
+
+        /* Progress Bar */
+        .progress-section {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            margin-bottom: 2rem;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 12px;
+            background: var(--border);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            width: 0%;
+            transition: width 0.5s ease;
+            border-radius: 10px;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            padding: 1rem;
+            cursor: pointer;
+            font-size: 1rem;
+            color: var(--text-light);
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+        }
+
+        .tab-btn.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Week Card */
+        .week-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            border: 2px solid var(--border);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .week-card:hover {
+            transform: translateX(-5px);
+            box-shadow: 0 8px 20px rgba(236, 72, 153, 0.2);
+        }
+
+        .week-card.active {
+            border-color: var(--primary);
+            background: linear-gradient(135deg, rgba(236, 72, 153, 0.05) 0%, rgba(168, 85, 247, 0.05) 100%);
+        }
+
+        .week-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .week-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .week-stage {
+            color: var(--text-light);
+            font-size: 0.9rem;
+        }
+
+        .week-content {
+            display: none;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 2px solid var(--border);
+        }
+
+        .week-content.show {
+            display: block;
+        }
+
+        .week-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .info-box {
+            padding: 1rem;
+            background: var(--light);
+            border-radius: 10px;
+            border: 1px solid var(--border);
+        }
+
+        .info-label {
+            color: var(--text-light);
+            font-size: 0.85rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .info-value {
+            font-weight: bold;
+            color: var(--primary);
+            font-size: 1.2rem;
+        }
+
+        /* Checklist */
+        .checklist {
+            margin: 1rem 0;
+        }
+
+        .checklist-item {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem;
+            background: var(--light);
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .checklist-item:hover {
+            background: var(--border);
+        }
+
+        .checklist-item input[type="checkbox"] {
+            margin-right: 1rem;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .checklist-item.checked {
+            opacity: 0.6;
+            text-decoration: line-through;
+        }
+
+        /* Tips and Exercises */
+        .tips-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .tip-card {
+            background: linear-gradient(135deg, rgba(236, 72, 153, 0.1) 0%, rgba(168, 85, 247, 0.1) 100%);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .tip-title {
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .tip-text {
+            color: var(--text-light);
+            font-size: 0.95rem;
+        }
+
+        /* Dark Mode Toggle */
+        .dark-toggle {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            width: 50px;
+            height: 50px;
+            background: white;
+            border: 2px solid var(--primary);
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            box-shadow: 0 5px 15px rgba(236, 72, 153, 0.2);
+            transition: all 0.3s ease;
+            z-index: 100;
+        }
+
+        .dark-toggle:hover {
+            transform: scale(1.1);
+        }
+
+        body.dark-mode .dark-toggle {
+            background: #374151;
+            border-color: var(--secondary);
+        }
+
+        /* Due Date Box */
+        .due-date {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 30px rgba(236, 72, 153, 0.3);
+        }
+
+        .due-date-label {
+            font-size: 1rem;
+            opacity: 0.9;
+            margin-bottom: 0.5rem;
+        }
+
+        .due-date-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-light);
+            margin-top: 3rem;
+        }
+
+        /* Fetal Development Chart */
+        .chart-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            margin-bottom: 2rem;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .chart {
+            width: 100%;
+            height: 300px;
+            background: linear-gradient(to bottom, var(--light) 0%, white 100%);
+            border-radius: 10px;
+            position: relative;
+            margin-top: 1rem;
+        }
+
+        /* Reminders */
+        .reminder-item {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+            border-left: 4px solid #f59e0b;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .reminder-item.completed {
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            border-left-color: #10b981;
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .dark-toggle {
+                width: 45px;
+                height: 45px;
+                font-size: 1.2rem;
+            }
+
+            .tabs {
+                gap: 0.5rem;
+            }
+
+            .tab-btn {
+                padding: 0.75rem;
+                font-size: 0.9rem;
+            }
+        }
+
+        /* Accessibility */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation: none !important;
+                transition: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Dark Mode Toggle -->
+    <button class="dark-toggle" id="darkToggle" title="تبديل النسق المظلم">🌙</button>
+
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🤰 رحلة الحمل</h1>
+            <p>كل لحظة مميزة مع جنينك 💕</p>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls">
+            <label>تاريخ آخر دورة شهرية:</label>
+            <input type="date" id="startDate" class="date-input">
+            <button class="btn btn-small" onclick="resetDate()">إعادة تعيين</button>
+        </div>
+
+        <!-- Due Date -->
+        <div class="due-date">
+            <div class="due-date-label">📅 الموعد المتوقع للولادة</div>
+            <div class="due-date-value" id="dueDate">--/--/----</div>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">❤️ الأسبوع الحالي</div>
+                <div class="stat-value" id="weekCount">0</div>
+                <div class="stat-subtext" id="dayCount">و 0 أيام</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">⏱️ متبقي من الأيام</div>
+                <div class="stat-value" id="remainingDays">280</div>
+                <div class="stat-subtext" id="remainingWeeks">و 0 أسابيع</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">📊 نسبة التقدم</div>
+                <div class="stat-value" id="progressPercent">0%</div>
+                <div class="stat-subtext" id="trimesterName">الثلث الأول</div>
+            </div>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="progress-section">
+            <div class="progress-label">
+                <span>تقدم الحمل</span>
+                <span id="progressPercent2">0%</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('week')">📋 الأسبوع الحالي</button>
+            <button class="tab-btn" onclick="switchTab('checklist')">✅ قائمة التحضيرات</button>
+            <button class="tab-btn" onclick="switchTab('exercises')">💪 تمارين آمنة</button>
+            <button class="tab-btn" onclick="switchTab('tips')">💡 نصائح صحية</button>
+            <button class="tab-btn" onclick="switchTab('reminders')">🔔 التذكيرات</button>
+        </div>
+
+        <!-- Tab: Week -->
+        <div id="week" class="tab-content active">
+            <div class="week-card" id="currentWeekCard">
+                <div class="week-header">
+                    <div>
+                        <div class="week-title" id="weekTitle">الأسبوع --</div>
+                        <div class="week-stage" id="weekStage">--</div>
+                    </div>
+                    <span>👶</span>
+                </div>
+                <div class="week-content show" id="weekDetailsContent">
+                    <div class="week-info">
+                        <div class="info-box">
+                            <div class="info-label">حجم الجنين</div>
+                            <div class="info-value" id="babySize">--</div>
+                        </div>
+                        <div class="info-box">
+                            <div class="info-label">وزن الجنين</div>
+                            <div class="info-value" id="babyWeight">--</div>
+                        </div>
+                    </div>
+
+                    <div style="margin: 1rem 0;">
+                        <h4 style="margin-bottom: 0.5rem; color: var(--primary);">تطور الجنين:</h4>
+                        <p id="babyDevelopment" style="color: var(--text-light); line-height: 1.6;">--</p>
+                    </div>
+
+                    <div style="margin: 1rem 0;">
+                        <h4 style="margin-bottom: 0.5rem; color: var(--primary);">أعراض الأم:</h4>
+                        <ul class="checklist" id="motherSymptomsList"></ul>
+                    </div>
+
+                    <div style="margin: 1rem 0;">
+                        <h4 style="margin-bottom: 0.5rem; color: var(--primary);">💡 النصائح لهذا الأسبوع:</h4>
+                        <p id="weekTips" style="color: var(--text-light); line-height: 1.6;">--</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Checklist -->
+        <div id="checklist" class="tab-content">
+            <div class="week-card">
+                <div class="week-header">
+                    <div class="week-title">✅ قائمة تحضيرات الولادة</div>
+                </div>
+                <div class="week-content show">
+                    <div class="checklist" id="preparationChecklist"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Exercises -->
+        <div id="exercises" class="tab-content">
+            <div class="week-card">
+                <div class="week-header">
+                    <div class="week-title">💪 تمارين آمنة للحمل</div>
+                </div>
+                <div class="week-content show">
+                    <div class="tips-grid" id="exercisesGrid"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Tips -->
+        <div id="tips" class="tab-content">
+            <div class="tips-grid" id="tipsGrid"></div>
+        </div>
+
+        <!-- Tab: Reminders -->
+        <div id="reminders" class="tab-content">
+            <div class="week-card">
+                <div class="week-header">
+                    <div class="week-title">🔔 التذكيرات الطبية</div>
+                </div>
+                <div class="week-content show">
+                    <div id="remindersList"></div>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>💕 تطبيق تتبع الحمل - صُنع بـ ❤️ لجعل رحلة الحمل أسهل وأجمل</p>
+            <p style="margin-top: 1rem; font-size: 0.9rem;">استشيري طبيبك دائماً لأي قلق أو أسئلة</p>
+        </footer>
+    </div>
+
+    <script>
+        // =====================
+        // البيانات والإعدادات
+        // =====================
+
+        const pregnancyData = {
+            1: { title: "الأسبوع الأول", stage: "قبل الحمل", size: "خلية", weight: "-", development: "تحضير البويضة والحيوان المنوي", symptoms: ["قد لا تشعري بأي شيء"], tips: "احرصي على الصحة العامة" },
+            4: { title: "الأسبوع الرابع", stage: "بدء الحمل", size: "حبة خشخاش", weight: "< 1g", development: "انغراس البويضة الملقحة في الرحم", symptoms: ["تأخر الدورة", "غثيان طفيف", "إرهاق"], tips: "قومي باختبار حمل وتناولي حمض الفوليك" },
+            8: { title: "الأسبوع الثامن", stage: "نهاية الثلث الأول", size: "حبة التوت", weight: "1g", development: "القلب ينبض! الأطراف تظهر", symptoms: ["غثيان قد يكون قوياً", "تعب شديد"], tips: "تناولي وجبات صغيرة متكررة" },
+            12: { title: "الأسبوع الثاني عشر", stage: "نهاية الثلث الأول", size: "حبة الجوافة", weight: "14g", development: "أصابع اليد والقدم واضحة", symptoms: ["الغثيان قد يبدأ يخف", "إرهاق أقل"], tips: "استمتعي بتخفيف الأعراض" },
+            16: { title: "الأسبوع السادس عشر", stage: "بداية الثلث الثاني", size: "الأفوكادو", weight: "100g", development: "يمكن سماع نبض القلب", symptoms: ["الغثيان يختفي", "طاقة أفضل"], tips: "استمتعي بسماع نبض القلب" },
+            20: { title: "الأسبوع العشرون", stage: "منتصف الحمل", size: "الموزة", weight: "300g", development: "الأم تشعر بحركة الجنين", symptoms: ["رفرفة خفيفة", "زيادة الوزن"], tips: "لاحظي نمط حركات الجنين" },
+            24: { title: "الأسبوع الرابع والعشرون", stage: "الثلث الثاني", size: "حبة الذرة", weight: "600g", development: "الحواس تتطور، يسمع الأصوات", symptoms: ["حركات قوية", "ألم في الظهر"], tips: "ابدئي تمارين كيجل" },
+            28: { title: "الأسبوع الثامن والعشرون", stage: "بداية الثلث الثالث", size: "الباذنجانة", weight: "1000g", development: "الجنين قابل للحياة خارج الرحم", symptoms: ["حركات قوية", "صعوبة في النوم"], tips: "قومي بفحوصات السكري" },
+            32: { title: "الأسبوع الثاني والثلاثون", stage: "الثلث الثالث", size: "الأناناس", weight: "1500g", development: "اكتمال معظم الأعضاء", symptoms: ["نمط نوم واضح", "ألم في الظهر"], tips: "استرخي أكثر" },
+            36: { title: "الأسبوع السادس والثلاثون", stage: "الاستعداد للولادة", size: "الرومانة", weight: "2400g", development: "الجنين ينزل نحو الحوض", symptoms: ["انخفاض البطن", "ضغط على الحوض"], tips: "تجهزي حقيبة المستشفى" },
+            40: { title: "الأسبوع الأربعون", stage: "موعد الولادة", size: "شمام", weight: "3500g", development: "مكتمل النمو وجاهز للولادة", symptoms: ["تقلصات منتظمة", "قرب المخاض"], tips: "استعدي نفسياً للولادة" }
+        };
+
+        const preparationList = [
+            "شراء ملابس للمولود",
+            "تجهيز سرير الأطفال",
+            "شراء حفاضات وملابس داخلية",
+            "تجهيز حقيبة المستشفى",
+            "تثبيت مقعد السيارة",
+            "تحضير غرفة الأطفال",
+            "شراء زجاجات الرضاعة",
+            "كتب الأمومة والرضاعة",
+            "الفيتامينات والمكملات",
+            "كريم تشقق الحلمات"
+        ];
+
+        const exercisesList = [
+            { name: "المشي", desc: "مشي منتظم 20-30 دقيقة يومياً، آمن جداً" },
+            { name: "السباحة", desc: "تخفف الضغط على المفاصل، آمنة جداً" },
+            { name: "تمارين كيجل", desc: "تقوية عضلات قاع الحوض، ضرورية جداً" },
+            { name: "اليوجا", desc: "يوجا الحمل برفق، تحسن المرونة" },
+            { name: "التمدد الخفيف", desc: "تمدد أعضاء الجسم برفق، 10 دقائق" },
+            { name: "صعود السلالم", desc: "نشاط خفيف، 10-15 دقيقة" }
+        ];
+
+        const tipsList = [
+            { icon: "💧", title: "شرب الماء", desc: "اشربي 8-10 أكواب يومياً" },
+            { icon: "🥗", title: "التغذية", desc: "طعام صحي ومتوازن غني بالكالسيوم" },
+            { icon: "😴", title: "النوم", desc: "احصلي على 7-9 ساعات نوم يومياً" },
+            { icon: "🚶‍♀️", title: "الحركة", desc: "نشاط منتظم آمن للحمل" },
+            { icon: "🧘‍♀️", title: "الاسترخاء", desc: "تمارين التنفس والاسترخاء" },
+            { icon: "👨‍⚕️", title: "الفحوصات", desc: "زوري الطبيب بانتظام" }
+        ];
+
+        const remindersList = [
+            { week: 8, text: "أول موجات فوق صوتية" },
+            { week: 12, text: "فحص تثلث الجنين الأول" },
+            { week: 16, text: "فحص الدم (مستويات الفيتامينات)" },
+            { week: 20, text: "موجات فوق صوتية مفصلة" },
+            { week: 24, text: "فحص السكري" },
+            { week: 28, text: "أخذ لقاح الإنفلونزا" },
+            { week: 30, text: "فحص الضغط والسكر" },
+            { week: 36, text: "الفحص النهائي قبل الولادة" }
+        ];
+
+        // =====================
+        // الدوال الرئيسية
+        // =====================
+
+        function updatePregnancyInfo() {
+            const startDate = new Date(document.getElementById('startDate').value);
+            const today = new Date();
+            
+            const dueDate = new Date(startDate);
+            dueDate.setDate(dueDate.getDate() + 280);
+            
+            const diffDays = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
+            const weeks = Math.floor(diffDays / 7);
+            const days = diffDays % 7;
+            
+            const remainingTime = dueDate - today;
+            const remainingDays = Math.ceil(remainingTime / (1000 * 60 * 60 * 24));
+            const remainingWeeks = Math.floor(remainingDays / 7);
+            
+            // تحديث الإحصائيات
+            document.getElementById('weekCount').textContent = weeks;
+            document.getElementById('dayCount').textContent = `و ${days} أيام`;
+            document.getElementById('remainingDays').textContent = remainingDays;
+            document.getElementById('remainingWeeks').textContent = `و ${remainingWeeks} أسابيع`;
+            
+            const percent = Math.round((weeks / 40) * 100);
+            document.getElementById('progressPercent').textContent = percent + '%';
+            document.getElementById('progressPercent2').textContent = percent + '%';
+            document.getElementById('progressFill').style.width = percent + '%';
+            
+            // تحديد الثلث
+            let trimester = "الثلث الأول";
+            if (weeks >= 14) trimester = "الثلث الثاني";
+            if (weeks >= 28) trimester = "الثلث الثالث";
+            document.getElementById('trimesterName').textContent = trimester;
+            
+            // تحديث موعد الولادة
+            const dueDateStr = dueDate.toLocaleDateString('ar-EG', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            document.getElementById('dueDate').textContent = dueDateStr;
+            
+            // تحديث معلومات الأسبوع الحالي
+            updateCurrentWeekInfo(weeks);
+            
+            // حفظ التاريخ
+            localStorage.setItem('pregnancyStartDate', document.getElementById('startDate').value);
+        }
+
+        function updateCurrentWeekInfo(weeks) {
+            let weekInfo = pregnancyData[weeks] || pregnancyData[40];
+            
+            if (weeks < 4) weekInfo = pregnancyData[1];
+            else if (weeks < 8) weekInfo = pregnancyData[4];
+            else if (weeks < 12) weekInfo = pregnancyData[8];
+            else if (weeks < 16) weekInfo = pregnancyData[12];
+            else if (weeks < 20) weekInfo = pregnancyData[16];
+            else if (weeks < 24) weekInfo = pregnancyData[20];
+            else if (weeks < 28) weekInfo = pregnancyData[24];
+            else if (weeks < 32) weekInfo = pregnancyData[28];
+            else if (weeks < 36) weekInfo = pregnancyData[32];
+            else if (weeks < 40) weekInfo = pregnancyData[36];
+            
+            document.getElementById('weekTitle').textContent = weekInfo.title;
+            document.getElementById('weekStage').textContent = weekInfo.stage;
+            document.getElementById('babySize').textContent = weekInfo.size;
+            document.getElementById('babyWeight').textContent = weekInfo.weight;
+            document.getElementById('babyDevelopment').textContent = weekInfo.development;
+            document.getElementById('weekTips').textContent = weekInfo.tips;
+            
+            // تحديث قائمة الأعراض
+            const symptomsList = document.getElementById('motherSymptomsList');
+            symptomsList.innerHTML = '';
+            weekInfo.symptoms.forEach(symptom => {
+                const li = document.createElement('li');
+                li.className = 'checklist-item';
+                li.innerHTML = `<input type="checkbox"> <span>${symptom}</span>`;
+                li.addEventListener('click', function() {
+                    this.classList.toggle('checked');
+                    this.querySelector('input').checked = !this.querySelector('input').checked;
+                });
+                symptomsList.appendChild(li);
+            });
+        }
+
+        function switchTab(tab) {
+            // إخفاء جميع الأقسام
+            document.querySelectorAll('.tab-content').forEach(el => {
+                el.classList.remove('active');
+            });
+            
+            // إزالة active من الأزرار
+            document.querySelectorAll('.tab-btn').forEach(el => {
+                el.classList.remove('active');
+            });
+            
+            // إظهار القسم المختار
+            document.getElementById(tab).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        function resetDate() {
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            document.getElementById('startDate').value = `${year}-${month}-${day}`;
+            updatePregnancyInfo();
+        }
+
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            document.getElementById('darkToggle').textContent = isDark ? '☀️' : '🌙';
+            localStorage.setItem('darkMode', isDark);
+        }
+
+        function initializePreparationChecklist() {
+            const list = document.getElementById('preparationChecklist');
+            list.innerHTML = '';
+            preparationList.forEach((item, index) => {
+                const li = document.createElement('div');
+                li.className = 'checklist-item';
+                li.innerHTML = `<input type="checkbox" id="prep${index}"> <span>${item}</span>`;
+                li.addEventListener('click', function() {
+                    this.classList.toggle('checked');
+                    this.querySelector('input').checked = !this.querySelector('input').checked;
+                });
+                list.appendChild(li);
+            });
+        }
+
+        function initializeExercises() {
+            const grid = document.getElementById('exercisesGrid');
+            grid.innerHTML = '';
+            exercisesList.forEach(exercise => {
+                const div = document.createElement('div');
+                div.className = 'tip-card';
+                div.innerHTML = `<div class="tip-title">💪 ${exercise.name}</div><div class="tip-text">${exercise.desc}</div>`;
+                grid.appendChild(div);
+            });
+        }
+
+        function initializeTips() {
+            const grid = document.getElementById('tipsGrid');
+            grid.innerHTML = '';
+            tipsList.forEach(tip => {
+                const div = document.createElement('div');
+                div.className = 'tip-card';
+                div.innerHTML = `<div class="tip-title">${tip.icon} ${tip.title}</div><div class="tip-text">${tip.desc}</div>`;
+                grid.appendChild(div);
+            });
+        }
+
+        function initializeReminders() {
+            const list = document.getElementById('remindersList');
+            list.innerHTML = '';
+            remindersList.forEach(reminder => {
+                const div = document.createElement('div');
+                div.className = 'reminder-item';
+                div.innerHTML = `
+                    <span>
+                        <strong>الأسبوع ${reminder.week}:</strong> ${reminder.text}
+                    </span>
+                    <button class="btn btn-small" onclick="this.parentElement.classList.toggle('completed')">✓</button>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        // =====================
+        // الحدث الأول والاستهلال
+        // =====================
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // تحميل التاريخ المحفوظ
+            const savedDate = localStorage.getItem('pregnancyStartDate');
+            if (savedDate) {
+                document.getElementById('startDate').value = savedDate;
+            } else {
+                resetDate();
+            }
+            
+            // تحميل النسق المظلم
+            if (localStorage.getItem('darkMode') === 'true') {
+                document.body.classList.add('dark-mode');
+                document.getElementById('darkToggle').textContent = '☀️';
+            }
+            
+            // تهيئة العناصر
+            initializePreparationChecklist();
+            initializeExercises();
+            initializeTips();
+            initializeReminders();
+            
+            // تحديث البيانات
+            updatePregnancyInfo();
+            
+            // إضافة مستمع للتاريخ
+            document.getElementById('startDate').addEventListener('change', updatePregnancyInfo);
+            
+            // إضافة مستمع للنسق المظلم
+            document.getElementById('darkToggle').addEventListener('click', toggleDarkMode);
+            
+            // تحديث البيانات كل دقيقة
+            setInterval(updatePregnancyInfo, 60000);
+        });
+
+        // تسجيل Service Worker للعمل بدون إنترنت
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('data:application/javascript,self.addEventListener("fetch",e=>e.respondWith(fetch(e.request).catch(()=>new Response("Offline",{status:503}))))').catch(() => {});
+        }
+    </script>
+</body>
+</html>
