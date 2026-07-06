@@ -183,7 +183,7 @@ const SYM_NAME={};METALS.forEach(([s,n])=>SYM_NAME[s]=n);
 const NAME_SYM={GOLD:'GC=F',SILVER:'SI=F',PLATINUM:'PL=F',PALLADIUM:'PA=F',COPPER:'HG=F',OIL:'CL=F',BRENT:'BZ=F',NATGAS:'NG=F',NASDAQ:'^NDX',SPX:'^GSPC',DOW:'^DJI'};
 
 const YF_TF={'1m':['1m','1d'],'5m':['5m','5d'],'15m':['15m','5d'],'30m':['30m','1mo'],'1h':['60m','1mo'],'4h':['60m','3mo'],'1d':['1d','1y'],'1w':['1wk','5y']};
-const PROXIES=[u=>`https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,u=>`https://corsproxy.io/?url=${encodeURIComponent(u)}`,u=>`https://thingproxy.freeboard.io/fetch/${u}`];
+const PROXIES=[u=>`https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,u=>`https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(u)}`,u=>`https://corsproxy.io/?url=${encodeURIComponent(u)}`];
 async function yahooCandles(sym,tf,limit){
   const [iv,range]=YF_TF[tf]||['1d','1y'];
   const url=`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=${iv}&range=${range}`;
@@ -209,7 +209,7 @@ let symbol=LASTSYM[market]||'BTCUSDT';
 let tf=store.get('tf')||'15m';
 let candles=[],depth=null,topPairs=[];
 let mainChart=null,candleSeries=null,volSeries=null,overlaySeries={},priceLines=[],subPanes={},indCache={};
-let pollTimer=null,alertTimer=null,syncing=false,fmt=null,loadSeq=0;
+let pollTimer=null,alertTimer=null,syncing=false,fmt=null,loadSeq=0,loading=false;
 const chartsEl=$('#charts'),mainEl=$('#mainPane');
 const isCrypto=()=>market==='crypto';
 
@@ -224,6 +224,7 @@ function macdArr(c,f=12,s=26,sg=9){const ef=ema(c,f),es=ema(c,s);const m=ef.map(
 function bbArr(c,n=20,mu=2){const mid=sma(c,n),u=[],l=[];for(let i=0;i<c.length;i++){if(mid[i]==null){u.push(null);l.push(null);continue;}let s=0;for(let j=i-n+1;j<=i;j++)s+=(c[j]-mid[i])**2;const sd=Math.sqrt(s/n);u.push(mid[i]+mu*sd);l.push(mid[i]-mu*sd);}return{u,m:mid,l};}
 function vwapArr(c){const o=[];let cum=0,cv=0,day=null;for(const b of c){const d=new Date(b.time*1000).getUTCDate();if(d!==day){day=d;cum=0;cv=0;}const tp=(b.high+b.low+b.close)/3;cum+=tp*b.volume;cv+=b.volume;o.push(cv?cum/cv:null);}return o;}
 const toLine=v=>candles.map((b,i)=>({time:b.time,value:v[i]})).filter(p=>p.value!=null&&isFinite(p.value));
+const fullLine=v=>candles.map((b,i)=>(v[i]!=null&&isFinite(v[i]))?{time:b.time,value:v[i]}:{time:b.time});
 function metricSeries(kind,cds){const close=cds.map(c=>c.close);if(kind==='price')return close;if(kind==='rsi')return rsiArr(cds,14);if(kind==='smi')return smiArr(cds).smi;if(kind==='stochk')return stochRsiArr(cds).k;return close;}
 
 /* ---------- charts ---------- */
@@ -250,7 +251,10 @@ function hookSync(chart){
       try{c.setCrosshairPosition(price,param.time,s);}catch(_){}});
   });
 }
-function buildMain(){if(mainChart)mainChart.remove();overlaySeries={};volSeries=null;priceLines=[];subPanes={};
+function buildMain(){if(mainChart){try{mainChart.remove();}catch(_){}}
+  Object.values(subPanes).forEach(p=>{try{p.chart.remove();}catch(_){}try{p.el.remove();}catch(_){}});
+  document.querySelectorAll('#charts .pane.sub').forEach(el=>el.remove());
+  overlaySeries={};volSeries=null;priceLines=[];subPanes={};
   mainChart=LightweightCharts.createChart(mainEl,baseOpts(mainEl));
   candleSeries=mainChart.addCandlestickSeries({upColor:'#22ab94',downColor:'#f23645',wickUpColor:'#22ab94',wickDownColor:'#f23645',borderVisible:false});
   hookSync(mainChart);}
@@ -272,7 +276,11 @@ function addSubPane(id,title){const el=document.createElement('div');el.classNam
   const p={el,chart,series:{},valsEl:el.querySelector('.paneVals')};subPanes[id]=p;return p;}
 
 /* ---------- data ---------- */
-async function jfetch(url){const r=await fetch(url);if(!r.ok){let m='';try{m=(await r.json()).msg||'';}catch(_){}throw new Error(m||('HTTP '+r.status));}return r.json();}
+async function jfetch(url){
+  try{const r=await fetch(url);if(r.ok)return await r.json();}catch(_){}
+  for(const p of PROXIES){try{const r=await fetch(p(url));if(r.ok){const t=await r.text();try{return JSON.parse(t);}catch(_){}}}catch(_){}}
+  throw new Error('network / CORS blocked');
+}
 async function getCandles(limit=500){if(isCrypto()){const S=SOURCES[src];return S.klineParse(await jfetch(S.klineUrl(symbol,S.tf[tf],limit)));}return yahooCandles(symbol,tf,limit);}
 async function loadTop(){
   if(!isCrypto()){topPairs=(market==='metals'?METALS.map(m=>m[0]):STOCKS).slice(0,100);renderQuick();fillPairList();return;}
@@ -280,18 +288,19 @@ async function loadTop(){
   renderQuick();fillPairList();}
 async function loadDepth(){if(!isCrypto()){depth=null;return;}try{const S=SOURCES[src];depth=S.depthParse(await jfetch(S.depthUrl(symbol)));}catch(_){depth=null;}}
 async function loadData(spin=true,structure=true){
-  const seq=++loadSeq;if(spin)setStatus('load','loading');
+  const seq=++loadSeq;const tok=market+'|'+src+'|'+symbol+'|'+tf;loading=true;if(spin)setStatus('load','loading');
   try{
-    const cds=await getCandles(500);if(seq!==loadSeq)return;
+    const cds=await getCandles(500);if(seq!==loadSeq||tok!==market+'|'+src+'|'+symbol+'|'+tf)return;
     if(!cds.length)throw new Error('no data for '+symbol);
     candles=cds;setFmt();$('#overlayMsg').style.display='none';
-    await loadDepth();if(seq!==loadSeq)return;
+    await loadDepth();if(seq!==loadSeq||tok!==market+'|'+src+'|'+symbol+'|'+tf)return;
     redrawAll(structure);updateHeader();computeSignal();setStatus('live','live');
   }catch(e){if(seq!==loadSeq)return;setStatus('err','offline');$('#overlayMsg').style.display='flex';
     $('#overlayMsg').innerHTML=`⚠️ Couldn't load <b>&nbsp;${dispName()}&nbsp;</b> on <b>${srcName()}</b>.<br>${e.message||''}<br><br>${isCrypto()?'Try another source (SRC row) or check the symbol.':'Metals & stocks route through a public proxy — it may be rate-limited. Try again, or switch timeframe.'}`;}
+  finally{loading=false;}
 }
-async function pollLast(){try{const S=SOURCES[src];const arr=S.klineParse(await jfetch(S.klineUrl(symbol,S.tf[tf],2)));for(const b of arr){const l=lastBar();if(l&&b.time===l.time)candles[candles.length-1]=b;else if(!l||b.time>l.time)candles.push(b);}redrawAll(false);updateHeader();computeSignal();setStatus('live','live');}catch(_){}}
-function startPoll(){clearInterval(pollTimer);pollTimer=setInterval(()=>{if(isCrypto()){pollLast();if(Math.random()<.34)loadDepth();}else{loadData(false,false);}},isCrypto()?4000:15000);}
+async function pollLast(){const sym=symbol,t=tf,mk=market;try{const S=SOURCES[src];const arr=S.klineParse(await jfetch(S.klineUrl(symbol,S.tf[tf],2)));if(sym!==symbol||t!==tf||mk!==market)return;for(const b of arr){const l=lastBar();if(l&&b.time===l.time)candles[candles.length-1]=b;else if(!l||b.time>l.time)candles.push(b);}redrawAll(false);updateHeader();computeSignal();setStatus('live','live');}catch(_){}}
+function startPoll(){clearInterval(pollTimer);pollTimer=setInterval(()=>{if(isCrypto()){if(!loading)pollLast();if(Math.random()<.34)loadDepth();}else{if(!loading)loadData(false,false);}},isCrypto()?4000:15000);}
 function setStatus(c,t){const d=$('#dot');if(!d)return;d.className='';if(c==='live')d.classList.add('live');if(c==='err')d.classList.add('err');$('#statusTxt').textContent=t;}
 function updateHeader(){const b=lastBar();if(!b)return;const f=candles[0],chg=b.close-f.open,pct=100*chg/f.open;
   $('#lastPrice').textContent=fnum(b.close);$('#lastPrice').className=chg>=0?'up':'dn';
@@ -344,10 +353,10 @@ function drawSubs(structure){const active=OSCS.filter(o=>o.on).map(o=>o.id);
   for(const id of Object.keys(subPanes))if(!active.includes(id)){subPanes[id].chart.remove();subPanes[id].el.remove();delete subPanes[id];}
   const close=candles.map(c=>c.close);
   for(const o of OSCS){if(!o.on)continue;let p=subPanes[o.id]||addSubPane(o.id,o.label);const S=p.series,mk=(c,w)=>p.chart.addLineSeries({color:c,lineWidth:w,lastValueVisible:false,priceLineVisible:false});
-    if(o.id==='smi'){const {smi,sig}=smiArr(candles);if(!S.a){S.a=mk('#4f8cff',2);S.b=mk('#ff9f43',2);[40,-40].forEach(v=>S.a.createPriceLine({price:v,color:'#3a4566',lineStyle:2,lineWidth:1,axisLabelVisible:false}));S.a.createPriceLine({price:0,color:'#26304d',lineStyle:2,lineWidth:1,axisLabelVisible:false});}S.a.setData(toLine(smi));S.b.setData(toLine(sig));p.valsEl.innerHTML=`<span style="color:#4f8cff">K ${smi.at(-1)!=null?smi.at(-1).toFixed(1):'—'}</span> <span style="color:#ff9f43">D ${sig.at(-1)!=null?sig.at(-1).toFixed(1):'—'}</span>`;}
-    if(o.id==='stochrsi'){const {k,d}=stochRsiArr(close);if(!S.a){S.a=mk('#e8b45a',2);S.b=mk('#4f8cff',2);[80,20].forEach(v=>S.a.createPriceLine({price:v,color:'#3a4566',lineStyle:2,lineWidth:1,axisLabelVisible:false}));}S.a.setData(toLine(k));S.b.setData(toLine(d));p.valsEl.innerHTML=`<span style="color:#e8b45a">K ${k.at(-1)!=null?k.at(-1).toFixed(1):'—'}</span> <span style="color:#4f8cff">D ${d.at(-1)!=null?d.at(-1).toFixed(1):'—'}</span>`;}
-    if(o.id==='rsi'){const r=rsiArr(candles,14);if(!S.a){S.a=mk('#b48cff',2);[70,30].forEach(v=>S.a.createPriceLine({price:v,color:'#3a4566',lineStyle:2,lineWidth:1,axisLabelVisible:false}));}S.a.setData(toLine(r));p.valsEl.innerHTML=`<span style="color:#b48cff">${r.at(-1)!=null?r.at(-1).toFixed(1):'—'}</span>`;}
-    if(o.id==='macd'){const {m,sig,h}=macdArr(close);if(!S.h){S.h=p.chart.addHistogramSeries({lastValueVisible:false,priceLineVisible:false});S.a=mk('#4f8cff',2);S.b=mk('#ff9f43',2);}S.h.setData(candles.map((b,i)=>({time:b.time,value:h[i]==null?0:h[i],color:(h[i]||0)>=0?'#22ab9466':'#f2364566'})));S.a.setData(toLine(m));S.b.setData(toLine(sig));p.valsEl.innerHTML=`<span style="color:#4f8cff">${m.at(-1)!=null?m.at(-1).toFixed(2):'—'}</span> <span style="color:#ff9f43">${sig.at(-1)!=null?sig.at(-1).toFixed(2):'—'}</span>`;}}
+    if(o.id==='smi'){const {smi,sig}=smiArr(candles);if(!S.a){S.a=mk('#4f8cff',2);S.b=mk('#ff9f43',2);[40,-40].forEach(v=>S.a.createPriceLine({price:v,color:'#3a4566',lineStyle:2,lineWidth:1,axisLabelVisible:false}));S.a.createPriceLine({price:0,color:'#26304d',lineStyle:2,lineWidth:1,axisLabelVisible:false});}S.a.setData(fullLine(smi));S.b.setData(fullLine(sig));p.valsEl.innerHTML=`<span style="color:#4f8cff">K ${smi.at(-1)!=null?smi.at(-1).toFixed(1):'—'}</span> <span style="color:#ff9f43">D ${sig.at(-1)!=null?sig.at(-1).toFixed(1):'—'}</span>`;}
+    if(o.id==='stochrsi'){const {k,d}=stochRsiArr(close);if(!S.a){S.a=mk('#e8b45a',2);S.b=mk('#4f8cff',2);[80,20].forEach(v=>S.a.createPriceLine({price:v,color:'#3a4566',lineStyle:2,lineWidth:1,axisLabelVisible:false}));}S.a.setData(fullLine(k));S.b.setData(fullLine(d));p.valsEl.innerHTML=`<span style="color:#e8b45a">K ${k.at(-1)!=null?k.at(-1).toFixed(1):'—'}</span> <span style="color:#4f8cff">D ${d.at(-1)!=null?d.at(-1).toFixed(1):'—'}</span>`;}
+    if(o.id==='rsi'){const r=rsiArr(candles,14);if(!S.a){S.a=mk('#b48cff',2);[70,30].forEach(v=>S.a.createPriceLine({price:v,color:'#3a4566',lineStyle:2,lineWidth:1,axisLabelVisible:false}));}S.a.setData(fullLine(r));p.valsEl.innerHTML=`<span style="color:#b48cff">${r.at(-1)!=null?r.at(-1).toFixed(1):'—'}</span>`;}
+    if(o.id==='macd'){const {m,sig,h}=macdArr(close);if(!S.h){S.h=p.chart.addHistogramSeries({lastValueVisible:false,priceLineVisible:false});S.a=mk('#4f8cff',2);S.b=mk('#ff9f43',2);}S.h.setData(candles.map((b,i)=>({time:b.time,value:h[i]==null?0:h[i],color:(h[i]||0)>=0?'#22ab9466':'#f2364566'})));S.a.setData(fullLine(m));S.b.setData(fullLine(sig));p.valsEl.innerHTML=`<span style="color:#4f8cff">${m.at(-1)!=null?m.at(-1).toFixed(2):'—'}</span> <span style="color:#ff9f43">${sig.at(-1)!=null?sig.at(-1).toFixed(2):'—'}</span>`;}}
   resizeAll();if(mainChart){const r=mainChart.timeScale().getVisibleLogicalRange();if(r)allCharts().forEach(c=>c.timeScale().setVisibleLogicalRange(r));}}
 function resizeAll(){if(mainChart)mainChart.applyOptions({width:mainEl.clientWidth,height:mainEl.clientHeight});for(const k in subPanes){const p=subPanes[k];p.chart.applyOptions({width:p.el.clientWidth,height:p.el.clientHeight});}}
 window.addEventListener('resize',resizeAll);
