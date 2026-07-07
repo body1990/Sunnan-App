@@ -177,10 +177,25 @@ const SOURCES={
 };
 
 /* ---------- metals & stocks (Yahoo via proxy) ---------- */
-const METALS=[['GC=F','GOLD'],['SI=F','SILVER'],['PL=F','PLATINUM'],['PA=F','PALLADIUM'],['HG=F','COPPER'],['CL=F','OIL WTI'],['BZ=F','BRENT'],['NG=F','NAT GAS'],['ALI=F','ALUMINUM']];
-const STOCKS='AAPL MSFT NVDA AMZN AVGO META TSLA GOOGL GOOG COST NFLX TMUS PLTR CSCO AMD PEP LIN INTU TXN QCOM AMGN ISRG BKNG ADBE HON AMAT CMCSA GILD VRTX ADP PANW MU ADI MELI LRCX INTC REGN KLAC SBUX CDNS CRWD SNPS MDLZ MAR CTAS ORLY CEG ASML CSX ABNB WDAY FTNT PYPL MNST ADSK ROP NXPI PCAR AEP DASH TTD CPRT ROST CHTR KDP PAYX FANG ODFL FAST EA VRSK EXC CTSH GEHC KHC DDOG XEL LULU CCEP BKR TEAM IDXX ZS ANSS ON CDW BIIB MRVL DXCM GFS TTWO WBD MDB ARM SMCI DLTR MRNA ZM COIN'.split(' ');
-const SYM_NAME={};METALS.forEach(([s,n])=>SYM_NAME[s]=n);
-const NAME_SYM={GOLD:'GC=F',SILVER:'SI=F',PLATINUM:'PL=F',PALLADIUM:'PA=F',COPPER:'HG=F',OIL:'CL=F',BRENT:'BZ=F',NATGAS:'NG=F',NASDAQ:'^NDX',SPX:'^GSPC',DOW:'^DJI'};
+SOURCES.bybit={name:'Bybit',tf:{'1m':'1','5m':'5','15m':'15','30m':'30','1h':'60','4h':'240','1d':'D','1w':'W'},
+  klineUrl:(s,t,l)=>`https://api.bybit.com/v5/market/kline?category=spot&symbol=${s}&interval=${t}&limit=${Math.min(l,1000)}`,
+  klineParse:r=>(((r.result&&r.result.list)||[]).map(k=>({time:Math.floor(+k[0]/1000),open:+k[1],high:+k[2],low:+k[3],close:+k[4],volume:+k[5]}))).sort((a,b)=>a.time-b.time),
+  depthUrl:s=>`https://api.bybit.com/v5/market/orderbook?category=spot&symbol=${s}&limit=200`,
+  depthParse:d=>({bids:((d.result&&d.result.b)||[]).map(x=>[+x[0],+x[1]]),asks:((d.result&&d.result.a)||[]).map(x=>[+x[0],+x[1]])}),
+  topUrl:()=>`https://api.bybit.com/v5/market/tickers?category=spot`,
+  topParse:d=>((d.result&&d.result.list)||[]).filter(x=>x.symbol.endsWith('USDT')).sort((p,q)=>(+q.turnover24h||0)-(+p.turnover24h||0)).map(x=>x.symbol)};
+
+/* stocks = xStocks on Bybit (label -> bybit pair) */
+const STOCKS=[['AAPL','AAPLXUSDT'],['MSFT','MSFTXUSDT'],['NVDA','NVDAXUSDT'],['TSLA','TSLAXUSDT'],['AMZN','AMZNXUSDT'],['GOOGL','GOOGLXUSDT'],['META','METAXUSDT'],['NFLX','NFLXXUSDT'],['AMD','AMDXUSDT'],['AVGO','AVGOXUSDT'],['COIN','COINXUSDT'],['HOOD','HOODXUSDT'],['MSTR','MSTRXUSDT'],['CRCL','CRCLXUSDT'],['PLTR','PLTRXUSDT'],['SPY','SPYXUSDT'],['QQQ','QQQXUSDT'],['MCD','MCDXUSDT'],['KO','KOXUSDT'],['DIS','DISXUSDT'],['JPM','JPMXUSDT'],['V','VXUSDT'],['MA','MAXUSDT'],['WMT','WMTXUSDT'],['ORCL','ORCLXUSDT'],['INTC','INTCXUSDT'],['CSCO','CSCOXUSDT'],['ABNB','ABNBXUSDT'],['UBER','UBERXUSDT'],['PYPL','PYPLXUSDT'],['GME','GMEXUSDT'],['AZN','AZNXUSDT'],['NInvalidPlaceholder','']].filter(x=>x[1]);
+/* metals = crypto gold token (label, exchange, pair) */
+const METALS=[['GOLD','binance','PAXGUSDT'],['GOLD·XAUT','bybit','XAUTUSDT']];
+/* instrument registry: pair -> {label, ex, market} */
+const INSTR={};
+STOCKS.forEach(([l,s])=>INSTR[s]={label:l,ex:'bybit',market:'stocks'});
+METALS.forEach(([l,ex,s])=>INSTR[s]={label:l,ex,market:'metals'});
+const LABEL_SYM={};STOCKS.forEach(([l,s])=>LABEL_SYM[l.toUpperCase()]=s);METALS.forEach(([l,ex,s])=>LABEL_SYM[l.toUpperCase().replace('·XAUT','')]=LABEL_SYM[l.toUpperCase().replace('·XAUT','')]||s);
+const SYM_NAME={};Object.keys(INSTR).forEach(s=>SYM_NAME[s]=INSTR[s].label);
+const NAME_SYM=LABEL_SYM;
 
 const YF_TF={'1m':['1m','1d'],'5m':['5m','5d'],'15m':['15m','5d'],'30m':['30m','1mo'],'1h':['60m','1mo'],'4h':['60m','3mo'],'1d':['1d','1y'],'1w':['1wk','5y']};
 const PROXIES=[u=>`https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,u=>`https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(u)}`,u=>`https://corsproxy.io/?url=${encodeURIComponent(u)}`];
@@ -204,7 +219,7 @@ const OSCS=[{id:'smi',label:'SMI',c:'#4f8cff',on:true},{id:'stochrsi',label:'STO
 /* ---------- state ---------- */
 let market=store.get('market')||'crypto';
 let src=store.get('src')||'binance';
-const LASTSYM=jget('lastsym',{crypto:'BTCUSDT',metals:'GC=F',stocks:'AAPL'});
+const LASTSYM=jget('lastsym',{crypto:'BTCUSDT',metals:'PAXGUSDT',stocks:'AAPLXUSDT'});
 let symbol=LASTSYM[market]||'BTCUSDT';
 let tf=store.get('tf')||'15m';
 let candles=[],depth=null,topPairs=[];
@@ -261,8 +276,9 @@ function buildMain(){if(mainChart){try{mainChart.remove();}catch(_){}}
 const lastBar=()=>candles.length?candles[candles.length-1]:null;
 function setFmt(){const p=lastBar()?lastBar().close:1;const dp=p>=1000?2:p>=1?3:p>=0.01?5:8;fmt=new Intl.NumberFormat('en-US',{minimumFractionDigits:Math.min(dp,2),maximumFractionDigits:dp});}
 const fnum=v=>(v==null||!isFinite(v))?'—':(fmt?fmt.format(v):v);
-const dispName=()=>SYM_NAME[symbol]||symbol;
-const srcName=()=>isCrypto()?SOURCES[src].name:'Yahoo';
+const exFor=()=>isCrypto()?src:((INSTR[symbol]&&INSTR[symbol].ex)||'binance');
+const dispName=()=>isCrypto()?symbol.replace('USDT',''):((INSTR[symbol]&&INSTR[symbol].label)||symbol);
+const srcName=()=>{const e=exFor();return (SOURCES[e]&&SOURCES[e].name)||e;};
 function renderMainLegend(b){if(!b){$('#mainLegend').innerHTML='';return;}const up=b.close>=b.open,cls=up?'up':'dn';
   const parts=[`<b>${dispName()}</b> · ${TF_LABEL[tf]} · ${srcName()}`,
     `O <span class="${cls}">${fnum(b.open)}</span> H <span class="${cls}">${fnum(b.high)}</span> L <span class="${cls}">${fnum(b.low)}</span> C <span class="${cls}">${fnum(b.close)}</span>`];
@@ -281,12 +297,13 @@ async function jfetch(url){
   for(const p of PROXIES){try{const r=await fetch(p(url));if(r.ok){const t=await r.text();try{return JSON.parse(t);}catch(_){}}}catch(_){}}
   throw new Error('network / CORS blocked');
 }
-async function getCandles(limit=500){if(isCrypto()){const S=SOURCES[src];return S.klineParse(await jfetch(S.klineUrl(symbol,S.tf[tf],limit)));}return yahooCandles(symbol,tf,limit);}
+async function getCandles(limit=500){const S=SOURCES[exFor()];return S.klineParse(await jfetch(S.klineUrl(symbol,S.tf[tf],limit)));}
 async function loadTop(){
-  if(!isCrypto()){topPairs=(market==='metals'?METALS.map(m=>m[0]):STOCKS).slice(0,100);renderQuick();fillPairList();return;}
+  if(market==='stocks'){topPairs=STOCKS.map(s=>s[1]);renderQuick();fillPairList();return;}
+  if(market==='metals'){topPairs=METALS.map(m=>m[2]);renderQuick();fillPairList();return;}
   try{const S=SOURCES[src];const raw=await jfetch(S.topUrl());topPairs=S.topParse(raw).slice(0,100);}catch(e){topPairs=['BTCUSDT','ETHUSDT','SOLUSDT','INJUSDT','HYPEUSDT','MONUSDT','AKTUSDT','BNBUSDT','XRPUSDT'];}
   renderQuick();fillPairList();}
-async function loadDepth(){if(!isCrypto()){depth=null;return;}try{const S=SOURCES[src];depth=S.depthParse(await jfetch(S.depthUrl(symbol)));}catch(_){depth=null;}}
+async function loadDepth(){const S=SOURCES[exFor()];if(!S||!S.depthUrl){depth=null;return;}try{depth=S.depthParse(await jfetch(S.depthUrl(symbol)));}catch(_){depth=null;}}
 async function loadData(spin=true,structure=true){
   const seq=++loadSeq;const tok=market+'|'+src+'|'+symbol+'|'+tf;loading=true;if(spin)setStatus('load','loading');
   try{
@@ -299,8 +316,8 @@ async function loadData(spin=true,structure=true){
     $('#overlayMsg').innerHTML=`⚠️ Couldn't load <b>&nbsp;${dispName()}&nbsp;</b> on <b>${srcName()}</b>.<br>${e.message||''}<br><br>${isCrypto()?'Try another source (SRC row) or check the symbol.':'Metals & stocks route through a public proxy — it may be rate-limited. Try again, or switch timeframe.'}`;}
   finally{loading=false;}
 }
-async function pollLast(){const sym=symbol,t=tf,mk=market;try{const S=SOURCES[src];const arr=S.klineParse(await jfetch(S.klineUrl(symbol,S.tf[tf],2)));if(sym!==symbol||t!==tf||mk!==market)return;for(const b of arr){const l=lastBar();if(l&&b.time===l.time)candles[candles.length-1]=b;else if(!l||b.time>l.time)candles.push(b);}redrawAll(false);updateHeader();computeSignal();setStatus('live','live');}catch(_){}}
-function startPoll(){clearInterval(pollTimer);pollTimer=setInterval(()=>{if(isCrypto()){if(!loading)pollLast();if(Math.random()<.34)loadDepth();}else{if(!loading)loadData(false,false);}},isCrypto()?4000:15000);}
+async function pollLast(){const sym=symbol,t=tf,mk=market,S=SOURCES[exFor()];if(!S)return;try{const arr=S.klineParse(await jfetch(S.klineUrl(symbol,S.tf[tf],3)));if(sym!==symbol||t!==tf||mk!==market)return;for(const b of arr){const l=lastBar();if(l&&b.time===l.time)candles[candles.length-1]=b;else if(!l||b.time>l.time)candles.push(b);}redrawAll(false);updateHeader();computeSignal();setStatus('live','live');}catch(_){}}
+function startPoll(){clearInterval(pollTimer);pollTimer=setInterval(()=>{if(!loading)pollLast();if(Math.random()<.34)loadDepth();},5000);}
 function setStatus(c,t){const d=$('#dot');if(!d)return;d.className='';if(c==='live')d.classList.add('live');if(c==='err')d.classList.add('err');$('#statusTxt').textContent=t;}
 function updateHeader(){const b=lastBar();if(!b)return;const f=candles[0],chg=b.close-f.open,pct=100*chg/f.open;
   $('#lastPrice').textContent=fnum(b.close);$('#lastPrice').className=chg>=0?'up':'dn';
@@ -373,8 +390,8 @@ function renderAlerts(){const box=$('#alertList');if(!alerts.length){box.innerHT
   box.innerHTML=alerts.map(a=>`<div class="alertItem ${a.fired?'fired':''}"><span>${SYM_NAME[a.sym]||a.sym} · ${a.kind.toUpperCase()} ${a.tf.toUpperCase()} ${({lt:'<',gt:'>',cu:'↗',cd:'↘'})[a.cond]} ${a.value}${a.fired?' · ✅':''}</span><button class="x" data-id="${a.id}">del</button></div>`).join('');
   box.querySelectorAll('.x').forEach(x=>x.onclick=()=>{alerts=alerts.filter(a=>a.id!==x.dataset.id);jset('alerts',alerts);renderAlerts();});}
 function addAlert(){const kind=$('#alKind').value,tfv=$('#alTf').value,cond=$('#alCond').value,value=parseFloat($('#alVal').value);if(!isFinite(value)){toast('Enter a value');return;}
-  alerts.push({id:Math.random().toString(36).slice(2,9),mk:market,src,sym:symbol,kind,tf:tfv,cond,value,fired:false});jset('alerts',alerts);renderAlerts();$('#alVal').value='';toast('Alert added · '+dispName());}
-async function fetchFor(a){if(a.mk&&a.mk!=='crypto')return yahooCandles(a.sym,a.tf,300);const S=SOURCES[a.src||'binance'];return S.klineParse(await jfetch(S.klineUrl(a.sym,S.tf[a.tf],300)));}
+  alerts.push({id:Math.random().toString(36).slice(2,9),mk:market,ex:exFor(),sym:symbol,kind,tf:tfv,cond,value,fired:false});jset('alerts',alerts);renderAlerts();$('#alVal').value='';toast('Alert added · '+dispName());}
+async function fetchFor(a){const S=SOURCES[a.ex||a.src||'binance'];return S.klineParse(await jfetch(S.klineUrl(a.sym,S.tf[a.tf],300)));}
 async function checkAlerts(){if(!alerts.length)return;const groups={};
   for(const a of alerts){if(a.fired&&(a.cond==='lt'||a.cond==='gt'))continue;(groups[(a.mk||'crypto')+'|'+(a.src||'')+'|'+a.sym+'|'+a.tf]=groups[(a.mk||'crypto')+'|'+(a.src||'')+'|'+a.sym+'|'+a.tf]||[]).push(a);}
   for(const key in groups){const g=groups[key];let cds;
@@ -388,25 +405,26 @@ function startAlertLoop(){clearInterval(alertTimer);alertTimer=setInterval(check
 
 /* ---------- UI ---------- */
 function ensureStatus(){let st=$('#status');if(!st){st=document.createElement('span');st.id='status';st.innerHTML='<span id="dot"></span><span id="statusTxt">connecting</span>';$('#srcRow').appendChild(st);}return st;}
-function renderSrc(){const row=$('#srcRow');row.querySelectorAll('.chip').forEach(x=>x.remove());
-  if(isCrypto()){for(const k of Object.keys(SOURCES)){const b=document.createElement('button');b.className='chip src'+(k===src?' on':'');b.textContent=SOURCES[k].name;b.onclick=()=>{src=k;store.set('src',k);renderSrc();topPairs=[];loadTop();loadData();};row.insertBefore(b,$('#status'));}}
-  else{const b=document.createElement('button');b.className='chip src on';b.textContent='Yahoo Finance';row.insertBefore(b,$('#status'));}
-  ensureStatus();}
+function renderSrc(){const row=$('#srcRow');row.querySelectorAll('.chip').forEach(x=>x.remove());ensureStatus();
+  if(isCrypto()){for(const k of Object.keys(SOURCES)){const b=document.createElement('button');b.className='chip src'+(k===src?' on':'');b.textContent=SOURCES[k].name;b.onclick=()=>{src=k;store.set('src',k);renderSrc();topPairs=[];loadTop();buildMain();loadData();};row.insertBefore(b,$('#status'));}}
+  else{const b=document.createElement('button');b.className='chip src on';b.textContent=market==='stocks'?'Bybit · xStocks':'Gold token (PAXG)';row.insertBefore(b,$('#status'));}}
 function fillPairList(){const dl=$('#pairList');const list=topPairs.length?topPairs:[];dl.innerHTML=list.map(s=>`<option value="${s}">${SYM_NAME[s]?SYM_NAME[s]:''}</option>`).join('');}
+function labelOf(s){return SYM_NAME[s]||s.replace('USDT','');}
 function renderQuick(){const row=$('#quickRow');row.querySelectorAll('.chip').forEach(x=>x.remove());
   const list=topPairs.length?topPairs:['BTCUSDT','ETHUSDT','SOLUSDT'];
-  for(const s of list){const b=document.createElement('button');b.className='chip'+(s===symbol?' on':'');b.textContent=SYM_NAME[s]||s.replace('USDT','');b.onclick=()=>setSymbol(s);row.appendChild(b);}}
+  for(const s of list){const b=document.createElement('button');b.className='chip'+(s===symbol?' on':'');b.textContent=labelOf(s);b.onclick=()=>setSymbol(s);row.appendChild(b);}}
 function renderTf(){const row=$('#tfRow');row.querySelectorAll('.chip').forEach(x=>x.remove());for(const k of TF_KEYS){const b=document.createElement('button');b.className='chip'+(k===tf?' on':'');b.textContent=TF_LABEL[k];b.onclick=()=>{tf=k;store.set('tf',k);renderTf();loadData();};row.appendChild(b);}}
 function renderIndChips(){const row=$('#indRow');row.querySelectorAll('.chip').forEach(x=>x.remove());for(const o of [...OVERLAYS,...OSCS]){const b=document.createElement('button');b.className='chip ind'+(o.on?' on':'');b.style.setProperty('--c',o.c);b.textContent=o.label;b.onclick=()=>{o.on=!o.on;renderIndChips();if(OSCS.includes(o))drawSubs(true);else{redrawAll(true);computeSignal();}};row.appendChild(b);}}
 function setSymbol(s){symbol=s;LASTSYM[market]=s;jset('lastsym',LASTSYM);$('#symInput').value=s;$('#alSym').textContent=SYM_NAME[s]||s;renderQuick();loadData();}
-function switchMarket(m){market=m;store.set('market',m);src=store.get('src')||'binance';symbol=LASTSYM[m]||(m==='metals'?'GC=F':m==='stocks'?'AAPL':'BTCUSDT');
+function switchMarket(m){market=m;store.set('market',m);src=store.get('src')||'binance';symbol=LASTSYM[m]||(m==='metals'?'PAXGUSDT':m==='stocks'?'AAPLXUSDT':'BTCUSDT');
   $('#symInput').value=symbol;$('#symInput').style.textTransform=isCrypto()?'uppercase':'none';$('#alSym').textContent=SYM_NAME[symbol]||symbol;
   renderSrc();topPairs=[];loadTop();buildMain();loadData();startPoll();}
 $('#catSel').value=market;
 $('#catSel').onchange=e=>switchMarket(e.target.value);
-$('#symInput').addEventListener('keydown',e=>{if(e.key!=='Enter')return;let v=e.target.value.trim();
-  if(isCrypto()){v=v.toUpperCase();if(v&&!/USDT$|USDC$|BTC$|ETH$|FDUSD$/.test(v))v+='USDT';}
-  else{const up=v.toUpperCase();if(NAME_SYM[up])v=NAME_SYM[up];else v=up;}
+$('#symInput').addEventListener('keydown',e=>{if(e.key!=='Enter')return;let v=e.target.value.trim().toUpperCase();
+  if(isCrypto()){if(v&&!/USDT$|USDC$|BTC$|ETH$|FDUSD$/.test(v))v+='USDT';}
+  else if(market==='stocks'){if(LABEL_SYM[v])v=LABEL_SYM[v];else if(!v.endsWith('USDT'))v=v+'XUSDT';}
+  else{if(LABEL_SYM[v])v=LABEL_SYM[v];}
   e.target.value=v;setSymbol(v);e.target.blur();});
 
 function fillTfSelect(){$('#alTf').innerHTML=TF_KEYS.map(k=>`<option value="${k}"${k===tf?' selected':''}>${TF_LABEL[k]}</option>`).join('');}
