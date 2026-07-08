@@ -79,6 +79,7 @@
     <option value="crypto">Crypto</option>
     <option value="metals">Metals</option>
     <option value="stocks">Stocks</option>
+    <option value="onchain">On-chain</option>
   </select>
   <input id="symInput" value="BTCUSDT" spellcheck="false" autocomplete="off" enterkeyhint="go" list="pairList" aria-label="Symbol">
   <datalist id="pairList"></datalist>
@@ -197,19 +198,21 @@ const LABEL_SYM={};STOCKS.forEach(([l,s])=>LABEL_SYM[l.toUpperCase()]=s);METALS.
 const SYM_NAME={};Object.keys(INSTR).forEach(s=>SYM_NAME[s]=INSTR[s].label);
 const NAME_SYM=LABEL_SYM;
 
-const YF_TF={'1m':['1m','1d'],'5m':['5m','5d'],'15m':['15m','5d'],'30m':['30m','1mo'],'1h':['60m','1mo'],'4h':['60m','3mo'],'1d':['1d','1y'],'1w':['1wk','5y']};
 const PROXIES=[u=>`https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,u=>`https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(u)}`,u=>`https://corsproxy.io/?url=${encodeURIComponent(u)}`];
-async function yahooCandles(sym,tf,limit){
-  const [iv,range]=YF_TF[tf]||['1d','1y'];
-  const url=`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(sym)}?interval=${iv}&range=${range}`;
-  let data=null,err;
-  for(const p of PROXIES){try{const r=await fetch(p(url));if(!r.ok)throw new Error('HTTP '+r.status);data=await r.json();if(data&&data.chart)break;}catch(e){err=e;}}
-  if(!data||!data.chart)throw err||new Error('proxy failed');
-  const res=data.chart.result&&data.chart.result[0];
-  if(!res)throw new Error((data.chart.error&&data.chart.error.description)||'no data');
-  const ts=res.timestamp||[],q=res.indicators.quote[0],out=[];
-  for(let i=0;i<ts.length;i++){if(q.open[i]==null||q.close[i]==null)continue;out.push({time:ts[i],open:q.open[i],high:q.high[i],low:q.low[i],close:q.close[i],volume:q.volume[i]||0});}
-  return out.slice(-limit);
+
+/* ---------- on-chain metrics: BGeometrics (bitcoin-data.com) free API ---------- */
+const OC_BASE='https://bitcoin-data.com/v1/';
+async function ocSeries(paths){
+  let raw=null;for(const p of (Array.isArray(paths)?paths:[paths])){try{raw=await jfetch(OC_BASE+p);if(raw)break;}catch(_){}}
+  if(!raw)throw new Error('metric unavailable');
+  const arr=Array.isArray(raw)?raw:(raw.data||raw.result||[]);
+  return arr.map(row=>{
+    let tt=null,t=row.unixTs||row.unix||row.timestamp||row.ts;
+    if(t!=null){const s=String(t);tt=s.length>=13?Math.floor(+s/1000):+s;}
+    else{const ds=row.d||row.date||row.theDay||row.theDate||row.day;if(ds)tt=Math.floor(Date.parse(ds)/1000);}
+    let v=null;for(const k in row){if(/^(d|date|day|theDay|theDate|unixTs|unix|timestamp|ts)$/i.test(k))continue;const n=+row[k];if(isFinite(n))v=n;}
+    return{time:tt,value:v};
+  }).filter(p=>p.time&&isFinite(p.time)&&p.value!=null&&isFinite(p.value)).sort((a,b)=>a.time-b.time);
 }
 
 /* ---------- indicator toggles ---------- */
@@ -227,6 +230,8 @@ let mainChart=null,candleSeries=null,volSeries=null,overlaySeries={},priceLines=
 let pollTimer=null,alertTimer=null,syncing=false,fmt=null,loadSeq=0,loading=false;
 const chartsEl=$('#charts'),mainEl=$('#mainPane');
 const isCrypto=()=>market==='crypto';
+const isOnchain=()=>market==='onchain';
+let ocRefs=null,ocLastFetch=0;
 
 /* ---------- indicator math ---------- */
 const sma=(s,n)=>s.map((_,i)=>{if(i<n-1)return null;let x=0;for(let j=i-n+1;j<=i;j++)x+=s[j];return x/n;});
@@ -277,9 +282,9 @@ const lastBar=()=>candles.length?candles[candles.length-1]:null;
 function setFmt(){const p=lastBar()?lastBar().close:1;const dp=p>=1000?2:p>=1?3:p>=0.01?5:8;fmt=new Intl.NumberFormat('en-US',{minimumFractionDigits:Math.min(dp,2),maximumFractionDigits:dp});}
 const fnum=v=>(v==null||!isFinite(v))?'—':(fmt?fmt.format(v):v);
 const exFor=()=>isCrypto()?src:((INSTR[symbol]&&INSTR[symbol].ex)||'binance');
-const dispName=()=>isCrypto()?symbol.replace('USDT',''):((INSTR[symbol]&&INSTR[symbol].label)||symbol);
-const srcName=()=>{const e=exFor();return (SOURCES[e]&&SOURCES[e].name)||e;};
-function renderMainLegend(b){if(!b){$('#mainLegend').innerHTML='';return;}const up=b.close>=b.open,cls=up?'up':'dn';
+const dispName=()=>isOnchain()?'BTC Supply P/L':(isCrypto()?symbol.replace('USDT',''):((INSTR[symbol]&&INSTR[symbol].label)||symbol));
+const srcName=()=>{if(isOnchain())return'BGeometrics';const e=exFor();return (SOURCES[e]&&SOURCES[e].name)||e;};
+function renderMainLegend(b){if(isOnchain())return;if(!b){$('#mainLegend').innerHTML='';return;}const up=b.close>=b.open,cls=up?'up':'dn';
   const parts=[`<b>${dispName()}</b> · ${TF_LABEL[tf]} · ${srcName()}`,
     `O <span class="${cls}">${fnum(b.open)}</span> H <span class="${cls}">${fnum(b.high)}</span> L <span class="${cls}">${fnum(b.low)}</span> C <span class="${cls}">${fnum(b.close)}</span>`];
   const i=candles.findIndex(c=>c.time===b.time),idx=i>=0?i:candles.length-1,ln=[];
@@ -299,12 +304,14 @@ async function jfetch(url){
 }
 async function getCandles(limit=500){const S=SOURCES[exFor()];return S.klineParse(await jfetch(S.klineUrl(symbol,S.tf[tf],limit)));}
 async function loadTop(){
+  if(isOnchain()){topPairs=['BTC'];renderQuick();fillPairList();return;}
   if(market==='stocks'){topPairs=STOCKS.map(s=>s[1]);renderQuick();fillPairList();return;}
   if(market==='metals'){topPairs=METALS.map(m=>m[2]);renderQuick();fillPairList();return;}
   try{const S=SOURCES[src];const raw=await jfetch(S.topUrl());topPairs=S.topParse(raw).slice(0,100);}catch(e){topPairs=['BTCUSDT','ETHUSDT','SOLUSDT','INJUSDT','HYPEUSDT','MONUSDT','AKTUSDT','BNBUSDT','XRPUSDT'];}
   renderQuick();fillPairList();}
 async function loadDepth(){const S=SOURCES[exFor()];if(!S||!S.depthUrl){depth=null;return;}try{depth=S.depthParse(await jfetch(S.depthUrl(symbol)));}catch(_){depth=null;}}
 async function loadData(spin=true,structure=true){
+  if(isOnchain())return loadOnchain(spin);
   const seq=++loadSeq;const tok=market+'|'+src+'|'+symbol+'|'+tf;loading=true;if(spin)setStatus('load','loading');
   try{
     const cds=await getCandles(500);if(seq!==loadSeq||tok!==market+'|'+src+'|'+symbol+'|'+tf)return;
@@ -313,11 +320,60 @@ async function loadData(spin=true,structure=true){
     await loadDepth();if(seq!==loadSeq||tok!==market+'|'+src+'|'+symbol+'|'+tf)return;
     redrawAll(structure);updateHeader();computeSignal();setStatus('live','live');
   }catch(e){if(seq!==loadSeq)return;setStatus('err','offline');$('#overlayMsg').style.display='flex';
-    $('#overlayMsg').innerHTML=`⚠️ Couldn't load <b>&nbsp;${dispName()}&nbsp;</b> on <b>${srcName()}</b>.<br>${e.message||''}<br><br>${isCrypto()?'Try another source (SRC row) or check the symbol.':'Metals & stocks route through a public proxy — it may be rate-limited. Try again, or switch timeframe.'}`;}
+    $('#overlayMsg').innerHTML=`⚠️ Couldn't load <b>&nbsp;${dispName()}&nbsp;</b> on <b>${srcName()}</b>.<br>${e.message||''}<br><br>Try another source (SRC row) or check the symbol.`;}
   finally{loading=false;}
 }
+
+/* ---------- on-chain view (BTC price + % supply in profit/loss) ---------- */
+async function loadOnchain(spin=true){
+  const seq=++loadSeq;loading=true;if(spin)setStatus('load','loading');
+  try{
+    const S=SOURCES.binance;const kl=S.klineParse(await jfetch(S.klineUrl('BTCUSDT','1d',1000)));
+    if(seq!==loadSeq||!isOnchain())return;
+    const price=kl.map(c=>({time:c.time,value:c.close}));
+    let profit=[],loss=[];
+    try{profit=await ocSeries(['supply-in-profit','percent-supply-in-profit','utxo-in-profit-percent']);}catch(_){}
+    try{loss=await ocSeries(['supply-in-loss','percent-supply-in-loss','utxo-in-loss-percent']);}catch(_){}
+    if(seq!==loadSeq||!isOnchain())return;
+    const rescale=a=>{if(!a.length)return a;const mx=Math.max(...a.map(p=>p.value));return mx<=1.5?a.map(p=>({time:p.time,value:p.value*100})):a;};
+    profit=rescale(profit);loss=rescale(loss);
+    if(profit.length&&!loss.length)loss=profit.map(p=>({time:p.time,value:100-p.value}));
+    if(loss.length&&!profit.length)profit=loss.map(p=>({time:p.time,value:100-p.value}));
+    if(!profit.length&&!loss.length)throw new Error('on-chain metric unavailable right now');
+    $('#overlayMsg').style.display='none';
+    renderOnchain(price,profit,loss);setStatus('live','on-chain · daily');ocLastFetch=Date.now();
+  }catch(e){if(seq!==loadSeq)return;setStatus('err','offline');$('#overlayMsg').style.display='flex';
+    $('#overlayMsg').innerHTML=`⚠️ Couldn't load on-chain data.<br>${e.message||''}<br><br>The free BGeometrics API (bitcoin-data.com) may be busy or blocked on this network. Try again shortly.`;}
+  finally{loading=false;}
+}
+function renderOnchain(price,profit,loss){
+  buildMain();
+  try{mainChart.removeSeries(candleSeries);}catch(_){}candleSeries=null;
+  candles=price.map(p=>({time:p.time,open:p.value,high:p.value,low:p.value,close:p.value,volume:0}));setFmt();
+  mainChart.priceScale('right').applyOptions({mode:1,borderColor:'#1e2740'});
+  const priceS=mainChart.addLineSeries({priceScaleId:'right',color:'#ffffff',lineWidth:2,priceLineVisible:false,lastValueVisible:true,title:'BTC'});
+  priceS.setData(price);
+  mainChart.priceScale('left').applyOptions({visible:true,scaleMargins:{top:0.06,bottom:0.06},borderColor:'#1e2740'});
+  const profitS=mainChart.addLineSeries({priceScaleId:'left',color:'#e8b45a',lineWidth:1,priceLineVisible:false,lastValueVisible:true,title:'% profit'});
+  const lossS=mainChart.addLineSeries({priceScaleId:'left',color:'#f23645',lineWidth:1,priceLineVisible:false,lastValueVisible:true,title:'% loss'});
+  profitS.setData(profit);lossS.setData(loss);
+  profitS.createPriceLine({price:50,color:'#3a4566',lineStyle:2,lineWidth:1,axisLabelVisible:true,title:'50%'});
+  ocRefs={priceS,profitS,lossS,price,profit,loss};
+  mainChart.subscribeCrosshairMove(param=>{if(isOnchain())renderOnchainLegend(param);});
+  mainChart.timeScale().fitContent();renderOnchainLegend(null);
+}
+function renderOnchainLegend(param){
+  if(!ocRefs)return;const at=(arr,key)=>{if(param&&param.seriesData&&param.seriesData.get(ocRefs[key])){const d=param.seriesData.get(ocRefs[key]);return d.value;}const a=ocRefs[key.replace('S','')];return a&&a.length?a[a.length-1].value:null;};
+  const pr=at('price','priceS'),pf=at('profit','profitS'),ls=at('loss','lossS');
+  $('#mainLegend').innerHTML=`<b>BTC</b> · Supply in Profit / Loss · <span style="color:var(--dim)">daily · BGeometrics</span><br>`+
+    `<span style="color:#ffffff">Price ${pr!=null?'$'+Number(pr).toLocaleString('en-US',{maximumFractionDigits:0}):'—'}</span>  `+
+    `<span style="color:#e8b45a">Profit ${pf!=null?pf.toFixed(2)+'%':'—'}</span>  `+
+    `<span style="color:#f23645">Loss ${ls!=null?ls.toFixed(2)+'%':'—'}</span>`;
+}
 async function pollLast(){const sym=symbol,t=tf,mk=market,S=SOURCES[exFor()];if(!S)return;try{const arr=S.klineParse(await jfetch(S.klineUrl(symbol,S.tf[tf],3)));if(sym!==symbol||t!==tf||mk!==market)return;for(const b of arr){const l=lastBar();if(l&&b.time===l.time)candles[candles.length-1]=b;else if(!l||b.time>l.time)candles.push(b);}redrawAll(false);updateHeader();computeSignal();setStatus('live','live');}catch(_){}}
-function startPoll(){clearInterval(pollTimer);pollTimer=setInterval(()=>{if(!loading)pollLast();if(Math.random()<.34)loadDepth();},5000);}
+function startPoll(){clearInterval(pollTimer);pollTimer=setInterval(()=>{
+  if(isOnchain()){if(!loading&&Date.now()-ocLastFetch>300000)loadOnchain(false);return;}
+  if(!loading)pollLast();if(Math.random()<.34)loadDepth();},5000);}
 function setStatus(c,t){const d=$('#dot');if(!d)return;d.className='';if(c==='live')d.classList.add('live');if(c==='err')d.classList.add('err');$('#statusTxt').textContent=t;}
 function updateHeader(){const b=lastBar();if(!b)return;const f=candles[0],chg=b.close-f.open,pct=100*chg/f.open;
   $('#lastPrice').textContent=fnum(b.close);$('#lastPrice').className=chg>=0?'up':'dn';
@@ -355,7 +411,7 @@ function drawSignalMarkers(smi,sig){if(!ov('sig')){candleSeries.setMarkers([]);r
     else if(smi[i-1]>=sig[i-1]&&smi[i]<sig[i]&&smi[i]>15)m.push({time:candles[i].time,position:'aboveBar',color:'#f23645',shape:'arrowDown',text:'S'});}
   candleSeries.setMarkers(m);}
 function renderSig(){const b=$('#sigBadge');b.className='';if(sigState.dir==='buy'){b.classList.add('buy');b.textContent='▲ BUY';}else if(sigState.dir==='sell'){b.classList.add('sell');b.textContent='▼ SELL';}else b.textContent='• WAIT';b.title=sigState.reason;}
-function redrawAll(structure=true){if(!candles.length)return;if(!mainChart)buildMain();candleSeries.setData(candles);computeOverlays();
+function redrawAll(structure=true){if(isOnchain())return;if(!candles.length)return;if(!mainChart)buildMain();candleSeries.setData(candles);computeOverlays();
   if(structure){for(const k in overlaySeries){const s=overlaySeries[k];(s.u?[s.u,s.m,s.l]:[s]).forEach(x=>{try{mainChart.removeSeries(x);}catch(_){}});}overlaySeries={};if(volSeries){try{mainChart.removeSeries(volSeries);}catch(_){}volSeries=null;}
     for(const o of OVERLAYS){if(!o.on)continue;
       if(o.id==='vol'){volSeries=mainChart.addHistogramSeries({priceScaleId:'vol',priceFormat:{type:'volume'},lastValueVisible:false,priceLineVisible:false});mainChart.priceScale('vol').applyOptions({scaleMargins:{top:0.84,bottom:0}});}
@@ -366,7 +422,7 @@ function redrawAll(structure=true){if(!candles.length)return;if(!mainChart)build
   if(overlaySeries.bb){const bb=bbArr(candles.map(c=>c.close));overlaySeries.bb.u.setData(toLine(bb.u));overlaySeries.bb.m.setData(toLine(bb.m));overlaySeries.bb.l.setData(toLine(bb.l));}
   for(const o of OVERLAYS){if(o.on&&overlaySeries[o.id]&&indCache[o.id])overlaySeries[o.id].setData(toLine(indCache[o.id]));}
   clearPriceLines();drawLiquidity();drawFib();drawSubs(structure);renderMainLegend(lastBar());}
-function drawSubs(structure){const active=OSCS.filter(o=>o.on).map(o=>o.id);
+function drawSubs(structure){if(isOnchain())return;const active=OSCS.filter(o=>o.on).map(o=>o.id);
   for(const id of Object.keys(subPanes))if(!active.includes(id)){subPanes[id].chart.remove();subPanes[id].el.remove();delete subPanes[id];}
   const close=candles.map(c=>c.close);
   for(const o of OSCS){if(!o.on)continue;let p=subPanes[o.id]||addSubPane(o.id,o.label);const S=p.series,mk=(c,w)=>p.chart.addLineSeries({color:c,lineWidth:w,lastValueVisible:false,priceLineVisible:false});
@@ -407,7 +463,7 @@ function startAlertLoop(){clearInterval(alertTimer);alertTimer=setInterval(check
 function ensureStatus(){let st=$('#status');if(!st){st=document.createElement('span');st.id='status';st.innerHTML='<span id="dot"></span><span id="statusTxt">connecting</span>';$('#srcRow').appendChild(st);}return st;}
 function renderSrc(){const row=$('#srcRow');row.querySelectorAll('.chip').forEach(x=>x.remove());ensureStatus();
   if(isCrypto()){for(const k of Object.keys(SOURCES)){const b=document.createElement('button');b.className='chip src'+(k===src?' on':'');b.textContent=SOURCES[k].name;b.onclick=()=>{src=k;store.set('src',k);renderSrc();topPairs=[];loadTop();buildMain();loadData();};row.insertBefore(b,$('#status'));}}
-  else{const b=document.createElement('button');b.className='chip src on';b.textContent=market==='stocks'?'Bybit · xStocks':'Gold token (PAXG)';row.insertBefore(b,$('#status'));}}
+  else{const b=document.createElement('button');b.className='chip src on';b.textContent=isOnchain()?'BGeometrics · on-chain':(market==='stocks'?'Bybit · xStocks':'Gold token (PAXG)');row.insertBefore(b,$('#status'));}}
 function fillPairList(){const dl=$('#pairList');const list=topPairs.length?topPairs:[];dl.innerHTML=list.map(s=>`<option value="${s}">${SYM_NAME[s]?SYM_NAME[s]:''}</option>`).join('');}
 function labelOf(s){return SYM_NAME[s]||s.replace('USDT','');}
 function renderQuick(){const row=$('#quickRow');row.querySelectorAll('.chip').forEach(x=>x.remove());
@@ -416,7 +472,7 @@ function renderQuick(){const row=$('#quickRow');row.querySelectorAll('.chip').fo
 function renderTf(){const row=$('#tfRow');row.querySelectorAll('.chip').forEach(x=>x.remove());for(const k of TF_KEYS){const b=document.createElement('button');b.className='chip'+(k===tf?' on':'');b.textContent=TF_LABEL[k];b.onclick=()=>{tf=k;store.set('tf',k);renderTf();loadData();};row.appendChild(b);}}
 function renderIndChips(){const row=$('#indRow');row.querySelectorAll('.chip').forEach(x=>x.remove());for(const o of [...OVERLAYS,...OSCS]){const b=document.createElement('button');b.className='chip ind'+(o.on?' on':'');b.style.setProperty('--c',o.c);b.textContent=o.label;b.onclick=()=>{o.on=!o.on;renderIndChips();if(OSCS.includes(o))drawSubs(true);else{redrawAll(true);computeSignal();}};row.appendChild(b);}}
 function setSymbol(s){symbol=s;LASTSYM[market]=s;jset('lastsym',LASTSYM);$('#symInput').value=s;$('#alSym').textContent=SYM_NAME[s]||s;renderQuick();loadData();}
-function switchMarket(m){market=m;store.set('market',m);src=store.get('src')||'binance';symbol=LASTSYM[m]||(m==='metals'?'PAXGUSDT':m==='stocks'?'AAPLXUSDT':'BTCUSDT');
+function switchMarket(m){market=m;store.set('market',m);src=store.get('src')||'binance';symbol=m==='onchain'?'BTC':(LASTSYM[m]||(m==='metals'?'PAXGUSDT':m==='stocks'?'AAPLXUSDT':'BTCUSDT'));
   $('#symInput').value=symbol;$('#symInput').style.textTransform=isCrypto()?'uppercase':'none';$('#alSym').textContent=SYM_NAME[symbol]||symbol;
   renderSrc();topPairs=[];loadTop();buildMain();loadData();startPoll();}
 $('#catSel').value=market;
