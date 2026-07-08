@@ -70,6 +70,30 @@
   #toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%) translateY(30px);opacity:0;transition:.25s;background:#182036;border:1px solid var(--line);color:var(--txt);font-size:12px;padding:10px 16px;border-radius:10px;z-index:60;pointer-events:none;max-width:90vw;text-align:center}
   #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
   .credit{font-size:9px;color:#3a4566;text-align:center;margin-top:14px}
+
+  /* data widgets (fear&greed / options / liq map) */
+  #panel{position:absolute;inset:0;z-index:9;background:var(--bg);overflow-y:auto;display:none;padding:14px 14px 30px}
+  #panel.show{display:block}
+  .wsec{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
+  .wsec h4{font-size:11px;letter-spacing:1px;color:var(--dim);text-transform:uppercase;margin-bottom:10px}
+  .splitbar{display:flex;height:34px;border-radius:9px;overflow:hidden;font-size:13px;font-weight:800}
+  .splitbar .c{background:linear-gradient(90deg,#1c7c63,#22ab94);color:#eafff8;display:flex;align-items:center;justify-content:center}
+  .splitbar .p{background:linear-gradient(90deg,#f23645,#b3222e);color:#fff;display:flex;align-items:center;justify-content:center}
+  .splitmeta{display:flex;justify-content:space-between;margin-top:7px;font-size:12px}
+  .splitmeta .cl{color:var(--up)} .splitmeta .pl{color:var(--dn)}
+  .bignum{font-size:26px;font-weight:800}
+  .kv{display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid var(--line)}
+  .kv:last-child{border-bottom:none}
+  .kv .k{color:var(--dim)}
+  .gauge{position:relative;width:220px;max-width:70vw;margin:6px auto 2px;aspect-ratio:2/1;overflow:hidden}
+  .gauge svg{width:100%;height:100%;display:block}
+  .gaugeVal{text-align:center;font-size:30px;font-weight:800;margin-top:-6px}
+  .gaugeLbl{text-align:center;font-size:13px;font-weight:700;margin-bottom:6px}
+  .fgrow{display:flex;justify-content:space-between;font-size:13px;padding:5px 0}
+  .pill{padding:3px 12px;border-radius:20px;font-weight:700;font-size:12px}
+  #panel iframe{width:100%;height:70vh;border:0;border-radius:12px;background:#0f0f1a}
+  .wnote{font-size:11px;color:var(--dim);line-height:1.6;margin-top:8px}
+  .wbtn{display:inline-block;margin-top:8px;background:var(--accent);color:#fff;font-weight:700;font-size:13px;padding:9px 14px;border-radius:9px;text-decoration:none}
 </style>
 </head>
 <body>
@@ -80,6 +104,9 @@
     <option value="metals">Metals</option>
     <option value="stocks">Stocks</option>
     <option value="onchain">On-chain</option>
+    <option value="fng">Fear/Greed</option>
+    <option value="options">Options</option>
+    <option value="liqmap">Liq Map</option>
   </select>
   <input id="symInput" value="BTCUSDT" spellcheck="false" autocomplete="off" enterkeyhint="go" list="pairList" aria-label="Symbol">
   <datalist id="pairList"></datalist>
@@ -102,6 +129,7 @@
     <button data-a="pct" title="Percent">%</button>
   </div>
   <div id="overlayMsg"></div>
+  <div id="panel"></div>
 </div>
 
 <div id="scrim"></div>
@@ -202,10 +230,12 @@ const PROXIES=[u=>`https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
 
 /* ---------- on-chain metrics: BGeometrics (bitcoin-data.com) free API ---------- */
 const OC_BASE='https://bitcoin-data.com/v1/';
-async function ocSeries(paths){
-  let raw=null;for(const p of (Array.isArray(paths)?paths:[paths])){try{raw=await jfetch(OC_BASE+p);if(raw)break;}catch(_){}}
-  if(!raw)throw new Error('metric unavailable');
-  const arr=Array.isArray(raw)?raw:(raw.data||raw.result||[]);
+async function ocFetch(url){
+  try{const r=await tfetch(url,6500);if(r.ok)return await r.json();}catch(_){}
+  try{const r=await tfetch(PROXIES[0](url),6500);if(r.ok){const t=await r.text();return JSON.parse(t);}}catch(_){}
+  return null;
+}
+function ocParse(arr){
   return arr.map(row=>{
     let tt=null,t=row.unixTs||row.unix||row.timestamp||row.ts;
     if(t!=null){const s=String(t);tt=s.length>=13?Math.floor(+s/1000):+s;}
@@ -213,6 +243,19 @@ async function ocSeries(paths){
     let v=null;for(const k in row){if(/^(d|date|day|theDay|theDate|unixTs|unix|timestamp|ts)$/i.test(k))continue;const n=+row[k];if(isFinite(n))v=n;}
     return{time:tt,value:v};
   }).filter(p=>p.time&&isFinite(p.time)&&p.value!=null&&isFinite(p.value)).sort((a,b)=>a.time-b.time);
+}
+async function ocSeries(paths){
+  for(const p of paths){const raw=await ocFetch(OC_BASE+p);if(!raw)continue;const arr=Array.isArray(raw)?raw:(raw.data||raw.result||[]);if(arr&&arr.length){const out=ocParse(arr);if(out.length)return out;}}
+  return [];
+}
+/* normalise profit/loss to 0-100% whatever the source returns (ratio / percent / absolute BTC) */
+function ocAlign(profit,loss){
+  if(!profit.length&&!loss.length)return{pf:[],ls:[]};
+  const base=profit.length?profit:loss;const mx=Math.max(...base.map(p=>p.value));
+  if(mx<=1.5){const pf=profit.map(p=>({time:p.time,value:p.value*100}));const ls=loss.length?loss.map(p=>({time:p.time,value:p.value*100})):pf.map(p=>({time:p.time,value:100-p.value}));return{pf,ls};}
+  if(mx<=100.5){const pf=profit.slice();const ls=loss.length?loss.slice():profit.map(p=>({time:p.time,value:100-p.value}));return{pf,ls};}
+  if(profit.length&&loss.length){const lm=new Map(loss.map(p=>[p.time,p.value]));const pf=[],ls=[];profit.forEach(p=>{const l=lm.get(p.time);if(l!=null){const t=p.value+l;if(t){pf.push({time:p.time,value:100*p.value/t});ls.push({time:p.time,value:100*l/t});}}});if(pf.length)return{pf,ls};}
+  const SUP=19900000;const pf=profit.map(p=>({time:p.time,value:Math.min(100,100*p.value/SUP)}));return{pf,ls:pf.map(p=>({time:p.time,value:100-p.value}))};
 }
 
 /* ---------- indicator toggles ---------- */
@@ -231,7 +274,9 @@ let pollTimer=null,alertTimer=null,syncing=false,fmt=null,loadSeq=0,loading=fals
 const chartsEl=$('#charts'),mainEl=$('#mainPane');
 const isCrypto=()=>market==='crypto';
 const isOnchain=()=>market==='onchain';
-let ocRefs=null,ocLastFetch=0;
+const WIDGETS=['fng','options','liqmap'];
+const isWidget=()=>WIDGETS.includes(market);
+let ocRefs=null,ocLastFetch=0,wLastFetch=0;
 
 /* ---------- indicator math ---------- */
 const sma=(s,n)=>s.map((_,i)=>{if(i<n-1)return null;let x=0;for(let j=i-n+1;j<=i;j++)x+=s[j];return x/n;});
@@ -297,13 +342,15 @@ function addSubPane(id,title){const el=document.createElement('div');el.classNam
   const p={el,chart,series:{},valsEl:el.querySelector('.paneVals')};subPanes[id]=p;return p;}
 
 /* ---------- data ---------- */
+async function tfetch(url,ms=8000){const c=new AbortController();const id=setTimeout(()=>c.abort(),ms);try{return await fetch(url,{signal:c.signal});}finally{clearTimeout(id);}}
 async function jfetch(url){
-  try{const r=await fetch(url);if(r.ok)return await r.json();}catch(_){}
-  for(const p of PROXIES){try{const r=await fetch(p(url));if(r.ok){const t=await r.text();try{return JSON.parse(t);}catch(_){}}}catch(_){}}
+  try{const r=await tfetch(url);if(r.ok)return await r.json();}catch(_){}
+  for(const p of PROXIES){try{const r=await tfetch(p(url));if(r.ok){const t=await r.text();try{return JSON.parse(t);}catch(_){}}}catch(_){}}
   throw new Error('network / CORS blocked');
 }
 async function getCandles(limit=500){const S=SOURCES[exFor()];return S.klineParse(await jfetch(S.klineUrl(symbol,S.tf[tf],limit)));}
 async function loadTop(){
+  if(isWidget())return;
   if(isOnchain()){topPairs=['BTC'];renderQuick();fillPairList();return;}
   if(market==='stocks'){topPairs=STOCKS.map(s=>s[1]);renderQuick();fillPairList();return;}
   if(market==='metals'){topPairs=METALS.map(m=>m[2]);renderQuick();fillPairList();return;}
@@ -312,6 +359,7 @@ async function loadTop(){
 async function loadDepth(){const S=SOURCES[exFor()];if(!S||!S.depthUrl){depth=null;return;}try{depth=S.depthParse(await jfetch(S.depthUrl(symbol)));}catch(_){depth=null;}}
 async function loadData(spin=true,structure=true){
   if(isOnchain())return loadOnchain(spin);
+  if(isWidget())return loadWidget(spin);
   const seq=++loadSeq;const tok=market+'|'+src+'|'+symbol+'|'+tf;loading=true;if(spin)setStatus('load','loading');
   try{
     const cds=await getCandles(500);if(seq!==loadSeq||tok!==market+'|'+src+'|'+symbol+'|'+tf)return;
@@ -326,27 +374,26 @@ async function loadData(spin=true,structure=true){
 
 /* ---------- on-chain view (BTC price + % supply in profit/loss) ---------- */
 async function loadOnchain(spin=true){
-  const seq=++loadSeq;loading=true;if(spin)setStatus('load','loading');
+  const seq=++loadSeq;loading=true;if(spin){setStatus('load','loading');$('#mainLegend').innerHTML='Loading BTC price…';}
   try{
     const S=SOURCES.binance;const kl=S.klineParse(await jfetch(S.klineUrl('BTCUSDT','1d',1000)));
     if(seq!==loadSeq||!isOnchain())return;
     const price=kl.map(c=>({time:c.time,value:c.close}));
-    let profit=[],loss=[];
-    try{profit=await ocSeries(['supply-in-profit','percent-supply-in-profit','utxo-in-profit-percent']);}catch(_){}
-    try{loss=await ocSeries(['supply-in-loss','percent-supply-in-loss','utxo-in-loss-percent']);}catch(_){}
-    if(seq!==loadSeq||!isOnchain())return;
-    const rescale=a=>{if(!a.length)return a;const mx=Math.max(...a.map(p=>p.value));return mx<=1.5?a.map(p=>({time:p.time,value:p.value*100})):a;};
-    profit=rescale(profit);loss=rescale(loss);
-    if(profit.length&&!loss.length)loss=profit.map(p=>({time:p.time,value:100-p.value}));
-    if(loss.length&&!profit.length)profit=loss.map(p=>({time:p.time,value:100-p.value}));
-    if(!profit.length&&!loss.length)throw new Error('on-chain metric unavailable right now');
     $('#overlayMsg').style.display='none';
-    renderOnchain(price,profit,loss);setStatus('live','on-chain · daily');ocLastFetch=Date.now();
+    renderOnchain(price);                       // 1) price shows immediately
+    setStatus('live','price · fetching on-chain…');
+    const profit=await ocSeries(['supply-in-profit','percent-supply-in-profit','utxo-in-profit','supply-in-profit-relative','profit-supply']);
+    const loss=await ocSeries(['supply-in-loss','percent-supply-in-loss','utxo-in-loss','loss-supply']);
+    if(seq!==loadSeq||!isOnchain())return;
+    const {pf,ls}=ocAlign(profit,loss);         // 2) metric arrives (or not)
+    if(pf.length){updateOnchainMetric(pf,ls);setStatus('live','on-chain · daily');}
+    else setStatus('live','price only · metric n/a');
+    ocLastFetch=Date.now();
   }catch(e){if(seq!==loadSeq)return;setStatus('err','offline');$('#overlayMsg').style.display='flex';
-    $('#overlayMsg').innerHTML=`⚠️ Couldn't load on-chain data.<br>${e.message||''}<br><br>The free BGeometrics API (bitcoin-data.com) may be busy or blocked on this network. Try again shortly.`;}
+    $('#overlayMsg').innerHTML=`⚠️ Couldn't load BTC price.<br>${e.message||''}<br><br>Check your connection and try again.`;}
   finally{loading=false;}
 }
-function renderOnchain(price,profit,loss){
+function renderOnchain(price){
   buildMain();
   try{mainChart.removeSeries(candleSeries);}catch(_){}candleSeries=null;
   candles=price.map(p=>({time:p.time,open:p.value,high:p.value,low:p.value,close:p.value,volume:0}));setFmt();
@@ -356,11 +403,116 @@ function renderOnchain(price,profit,loss){
   mainChart.priceScale('left').applyOptions({visible:true,scaleMargins:{top:0.06,bottom:0.06},borderColor:'#1e2740'});
   const profitS=mainChart.addLineSeries({priceScaleId:'left',color:'#e8b45a',lineWidth:1,priceLineVisible:false,lastValueVisible:true,title:'% profit'});
   const lossS=mainChart.addLineSeries({priceScaleId:'left',color:'#f23645',lineWidth:1,priceLineVisible:false,lastValueVisible:true,title:'% loss'});
-  profitS.setData(profit);lossS.setData(loss);
   profitS.createPriceLine({price:50,color:'#3a4566',lineStyle:2,lineWidth:1,axisLabelVisible:true,title:'50%'});
-  ocRefs={priceS,profitS,lossS,price,profit,loss};
+  ocRefs={priceS,profitS,lossS,price,profit:[],loss:[]};
   mainChart.subscribeCrosshairMove(param=>{if(isOnchain())renderOnchainLegend(param);});
   mainChart.timeScale().fitContent();renderOnchainLegend(null);
+}
+function updateOnchainMetric(pf,ls){if(!ocRefs)return;ocRefs.profit=pf;ocRefs.loss=ls;try{ocRefs.profitS.setData(pf);ocRefs.lossS.setData(ls);}catch(_){}renderOnchainLegend(null);}
+
+/* ================= data widgets ================= */
+function showPanel(on){const p=$('#panel');if(on){p.classList.add('show');}else{p.classList.remove('show');p.innerHTML='';}}
+async function loadWidget(spin=true){
+  const seq=++loadSeq;loading=true;if(spin)setStatus('load','loading');showPanel(true);
+  try{
+    if(market==='fng')await renderFng(seq);
+    else if(market==='options')await renderOptions(seq);
+    else if(market==='liqmap')renderLiqMap();
+    if(seq!==loadSeq||!isWidget())return;
+    setStatus('live',market==='liqmap'?'embed':'live');wLastFetch=Date.now();
+  }catch(e){if(seq!==loadSeq)return;setStatus('err','offline');
+    $('#panel').innerHTML=`<div class="wsec"><h4>Couldn't load</h4><div class="wnote">${e.message||'network error'}. This source may be busy or blocked on your network — try again shortly.</div></div>`;}
+  finally{loading=false;}
+}
+
+/* ---- Fear & Greed (alternative.me, free, no key) ---- */
+const FNG_COL=v=>v<25?'#f23645':v<46?'#e8834a':v<55?'#e8b45a':v<75?'#8dc63f':'#22ab94';
+const FNG_LBL=v=>v<25?'Extreme Fear':v<46?'Fear':v<55?'Neutral':v<75?'Greed':'Extreme Greed';
+async function renderFng(seq){
+  const d=await jfetch('https://api.alternative.me/fng/?limit=365');
+  if(seq!==loadSeq)return;
+  const arr=(d&&d.data)||[];if(!arr.length)throw new Error('no fear & greed data');
+  const cur=arr[0],v=+cur.value;const hist=arr.map(x=>({time:+x.timestamp,value:+x.value})).sort((a,b)=>a.time-b.time);
+  const y=arr[1],w=arr[7],m=arr[30];
+  const ang=-90+(v/100)*180, col=FNG_COL(v);
+  const row=(lbl,o)=>o?`<div class="fgrow"><span class="k" style="color:var(--dim)">${lbl}</span><span class="pill" style="background:${FNG_COL(+o.value)}22;color:${FNG_COL(+o.value)}">${FNG_LBL(+o.value)} · ${o.value}</span></div>`:'';
+  $('#panel').innerHTML=`
+    <div class="wsec">
+      <h4>Crypto Fear & Greed Index</h4>
+      <div class="gauge"><svg viewBox="0 0 100 50">
+        <path d="M5 50 A45 45 0 0 1 12.2 25" stroke="#f23645" stroke-width="9" fill="none"/>
+        <path d="M12.2 25 A45 45 0 0 1 32 7.5" stroke="#e8834a" stroke-width="9" fill="none"/>
+        <path d="M32 7.5 A45 45 0 0 1 68 7.5" stroke="#e8b45a" stroke-width="9" fill="none"/>
+        <path d="M68 7.5 A45 45 0 0 1 87.8 25" stroke="#8dc63f" stroke-width="9" fill="none"/>
+        <path d="M87.8 25 A45 45 0 0 1 95 50" stroke="#22ab94" stroke-width="9" fill="none"/>
+        <line x1="50" y1="50" x2="${50+38*Math.cos(ang*Math.PI/180)}" y2="${50+38*Math.sin(ang*Math.PI/180)}" stroke="${col}" stroke-width="2.5"/>
+        <circle cx="50" cy="50" r="4" fill="${col}"/>
+      </svg></div>
+      <div class="gaugeVal" style="color:${col}">${v}</div>
+      <div class="gaugeLbl" style="color:${col}">${FNG_LBL(v)}</div>
+      ${row('Yesterday',y)}${row('Last week',w)}${row('Last month',m)}
+    </div>
+    <div class="wsec"><h4>History (1y)</h4><div id="fngChart" style="height:260px"></div></div>`;
+  const el=$('#fngChart');const ch=LightweightCharts.createChart(el,baseOpts(el));
+  const s=ch.addAreaSeries({lineColor:col,topColor:col+'55',bottomColor:col+'08',lineWidth:2,priceLineVisible:false});
+  s.setData(hist);[25,55,75].forEach(l=>s.createPriceLine({price:l,color:'#3a4566',lineStyle:2,lineWidth:1,axisLabelVisible:false}));
+  ch.timeScale().fitContent();
+}
+
+/* ---- Options (Deribit public API) ---- */
+function parseInstr(n){const p=n.split('-');return{expiry:p[1],strike:+p[2],type:p[3]};}
+async function renderOptions(seq){
+  const cur=(store.get('optcur')||'BTC');
+  const d=await jfetch(`https://www.deribit.com/api/v2/public/get_book_summary_by_currency?currency=${cur}&kind=option`);
+  if(seq!==loadSeq)return;
+  const rows=(d&&d.result)||[];if(!rows.length)throw new Error('no options data from Deribit');
+  let callOI=0,putOI=0,callVol=0,putVol=0,spot=0;const byExp={};
+  for(const r of rows){const i=parseInstr(r.instrument_name);const oi=+r.open_interest||0,vol=+r.volume||0;if(r.underlying_price)spot=+r.underlying_price;
+    if(i.type==='C'){callOI+=oi;callVol+=vol;}else if(i.type==='P'){putOI+=oi;putVol+=vol;}
+    (byExp[i.expiry]=byExp[i.expiry]||[]).push({...i,oi});}
+  const oiTot=callOI+putOI,volTot=callVol+putVol;
+  const cPct=oiTot?100*callOI/oiTot:50, vcPct=volTot?100*callVol/volTot:50;
+  const pcr=callOI?putOI/callOI:0;
+  // nearest expiry max pain
+  const parseExp=e=>{const m={JAN:0,FEB:1,MAR:2,APR:3,MAY:4,JUN:5,JUL:6,AUG:7,SEP:8,OCT:9,NOV:10,DEC:11};const mm=e.match(/(\d{1,2})([A-Z]{3})(\d{2})/);return mm?new Date(2000+ +mm[3],m[mm[2]], +mm[1]).getTime():Infinity;};
+  const exps=Object.keys(byExp).sort((a,b)=>parseExp(a)-parseExp(b));const now=Date.now();
+  const nextExp=exps.find(e=>parseExp(e)>=now-864e5)||exps[0];
+  const maxPain=nextExp?computeMaxPain(byExp[nextExp]):null;
+  const usd=v=>'$'+(v>=1e9?(v/1e9).toFixed(2)+'B':v>=1e6?(v/1e6).toFixed(1)+'M':Math.round(v).toLocaleString());
+  $('#panel').innerHTML=`
+    <div class="wsec"><h4>Open Interest · Call vs Put (${cur})</h4>
+      <div class="splitbar"><div class="c" style="width:${cPct}%">${cPct.toFixed(1)}%</div><div class="p" style="width:${100-cPct}%">${(100-cPct).toFixed(1)}%</div></div>
+      <div class="splitmeta"><span class="cl">Calls ${callOI.toLocaleString(undefined,{maximumFractionDigits:1})} ${cur}</span><span class="pl">Puts ${putOI.toLocaleString(undefined,{maximumFractionDigits:1})} ${cur}</span></div>
+    </div>
+    <div class="wsec"><h4>Options Volume 24h · Call vs Put</h4>
+      <div class="splitbar"><div class="c" style="width:${vcPct}%">${vcPct.toFixed(1)}%</div><div class="p" style="width:${100-vcPct}%">${(100-vcPct).toFixed(1)}%</div></div>
+      <div class="splitmeta"><span class="cl">Calls ${callVol.toLocaleString(undefined,{maximumFractionDigits:1})} ${cur}</span><span class="pl">Puts ${putVol.toLocaleString(undefined,{maximumFractionDigits:1})} ${cur}</span></div>
+    </div>
+    <div class="wsec"><h4>Key metrics</h4>
+      <div class="kv"><span class="k">Put/Call ratio (OI)</span><span>${pcr.toFixed(3)}</span></div>
+      <div class="kv"><span class="k">Total open interest</span><span>${oiTot.toLocaleString(undefined,{maximumFractionDigits:0})} ${cur} · ${usd(oiTot*spot)}</span></div>
+      <div class="kv"><span class="k">Nearest expiry</span><span>${nextExp||'—'}</span></div>
+      <div class="kv"><span class="k">Max Pain (${nextExp||'—'})</span><span style="color:var(--gold);font-weight:800">${maxPain?usd(maxPain):'—'}</span></div>
+      <div class="kv"><span class="k">Spot (underlying)</span><span>${spot?usd(spot):'—'}</span></div>
+    </div>
+    <div class="wsec"><h4>Currency</h4><div class="btnrow">
+      <button class="chip ${cur==='BTC'?'on':''}" onclick="setOptCur('BTC')">BTC</button>
+      <button class="chip ${cur==='ETH'?'on':''}" onclick="setOptCur('ETH')">ETH</button></div>
+      <div class="wnote">Source: Deribit public API (the dominant crypto options venue). Max Pain = strike where option holders lose the most at expiry, computed from live open interest.</div>
+    </div>`;
+}
+function computeMaxPain(list){const strikes=[...new Set(list.map(o=>o.strike))].sort((a,b)=>a-b);let best=null,bestLoss=Infinity;
+  for(const K of strikes){let loss=0;for(const o of list){if(o.type==='C')loss+=o.oi*Math.max(0,K-o.strike);else if(o.type==='P')loss+=o.oi*Math.max(0,o.strike-K);}if(loss<bestLoss){bestLoss=loss;best=K;}}return best;}
+window.setOptCur=c=>{store.set('optcur',c);loadWidget(true);};
+
+/* ---- Liquidation Map (Coinglass — paid API; embed as iframe) ---- */
+function renderLiqMap(){
+  $('#panel').innerHTML=`
+    <div class="wsec"><h4>Liquidation Heatmap · BTC</h4>
+      <iframe src="https://www.coinglass.com/pro/futures/LiquidationHeatMap" loading="lazy" referrerpolicy="no-referrer"></iframe>
+      <div class="wnote">Liquidation heatmap data is Coinglass proprietary (no free API), so this embeds their public page. If it shows blank, Coinglass blocks embedding — open it directly:</div>
+      <a class="wbtn" href="https://www.coinglass.com/pro/futures/LiquidationHeatMap" target="_blank" rel="noopener">Open Coinglass ↗</a>
+    </div>`;
 }
 function renderOnchainLegend(param){
   if(!ocRefs)return;const at=(arr,key)=>{if(param&&param.seriesData&&param.seriesData.get(ocRefs[key])){const d=param.seriesData.get(ocRefs[key]);return d.value;}const a=ocRefs[key.replace('S','')];return a&&a.length?a[a.length-1].value:null;};
@@ -372,6 +524,7 @@ function renderOnchainLegend(param){
 }
 async function pollLast(){const sym=symbol,t=tf,mk=market,S=SOURCES[exFor()];if(!S)return;try{const arr=S.klineParse(await jfetch(S.klineUrl(symbol,S.tf[tf],3)));if(sym!==symbol||t!==tf||mk!==market)return;for(const b of arr){const l=lastBar();if(l&&b.time===l.time)candles[candles.length-1]=b;else if(!l||b.time>l.time)candles.push(b);}redrawAll(false);updateHeader();computeSignal();setStatus('live','live');}catch(_){}}
 function startPoll(){clearInterval(pollTimer);pollTimer=setInterval(()=>{
+  if(isWidget()){if(market!=='liqmap'&&!loading&&Date.now()-wLastFetch>60000)loadWidget(false);return;}
   if(isOnchain()){if(!loading&&Date.now()-ocLastFetch>300000)loadOnchain(false);return;}
   if(!loading)pollLast();if(Math.random()<.34)loadDepth();},5000);}
 function setStatus(c,t){const d=$('#dot');if(!d)return;d.className='';if(c==='live')d.classList.add('live');if(c==='err')d.classList.add('err');$('#statusTxt').textContent=t;}
@@ -463,8 +616,17 @@ function startAlertLoop(){clearInterval(alertTimer);alertTimer=setInterval(check
 function ensureStatus(){let st=$('#status');if(!st){st=document.createElement('span');st.id='status';st.innerHTML='<span id="dot"></span><span id="statusTxt">connecting</span>';$('#srcRow').appendChild(st);}return st;}
 function renderSrc(){const row=$('#srcRow');row.querySelectorAll('.chip').forEach(x=>x.remove());ensureStatus();
   if(isCrypto()){for(const k of Object.keys(SOURCES)){const b=document.createElement('button');b.className='chip src'+(k===src?' on':'');b.textContent=SOURCES[k].name;b.onclick=()=>{src=k;store.set('src',k);renderSrc();topPairs=[];loadTop();buildMain();loadData();};row.insertBefore(b,$('#status'));}}
-  else{const b=document.createElement('button');b.className='chip src on';b.textContent=isOnchain()?'BGeometrics · on-chain':(market==='stocks'?'Bybit · xStocks':'Gold token (PAXG)');row.insertBefore(b,$('#status'));}}
-function fillPairList(){const dl=$('#pairList');const list=topPairs.length?topPairs:[];dl.innerHTML=list.map(s=>`<option value="${s}">${SYM_NAME[s]?SYM_NAME[s]:''}</option>`).join('');}
+  else{const b=document.createElement('button');b.className='chip src on';
+    b.textContent=isOnchain()?'BGeometrics · on-chain':market==='fng'?'alternative.me':market==='options'?'Deribit':market==='liqmap'?'Coinglass (embed)':(market==='stocks'?'Bybit · xStocks':'Gold token (PAXG)');
+    row.insertBefore(b,$('#status'));}}
+function setChartRowsVisible(on){['#tfRow','#indRow','#quickRow'].forEach(s=>{const el=$(s);if(el)el.style.display=on?'flex':'none';});}
+function switchMarket(m){market=m;store.set('market',m);src=store.get('src')||'binance';
+  symbol=isWidget()?m:(m==='onchain'?'BTC':(LASTSYM[m]||(m==='metals'?'PAXGUSDT':m==='stocks'?'AAPLXUSDT':'BTCUSDT')));
+  $('#symInput').value=isWidget()?({fng:'Fear & Greed',options:'Options',liqmap:'Liq Map'})[m]:symbol;
+  $('#symInput').style.textTransform=isCrypto()?'uppercase':'none';$('#alSym').textContent=SYM_NAME[symbol]||symbol;
+  $('#sigBadge').style.display=isWidget()?'none':'';
+  if(isWidget()){$('#lastPrice').textContent='';$('#chg').textContent='';setChartRowsVisible(false);}else{setChartRowsVisible(true);showPanel(false);}
+  renderSrc();topPairs=[];if(!isWidget())loadTop();if(!isWidget())buildMain();loadData();startPoll();}
 function labelOf(s){return SYM_NAME[s]||s.replace('USDT','');}
 function renderQuick(){const row=$('#quickRow');row.querySelectorAll('.chip').forEach(x=>x.remove());
   const list=topPairs.length?topPairs:['BTCUSDT','ETHUSDT','SOLUSDT'];
@@ -494,7 +656,12 @@ let toastT;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add
 /* ---------- boot ---------- */
 const CDN=['https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.7/dist/lightweight-charts.standalone.production.js','https://unpkg.com/lightweight-charts@4.1.7/dist/lightweight-charts.standalone.production.js','https://fastly.jsdelivr.net/npm/lightweight-charts@4.1.7/dist/lightweight-charts.standalone.production.js','https://cdn.jsdelivr.net/npm/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js'];
 function loadLib(i=0){if(typeof LightweightCharts!=='undefined')return boot();if(i>=CDN.length){$('#overlayMsg').style.display='flex';$('#overlayMsg').innerHTML='⚠️ Chart library blocked on every CDN. Try another network.';return;}const s=document.createElement('script');s.src=CDN[i];s.onload=()=>typeof LightweightCharts!=='undefined'?boot():loadLib(i+1);s.onerror=()=>loadLib(i+1);document.head.appendChild(s);}
-function boot(){$('#catSel').value=market;$('#symInput').value=symbol;$('#symInput').style.textTransform=isCrypto()?'uppercase':'none';renderSrc();renderTf();renderIndChips();renderQuick();buildMain();loadTop();loadData();startPoll();startAlertLoop();fillTfSelect();renderAlerts();}
+function boot(){$('#catSel').value=market;
+  $('#symInput').value=isWidget()?({fng:'Fear & Greed',options:'Options',liqmap:'Liq Map'})[market]:symbol;
+  $('#symInput').style.textTransform=isCrypto()?'uppercase':'none';
+  $('#sigBadge').style.display=isWidget()?'none':'';
+  setChartRowsVisible(!isWidget());
+  renderSrc();renderTf();renderIndChips();renderQuick();buildMain();loadTop();loadData();startPoll();startAlertLoop();fillTfSelect();renderAlerts();}
 loadLib();
 </script>
 </body>
