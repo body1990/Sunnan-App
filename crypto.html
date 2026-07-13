@@ -328,6 +328,21 @@
     <button class="pbtn ghost" data-scale="log">Logarithmic</button>
     <button class="pbtn ghost" data-scale="pct">Percent</button>
   </div>
+  <h3>Custom indicators</h3>
+  <div class="field"><label>Name</label><input id="ciName" placeholder="e.g. My HMA" autocomplete="off"></div>
+  <div class="field"><label>Formula <span id="ciErr" style="color:var(--dn)"></span></label>
+    <input id="ciExpr" placeholder="e.g. sma(close,20)" autocomplete="off" spellcheck="false" style="font-family:ui-monospace"></div>
+  <div class="g2">
+    <div class="field"><label>Draw on</label><select id="ciPane"><option value="over">Price (overlay)</option><option value="below">Separate pane</option></select></div>
+    <div class="field"><label>Color</label><input id="ciColor" type="color" value="#4dd0e1" style="height:38px;padding:3px"></div>
+  </div>
+  <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--dim);margin-bottom:8px">
+    <input type="checkbox" id="ciPine"> Paste is Pine Script (auto-translate ta.* functions)</label>
+  <div class="btnrow"><button class="pbtn" id="ciAdd">Add indicator</button>
+    <button class="pbtn ghost" id="ciHelp">Examples</button></div>
+  <div class="hint" id="ciHint">Formulas return a series. Available: <b>close, high, low, open, volume, hl2, hlc3</b> and <b>sma, ema, rma, wma, rsi, atr, stdev, highest, lowest, change, cross, add, sub, mul, div</b>. Example: <code>sub(ema(close,9), ema(close,21))</code></div>
+  <div id="ciList" style="margin-top:8px"></div>
+
   <h3>Add alert · <span id="alSym" style="color:var(--accent)">BTCUSDT</span></h3>
   <div class="g2">
     <div class="field"><label>Metric</label>
@@ -485,7 +500,7 @@ let ocRefs=null,ocLastFetch=0,wLastFetch=0;
 const sma=(s,n)=>s.map((_,i)=>{if(i<n-1)return null;let x=0;for(let j=i-n+1;j<=i;j++)x+=s[j];return x/n;});
 function ema(s,n){const o=Array(s.length).fill(null),k=2/(n+1);let p=null,st=false,seed=0,c=0;for(let i=0;i<s.length;i++){const v=s[i];if(v==null){o[i]=p;continue;}if(!st){seed+=v;c++;if(c===n){p=seed/n;o[i]=p;st=true;}continue;}p=v*k+p*(1-k);o[i]=p;}return o;}
 function emaRaw(s,n){const f=s.findIndex(v=>v!=null);if(f<0)return s.map(_=>null);return Array(f).fill(null).concat(ema(s.slice(f),n));}
-function rsiArr(c,n=14){const o=Array(c.length).fill(null);let g=0,l=0;for(let i=1;i<c.length;i++){const d=c[i]-c[i-1],u=Math.max(d,0),dn=Math.max(-d,0);if(i<=n){g+=u;l+=dn;if(i===n){g/=n;l/=n;o[i]=100-100/(1+(l===0?100:g/l));}}else{g=(g*(n-1)+u)/n;l=(l*(n-1)+dn)/n;o[i]=l===0?100:100-100/(1+g/l);}}return o;}
+function rsiArr(c,n=14){const o=Array(c.length).fill(null);const px=i=>typeof c[i]==='number'?c[i]:c[i].close;let g=0,l=0;for(let i=1;i<c.length;i++){const d=px(i)-px(i-1),u=Math.max(d,0),dn=Math.max(-d,0);if(i<=n){g+=u;l+=dn;if(i===n){g/=n;l/=n;o[i]=100-100/(1+(l===0?100:g/l));}}else{g=(g*(n-1)+u)/n;l=(l*(n-1)+dn)/n;o[i]=l===0?100:100-100/(1+g/l);}}return o;}
 function smiArr(c,n=10,a=3,b=3,sg=3){const d=[],r=[],H=c.map(x=>x.high),L=c.map(x=>x.low);for(let i=0;i<c.length;i++){if(i<n-1){d.push(null);r.push(null);continue;}let hh=-1e18,ll=1e18;for(let j=i-n+1;j<=i;j++){if(H[j]>hh)hh=H[j];if(L[j]<ll)ll=L[j];}d.push(c[i].close-(hh+ll)/2);r.push(hh-ll);}const ds=emaRaw(emaRaw(d,a),b),rs=emaRaw(emaRaw(r,a),b);const smi=ds.map((v,i)=>(v==null||!rs[i])?null:100*v/(rs[i]/2));return{smi,sig:emaRaw(smi,sg)};}
 function stochRsiArr(c,rl=14,sl=14,k=3,dl=3){const r=rsiArr(c,rl),st=Array(r.length).fill(null);for(let i=0;i<r.length;i++){if(r[i]==null)continue;let hi=-1e18,lo=1e18,ok=true;for(let j=i-sl+1;j<=i;j++){if(j<0||r[j]==null){ok=false;break;}if(r[j]>hi)hi=r[j];if(r[j]<lo)lo=r[j];}if(ok)st[i]=hi===lo?0:100*(r[i]-lo)/(hi-lo);}const sn=(x,m)=>x.map((_,i)=>{let s=0,cc=0;for(let j=i-m+1;j<=i;j++){if(j<0||x[j]==null)return null;s+=x[j];cc++;}return s/cc;});const K=sn(st,k);return{k:K,d:sn(K,dl)};}
 function macdArr(c,f=12,s=26,sg=9){const ef=ema(c,f),es=ema(c,s);const m=ef.map((v,i)=>(v==null||es[i]==null)?null:v-es[i]);const sig=emaRaw(m,sg);const h=m.map((v,i)=>(v==null||sig[i]==null)?null:v-sig[i]);return{m,sig,h};}
@@ -619,12 +634,16 @@ function hookSync(chart){
 function buildMain(){if(mainChart){try{mainChart.remove();}catch(_){}}
   Object.values(subPanes).forEach(p=>{try{p.chart.remove();}catch(_){}try{p.el.remove();}catch(_){}try{if(p.splitter)p.splitter.remove();}catch(_){}});
   document.querySelectorAll('#charts .pane.sub, #charts .splitter').forEach(el=>el.remove());
+  if(typeof clearCustom==='function')clearCustom();
   overlaySeries={};volSeries=null;priceLines=[];subPanes={};
   mainChart=LightweightCharts.createChart(mainEl,baseOpts(mainEl));
   candleSeries=mainChart.addCandlestickSeries({upColor:cssv('--up'),downColor:cssv('--dn'),wickUpColor:cssv('--up'),wickDownColor:cssv('--dn'),borderVisible:false});
   hookSync(mainChart);}
 const lastBar=()=>candles.length?candles[candles.length-1]:null;
-function setFmt(){const p=lastBar()?lastBar().close:1;const dp=p>=1000?2:p>=1?3:p>=0.01?5:8;fmt=new Intl.NumberFormat('en-US',{minimumFractionDigits:Math.min(dp,2),maximumFractionDigits:dp});}
+function priceDp(p){p=Math.abs(p||0);return p>=1000?2:p>=1?3:p>=0.1?4:p>=0.01?5:p>=0.001?6:p>=0.0001?7:8;}
+function priceFmtOf(p){return {type:'price',precision:priceDp(p),minMove:1/Math.pow(10,priceDp(p))};}
+function applyPriceFmt(){if(!candleSeries||!candles.length)return;const pf=priceFmtOf(lastBar().close);try{candleSeries.applyOptions({priceFormat:pf});}catch(_){}for(const k in overlaySeries){const S=overlaySeries[k];const arr=S.u?[S.u,S.m,S.l]:S.t?[S.t,S.k,S.a,S.b]:[S];arr.forEach(x=>{try{x.applyOptions({priceFormat:pf});}catch(_){}});}}
+function setFmt(){const p=lastBar()?lastBar().close:1;const dp=priceDp(p);fmt=new Intl.NumberFormat('en-US',{minimumFractionDigits:Math.min(dp,2),maximumFractionDigits:dp});}
 const fnum=v=>(v==null||!isFinite(v))?'—':(fmt?fmt.format(v):v);
 const exFor=()=>isCrypto()?src:((INSTR[symbol]&&INSTR[symbol].ex)||'binance');
 const dispName=()=>isOnchain()?'BTC Supply P/L':(isCrypto()?symbol.replace('USDT',''):((INSTR[symbol]&&INSTR[symbol].label)||symbol));
@@ -949,7 +968,7 @@ function drawSignalMarkers(smi,sig){if(!ov('sig')){candleSeries.setMarkers([]);r
     else if(smi[i-1]>=sig[i-1]&&smi[i]<sig[i]&&smi[i]>15)m.push({time:toLocal(candles[i].time),position:'aboveBar',color:'#f23645',shape:'arrowDown',text:'S'});}
   candleSeries.setMarkers(m);}
 function renderSig(){const b=$('#sigBadge');b.className='';if(sigState.dir==='buy'){b.classList.add('buy');b.textContent='▲ BUY';}else if(sigState.dir==='sell'){b.classList.add('sell');b.textContent='▼ SELL';}else b.textContent='• WAIT';b.title=sigState.reason;}
-function redrawAll(structure=true){if(isOnchain())return;if(!candles.length)return;if(!mainChart)buildMain();candleSeries.setData(candles.map(c=>({...c,time:toLocal(c.time)})));computeOverlays();
+function redrawAll(structure=true){if(isOnchain())return;if(!candles.length)return;if(!mainChart)buildMain();candleSeries.setData(candles.map(c=>({...c,time:toLocal(c.time)})));computeOverlays();applyPriceFmt();
   if(structure){for(const k in overlaySeries){const s=overlaySeries[k];const arr=s.u?[s.u,s.m,s.l]:s.t?[s.t,s.k,s.a,s.b]:[s];arr.forEach(x=>{try{mainChart.removeSeries(x);}catch(_){}});}overlaySeries={};if(volSeries){try{mainChart.removeSeries(volSeries);}catch(_){}volSeries=null;}
     for(const o of OVERLAYS){if(!o.on)continue;
       if(o.id==='vol'){volSeries=mainChart.addHistogramSeries({priceScaleId:'vol',priceFormat:{type:'volume'},lastValueVisible:false,priceLineVisible:false});mainChart.priceScale('vol').applyOptions({scaleMargins:{top:0.84,bottom:0}});}
@@ -964,7 +983,7 @@ function redrawAll(structure=true){if(isOnchain())return;if(!candles.length)retu
   if(overlaySeries.kc){const kc=keltnerArr(candles,20,2);overlaySeries.kc.u.setData(toLine(kc.u));overlaySeries.kc.m.setData(toLine(kc.m));overlaySeries.kc.l.setData(toLine(kc.l));}
   if(overlaySeries.ichi){const ic=ichimokuArr(candles);overlaySeries.ichi.t.setData(toLine(ic.tenkan));overlaySeries.ichi.k.setData(toLine(ic.kijun));overlaySeries.ichi.a.setData(toLine(ic.spanA));overlaySeries.ichi.b.setData(toLine(ic.spanB));}
   for(const o of OVERLAYS){if(o.on&&overlaySeries[o.id]&&indCache[o.id])overlaySeries[o.id].setData(toLine(indCache[o.id]));}
-  clearPriceLines();drawLiquidity();drawFib();drawSubs(structure);renderMainLegend(lastBar());}
+  clearPriceLines();drawLiquidity();drawFib();drawSubs(structure);if(typeof drawCustom==='function')drawCustom();renderMainLegend(lastBar());}
 function drawSubs(structure){if(isOnchain())return;const active=OSCS.filter(o=>o.on).map(o=>o.id);
   for(const id of Object.keys(subPanes))if(!active.includes(id)){subPanes[id].chart.remove();subPanes[id].el.remove();if(subPanes[id].splitter)subPanes[id].splitter.remove();delete subPanes[id];}
   const close=candles.map(c=>c.close);
@@ -1097,7 +1116,7 @@ $('#symInput').addEventListener('keydown',e=>{if(e.key!=='Enter')return;let v=e.
   e.target.value=v;setSymbol(v);e.target.blur();});
 
 function fillTfSelect(){$('#alTf').innerHTML=TF_KEYS.map(k=>`<option value="${k}"${k===tf?' selected':''}>${TF_LABEL[k]}</option>`).join('');}
-function openSheet(){$('#alSym').textContent=dispName();fillTfSelect();if(typeof renderChannels==='function')renderChannels();if(typeof applyTheme==='function')applyTheme();$('#tgToken').value=store.get('tg_token')||'';$('#tgChat').value=store.get('tg_chat')||'';renderAlerts();$('#scrim').style.display='block';$('#sheet').classList.add('open');}
+function openSheet(){$('#alSym').textContent=dispName();fillTfSelect();if(typeof renderChannels==='function')renderChannels();if(typeof applyTheme==='function')applyTheme();if(typeof renderCustomList==='function')renderCustomList();$('#tgToken').value=store.get('tg_token')||'';$('#tgChat').value=store.get('tg_chat')||'';renderAlerts();$('#scrim').style.display='block';$('#sheet').classList.add('open');}
 function closeSheet(){$('#sheet').classList.remove('open');$('#scrim').style.display='none';}
 $('#gear').onclick=openSheet;$('#scrim').onclick=closeSheet;$('#closeSheet').onclick=closeSheet;$('#alAdd').onclick=addAlert;
 $('#tgSave').onclick=()=>{store.set('tg_token',$('#tgToken').value.trim());store.set('tg_chat',$('#tgChat').value.trim());toast('Telegram saved');};
@@ -1137,6 +1156,7 @@ function applyTheme(){
     rightPriceScale:{borderColor:cssv('--line')},timeScale:{borderColor:cssv('--line')}};
   try{allCharts().forEach(c=>c.applyOptions(opts));}catch(_){}
   try{if(typeof gRestyle==='function')gRestyle(opts);}catch(_){}
+  try{if(typeof customPanes!=='undefined')for(const id in customPanes)customPanes[id].chart.applyOptions(opts);}catch(_){}
   try{if(candleSeries)candleSeries.applyOptions({upColor:cssv('--up'),downColor:cssv('--dn'),wickUpColor:cssv('--up'),wickDownColor:cssv('--dn')});}catch(_){}
   try{if(volSeries&&candles.length)volSeries.setData(candles.map(c=>({time:toLocal(c.time),value:c.volume,color:(c.close>=c.open?cssv('--up'):cssv('--dn'))+'55'})));}catch(_){}
   // SMA 200 is white on dark, must darken on light
@@ -1150,6 +1170,20 @@ function applyTheme(){
 }
 document.querySelectorAll('[data-theme-set]').forEach(b=>b.onclick=()=>{store.set('theme',b.dataset.themeSet);applyTheme();toast('Theme: '+b.dataset.themeSet);});
 try{window.matchMedia('(prefers-color-scheme: light)').addEventListener('change',()=>{if(themePref()==='auto')applyTheme();});}catch(_){}
+
+$('#ciAdd').onclick=addCustom;
+const CI_EXAMPLES=[
+  ['HMA 21 (Hull MA)','sub(mul(wma(close,10),2), wma(close,21))','over'],
+  ['EMA ribbon fast-slow','sub(ema(close,9), ema(close,21))','below'],
+  ['Donchian mid','div(add(highest(high,20), lowest(low,20)),2)','over'],
+  ['RSI momentum','sub(rsi(14), 50)','below'],
+  ['ATR bands upper','add(close, mul(atr(14), 2))','over'],
+  ['Volatility (stdev%)','mul(div(stdev(close,20), close), 100)','below'],
+];
+let ciEx=0;
+if($('#ciHelp'))$('#ciHelp').onclick=()=>{const e=CI_EXAMPLES[ciEx%CI_EXAMPLES.length];ciEx++;
+  $('#ciName').value=e[0];$('#ciExpr').value=e[1];$('#ciPane').value=e[2];$('#ciPine').checked=false;
+  toast('Example loaded — press Add indicator');};
 
 let toastT;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2600);}
 
@@ -1389,7 +1423,7 @@ let gCfgs=jget('gCfgs',[
   {sym:'BNBUSDT',tf:'15m',src:'binance'}]);
 
 const gWrap=$('#chartsWrap');
-function gFmtFor(px){const dp=px>=1000?2:px>=1?3:px>=0.01?5:8;
+function gFmtFor(px){const dp=priceDp(px);
   return new Intl.NumberFormat('en-US',{minimumFractionDigits:Math.min(dp,2),maximumFractionDigits:dp});}
 
 function gMakePane(i){
@@ -1445,6 +1479,7 @@ async function gLoad(p,spin=true){
     if(!cds.length)throw new Error('no data');
     p.candles=cds;p.fmt=gFmtFor(cds[cds.length-1].close);
     p.series.setData(cds.map(c=>({...c,time:toLocal(c.time)})));
+    try{const gpf=priceFmtOf(cds[cds.length-1].close);p.series.applyOptions({priceFormat:gpf});p.ma.applyOptions({priceFormat:gpf});}catch(_){}
     p.vol.setData(cds.map(c=>({time:toLocal(c.time),value:c.volume,color:(c.close>=c.open?cssv('--up'):cssv('--dn'))+'55'})));
     const m=sma(cds.map(c=>c.close),20);
     p.ma.setData(cds.map((b,i)=>({time:toLocal(b.time),value:m[i]})).filter(x=>x.value!=null));
@@ -1482,6 +1517,157 @@ function gRestyle(opts){gPanes.forEach(p=>{try{p.chart.applyOptions(opts);
   p.series.applyOptions({upColor:cssv('--up'),downColor:cssv('--dn'),wickUpColor:cssv('--up'),wickDownColor:cssv('--dn')});}catch(_){}});}
 
 $('#gridSel').onchange=e=>gApply(e.target.value);
+
+/* ================= custom indicators (write a JS/Pine-like formula) ================= */
+let customInds=jget('customInds',[]);   // {id,name,expr,color,pane,on}
+
+/* ---- sandbox: expose a safe library, no access to window/document ---- */
+function evalFormula(expr){
+  if(/\b(constructor|__proto__|prototype|import|eval|Function|window|document|globalThis|require|process|fetch|localStorage|XMLHttpRequest)\b/.test(expr))
+    throw new Error('disallowed keyword in formula');
+  // helpers available inside a formula. `c`=candles, `close/high/low/open/volume/hl2/hlc3`=arrays
+  const close=candles.map(x=>x.close),high=candles.map(x=>x.high),low=candles.map(x=>x.low),
+        open=candles.map(x=>x.open),volume=candles.map(x=>x.volume),
+        hl2=candles.map(x=>(x.high+x.low)/2),hlc3=candles.map(x=>(x.high+x.low+x.close)/3),
+        ohlc4=candles.map(x=>(x.open+x.high+x.low+x.close)/4);
+  const lib={
+    // moving averages / momentum (reuse the app's tested implementations)
+    sma:(s,n)=>sma(s,n), ema:(s,n)=>emaRaw(s,n), rma:(s,n)=>rma(s,n),
+    wma:(s,n)=>s.map((_,i)=>{if(i<n-1)return null;let num=0,den=0;for(let j=0;j<n;j++){const w=n-j;num+=s[i-j]*w;den+=w;}return num/den;}),
+    rsi:(n=14)=>rsiArr(candles,n),
+    atr:(n=14)=>atrArr(candles,n),
+    stdev:(s,n)=>s.map((_,i)=>{if(i<n-1)return null;let m=0;for(let j=i-n+1;j<=i;j++)m+=s[j];m/=n;let v=0;for(let j=i-n+1;j<=i;j++)v+=(s[j]-m)**2;return Math.sqrt(v/n);}),
+    highest:(s,n)=>s.map((_,i)=>{if(i<n-1)return null;let h=-1e18;for(let j=i-n+1;j<=i;j++)if(s[j]>h)h=s[j];return h;}),
+    lowest:(s,n)=>s.map((_,i)=>{if(i<n-1)return null;let l=1e18;for(let j=i-n+1;j<=i;j++)if(s[j]<l)l=s[j];return l;}),
+    change:(s,n=1)=>s.map((v,i)=>i>=n?v-s[i-n]:null),
+    cross:(a,b)=>a.map((v,i)=>i>0&&a[i-1]!=null&&b[i-1]!=null&&((a[i-1]<=b[i-1]&&v>b[i])?1:(a[i-1]>=b[i-1]&&v<b[i])?-1:0)),
+    abs:s=>s.map(v=>v==null?null:Math.abs(v)),
+    add:(a,b)=>a.map((v,i)=>v==null||(b[i]==null&&typeof b!=='number')?null:v+(typeof b==='number'?b:b[i])),
+    sub:(a,b)=>a.map((v,i)=>v==null?null:v-(typeof b==='number'?b:b[i])),
+    mul:(a,b)=>a.map((v,i)=>v==null?null:v*(typeof b==='number'?b:b[i])),
+    div:(a,b)=>a.map((v,i)=>v==null?null:v/(typeof b==='number'?b:b[i])),
+    // raw source arrays
+    close,high,low,open,volume,hl2,hlc3,ohlc4,c:candles,
+    Math
+  };
+  // Function with an explicit, frozen argument list — no globals reachable.
+  const keys=Object.keys(lib);
+  const fn=new Function(...keys,'"use strict";return ('+expr+');');
+  const out=fn(...keys.map(k=>lib[k]));
+  // normalise: number -> flat line; array -> as is
+  if(typeof out==='number')return candles.map(()=>out);
+  if(Array.isArray(out))return out;
+  throw new Error('formula must return an array or number');
+}
+
+/* ---- Pine → JS translator (common patterns; best-effort) ---- */
+function pineToJs(src){
+  let e=src.trim();
+  const map=[
+    [/ta\.sma\s*\(([^,]+),([^)]+)\)/g,'sma($1,$2)'],
+    [/ta\.ema\s*\(([^,]+),([^)]+)\)/g,'ema($1,$2)'],
+    [/ta\.rma\s*\(([^,]+),([^)]+)\)/g,'rma($1,$2)'],
+    [/ta\.wma\s*\(([^,]+),([^)]+)\)/g,'wma($1,$2)'],
+    [/ta\.rsi\s*\([^,]+,([^)]+)\)/g,'rsi($1)'],
+    [/ta\.atr\s*\(([^)]+)\)/g,'atr($1)'],
+    [/ta\.stdev\s*\(([^,]+),([^)]+)\)/g,'stdev($1,$2)'],
+    [/ta\.highest\s*\(([^,]+),([^)]+)\)/g,'highest($1,$2)'],
+    [/ta\.lowest\s*\(([^,]+),([^)]+)\)/g,'lowest($1,$2)'],
+    [/ta\.change\s*\(([^)]+)\)/g,'change($1)'],
+    [/ta\.crossover\s*\(([^,]+),([^)]+)\)/g,'cross($1,$2)'],
+    [/ta\.crossunder\s*\(([^,]+),([^)]+)\)/g,'cross($1,$2)'],
+    [/\bmath\./g,'Math.'],
+  ];
+  for(const [re,rep] of map)e=e.replace(re,rep);
+  const lines=e.split('\n').map(l=>l.trim()).filter(l=>l&&!l.startsWith('//')&&!/^(indicator|study|strategy)\b/.test(l));
+  const vars={};let plotted=null;
+  for(let line of lines){
+    const pm=line.match(/^plot\s*\((.+)\)\s*$/);
+    if(pm){let inner=pm[1].replace(/,\s*(title|color|linewidth|style|transp|display|offset)\s*=.*$/,'').trim();plotted=inner;continue;}
+    const am=line.match(/^([A-Za-z_]\w*)\s*=\s*(.+)$/);
+    if(am){vars[am[1]]=am[2].trim();continue;}
+    plotted=line;
+  }
+  let out=plotted!=null?plotted:e;
+  for(let pass=0;pass<5;pass++){let before=out;
+    Object.keys(vars).forEach(k=>{out=out.replace(new RegExp('\\b'+k+'\\b','g'),'('+vars[k]+')');});
+    if(out===before)break;}
+  {const m=out.match(/^\((.*)\)$/s);if(m){let d=0,wraps=true;const inner=m[1];
+    for(let i=0;i<inner.length;i++){if(inner[i]==='(')d++;else if(inner[i]===')'){d--;if(d<0){wraps=false;break;}}}
+    if(wraps&&d===0)out=inner;}}
+  return out.trim();
+}
+/* ---- render custom indicators ---- */
+let customSeries={};   // id -> series (overlay) ; panes handled by subPanes-like map
+let customPanes={};    // id -> {el,chart,series}
+function clearCustom(){
+  for(const id in customSeries){try{mainChart.removeSeries(customSeries[id]);}catch(_){}}
+  customSeries={};
+  for(const id in customPanes){try{customPanes[id].chart.remove();}catch(_){}try{customPanes[id].el.remove();}catch(_){}
+    try{if(customPanes[id].splitter)customPanes[id].splitter.remove();}catch(_){}}
+  customPanes={};
+}
+function drawCustom(){
+  if(isWidget()||isOnchain()||!candleSeries||!candles.length)return;
+  // remove series for disabled/deleted inds
+  for(const id in customSeries){if(!customInds.find(c=>c.id===id&&c.on&&c.pane==='over')){try{mainChart.removeSeries(customSeries[id]);}catch(_){}delete customSeries[id];}}
+  for(const id in customPanes){if(!customInds.find(c=>c.id===id&&c.on&&c.pane==='below')){try{customPanes[id].chart.remove();}catch(_){}try{customPanes[id].el.remove();}catch(_){}try{if(customPanes[id].splitter)customPanes[id].splitter.remove();}catch(_){}delete customPanes[id];}}
+  for(const ci of customInds){
+    if(!ci.on)continue;
+    let data;
+    try{data=evalFormula(ci.expr);}catch(e){ci.err=e.message;continue;}
+    ci.err=null;
+    const line=candles.map((b,i)=>({time:toLocal(b.time),value:(data[i]!=null&&isFinite(data[i]))?data[i]:undefined}))
+                      .filter(p=>p.value!==undefined);
+    if(ci.pane==='over'){
+      if(!customSeries[ci.id])customSeries[ci.id]=mainChart.addLineSeries({color:ci.color,lineWidth:2,lastValueVisible:true,priceLineVisible:false,crosshairMarkerVisible:false});
+      customSeries[ci.id].applyOptions({color:ci.color});
+      customSeries[ci.id].setData(line);
+    }else{
+      let p=customPanes[ci.id];
+      if(!p){
+        const sp=(typeof makeSplitter==='function')?null:null;
+        const el=document.createElement('div');el.className='pane sub';el.style.setProperty('--h','130px');
+        el.innerHTML=`<div class="paneTitle">${ci.name}</div><div class="paneVals"></div><button class="closeSub">×</button>`;
+        chartsEl.appendChild(el);
+        const chart=LightweightCharts.createChart(el,baseOpts(el));hookSync(chart);
+        el.querySelector('.closeSub').onclick=()=>{ci.on=false;jset('customInds',customInds);renderCustomList();drawCustom();renderIndChips&&renderIndChips();};
+        const series=chart.addLineSeries({color:ci.color,lineWidth:2,lastValueVisible:true,priceLineVisible:false});
+        p=customPanes[ci.id]={el,chart,series,valsEl:el.querySelector('.paneVals')};
+      }
+      p.series.applyOptions({color:ci.color});
+      p.series.setData(line);
+      const lastv=[...data].reverse().find(v=>v!=null&&isFinite(v));
+      p.valsEl.innerHTML=`<span style="color:${ci.color}">${lastv!=null?(Math.abs(lastv)>=1000?lastv.toFixed(0):lastv.toFixed(4)):'—'}</span>`;
+    }
+  }
+  resizeAll();
+}
+
+/* ---- UI: list + add form in the settings sheet ---- */
+function renderCustomList(){
+  const box=$('#ciList');if(!box)return;
+  if(!customInds.length){box.innerHTML='<div class="hint">No custom indicators yet.</div>';return;}
+  box.innerHTML=customInds.map(ci=>`<div class="alertItem ${ci.on?'':'paused'}">
+    <div class="txt"><div><span style="color:${ci.color}">●</span> <b>${ci.name}</b> · ${ci.pane==='over'?'overlay':'pane'}</div>
+      <div class="sub" style="font-family:ui-monospace">${ci.expr}${ci.err?' · <span style="color:var(--dn)">⚠ '+ci.err+'</span>':''}</div></div>
+    <div class="ctl"><button class="tgl ${ci.on?'on':''}" data-cton="${ci.id}">${ci.on?'on':'off'}</button>
+      <button class="x" data-ctdel="${ci.id}">del</button></div></div>`).join('');
+  box.querySelectorAll('[data-cton]').forEach(b=>b.onclick=()=>{const ci=customInds.find(c=>c.id===b.dataset.cton);ci.on=!ci.on;jset('customInds',customInds);renderCustomList();drawCustom();});
+  box.querySelectorAll('[data-ctdel]').forEach(b=>b.onclick=()=>{customInds=customInds.filter(c=>c.id!==b.dataset.ctdel);jset('customInds',customInds);renderCustomList();drawCustom();});
+}
+function addCustom(){
+  const name=$('#ciName').value.trim()||'Custom';
+  let expr=$('#ciExpr').value.trim();if(!expr){toast('Enter a formula');return;}
+  if($('#ciPine').checked)expr=pineToJs(expr);
+  // validate against current candles
+  try{const test=evalFormula(expr);if(!Array.isArray(test))throw new Error('must return a series');}
+  catch(e){toast('Formula error: '+e.message);$('#ciErr').textContent='⚠ '+e.message;return;}
+  $('#ciErr').textContent='';
+  customInds.push({id:Math.random().toString(36).slice(2,9),name,expr,color:$('#ciColor').value,pane:$('#ciPane').value,on:true});
+  jset('customInds',customInds);$('#ciExpr').value='';$('#ciName').value='';
+  renderCustomList();drawCustom();toast('Added '+name);
+}
 
 /* ================= boot ================= */
 const CDN=['https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.7/dist/lightweight-charts.standalone.production.js','https://unpkg.com/lightweight-charts@4.1.7/dist/lightweight-charts.standalone.production.js','https://fastly.jsdelivr.net/npm/lightweight-charts@4.1.7/dist/lightweight-charts.standalone.production.js','https://cdn.jsdelivr.net/npm/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js'];
