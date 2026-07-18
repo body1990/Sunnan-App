@@ -213,6 +213,7 @@
   #drawCanvas{position:absolute;inset:0;z-index:6;pointer-events:none}
   #drawCanvas.active{pointer-events:auto;cursor:crosshair}
   #tools{position:absolute;top:6px;left:6px;z-index:8;display:flex;flex-direction:column;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:4px}
+  @media (max-width:820px){#tools{display:none!important}.legend{left:8px}}
   #tools button{width:34px;height:32px;background:rgba(18,24,41,.92);border:1px solid var(--line);color:var(--dim);font-size:14px;border-radius:7px;display:flex;align-items:center;justify-content:center}
   #tools button.on{border-color:var(--accent);color:var(--accent);background:var(--wlsel)}
   #tools button:hover{color:var(--txt)}
@@ -269,6 +270,7 @@
 <div id="charts">
   <div class="pane" id="mainPane">
     <div class="legend" id="mainLegend"></div>
+    <div id="imbalNote" style="position:absolute;top:6px;right:90px;z-index:5;font-size:10px;color:#ff8a8a;pointer-events:none;text-shadow:0 1px 3px var(--bg)"></div>
     <canvas id="drawCanvas"></canvas>
     <div id="measure"></div>
     <div id="tools">
@@ -477,7 +479,7 @@ function ocAlign(profit,loss){
 }
 
 /* ---------- indicator toggles ---------- */
-const OVERLAYS=[{id:'sma20',label:'SMA 20',c:'#2bd94f',on:true},{id:'sma50',label:'SMA 50',c:'#4f8cff',on:true},{id:'sma200',label:'SMA 200',c:'#ffffff',on:true},{id:'ema20',label:'EMA 20',c:'#e8b45a',on:false},{id:'ema50',label:'EMA 50',c:'#ff8bd1',on:false},{id:'bb',label:'BB 20·2',c:'#8a6bd1',on:false},{id:'kc',label:'KELTNER',c:'#4dd0e1',on:false},{id:'st',label:'SUPERTREND',c:'#00e676',on:false},{id:'ichi',label:'ICHIMOKU',c:'#ef5350',on:false},{id:'vwap',label:'VWAP',c:'#ff8bd1',on:false},{id:'vol',label:'VOL',c:'#7f8cae',on:true},{id:'liq',label:'LIQ',c:'#00d0ff',on:true},{id:'fib',label:'FIB',c:'#e8b45a',on:false},{id:'sig',label:'SIGNALS',c:'#ffd23f',on:true}];
+const OVERLAYS=[{id:'sma20',label:'SMA 20',c:'#2bd94f',on:true},{id:'sma50',label:'SMA 50',c:'#4f8cff',on:true},{id:'sma200',label:'SMA 200',c:'#ffffff',on:true},{id:'ema20',label:'EMA 20',c:'#e8b45a',on:false},{id:'ema50',label:'EMA 50',c:'#ff8bd1',on:false},{id:'bb',label:'BB 20·2',c:'#8a6bd1',on:false},{id:'kc',label:'KELTNER',c:'#4dd0e1',on:false},{id:'st',label:'SUPERTREND',c:'#00e676',on:false},{id:'ichi',label:'ICHIMOKU',c:'#ef5350',on:false},{id:'vwap',label:'VWAP',c:'#ff8bd1',on:false},{id:'vol',label:'VOL',c:'#7f8cae',on:true},{id:'liq',label:'LIQ',c:'#00d0ff',on:true},{id:'imbal',label:'IMBALANCE',c:'#ff5252',on:false},{id:'fib',label:'FIB',c:'#e8b45a',on:false},{id:'sig',label:'SIGNALS',c:'#ffd23f',on:true}];
 const OSCS=[{id:'smi',label:'SMI',c:'#4f8cff',on:true},{id:'stochrsi',label:'STOCH RSI',c:'#e8b45a',on:false},{id:'rsi',label:'RSI 14',c:'#b48cff',on:false},{id:'macd',label:'MACD',c:'#2bd94f',on:false},{id:'adx',label:'ADX',c:'#ffa726',on:false},{id:'atr',label:'ATR',c:'#26c6da',on:false},{id:'cci',label:'CCI',c:'#ab47bc',on:false},{id:'mfi',label:'MFI',c:'#66bb6a',on:false},{id:'obv',label:'OBV',c:'#8d6e63',on:false},{id:'wr',label:'WILLIAMS %R',c:'#ec407a',on:false}];
 
 /* ---------- state ---------- */
@@ -983,7 +985,7 @@ function redrawAll(structure=true){if(isOnchain())return;if(!candles.length)retu
   if(overlaySeries.kc){const kc=keltnerArr(candles,20,2);overlaySeries.kc.u.setData(toLine(kc.u));overlaySeries.kc.m.setData(toLine(kc.m));overlaySeries.kc.l.setData(toLine(kc.l));}
   if(overlaySeries.ichi){const ic=ichimokuArr(candles);overlaySeries.ichi.t.setData(toLine(ic.tenkan));overlaySeries.ichi.k.setData(toLine(ic.kijun));overlaySeries.ichi.a.setData(toLine(ic.spanA));overlaySeries.ichi.b.setData(toLine(ic.spanB));}
   for(const o of OVERLAYS){if(o.on&&overlaySeries[o.id]&&indCache[o.id])overlaySeries[o.id].setData(toLine(indCache[o.id]));}
-  clearPriceLines();drawLiquidity();drawFib();drawSubs(structure);if(typeof drawCustom==='function')drawCustom();renderMainLegend(lastBar());}
+  clearPriceLines();drawLiquidity();if(typeof drawImbalance==='function')drawImbalance();drawFib();drawSubs(structure);if(typeof drawCustom==='function')drawCustom();renderMainLegend(lastBar());}
 function drawSubs(structure){if(isOnchain())return;const active=OSCS.filter(o=>o.on).map(o=>o.id);
   for(const id of Object.keys(subPanes))if(!active.includes(id)){subPanes[id].chart.remove();subPanes[id].el.remove();if(subPanes[id].splitter)subPanes[id].splitter.remove();delete subPanes[id];}
   const close=candles.map(c=>c.close);
@@ -1325,15 +1327,19 @@ function showCtx(clientX,clientY,price){
 }
 mainEl.addEventListener('contextmenu',e=>{
   if(isWidget()||isOnchain())return;
+  if(('ontouchstart' in window)||navigator.maxTouchPoints>0)return;  // no menu on touch (iPhone/iPad)
   e.preventDefault();
   const r=mainEl.getBoundingClientRect();
   showCtx(e.clientX,e.clientY,y2p(e.clientY-r.top));
 });
 let lpTimer=null;
-mainEl.addEventListener('touchstart',e=>{if(tool!=='cursor'||isWidget()||isOnchain())return;
-  const t=e.touches[0];
-  lpTimer=setTimeout(()=>{const r=mainEl.getBoundingClientRect();showCtx(t.clientX,t.clientY,y2p(t.clientY-r.top));},520);},{passive:true});
-['touchend','touchmove','touchcancel'].forEach(ev=>mainEl.addEventListener(ev,()=>clearTimeout(lpTimer),{passive:true}));
+const IS_TOUCH=('ontouchstart' in window)||navigator.maxTouchPoints>0;
+if(!IS_TOUCH){
+  mainEl.addEventListener('touchstart',e=>{if(tool!=='cursor'||isWidget()||isOnchain())return;
+    const t=e.touches[0];
+    lpTimer=setTimeout(()=>{const r=mainEl.getBoundingClientRect();showCtx(t.clientX,t.clientY,y2p(t.clientY-r.top));},520);},{passive:true});
+  ['touchend','touchmove','touchcancel'].forEach(ev=>mainEl.addEventListener(ev,()=>clearTimeout(lpTimer),{passive:true}));
+}
 
 
 /* ================= watchlist ================= */
@@ -1667,6 +1673,86 @@ function addCustom(){
   customInds.push({id:Math.random().toString(36).slice(2,9),name,expr,color:$('#ciColor').value,pane:$('#ciPane').value,on:true});
   jset('customInds',customInds);$('#ciExpr').value='';$('#ciName').value='';
   renderCustomList();drawCustom();toast('Added '+name);
+}
+
+/* ================= stacked imbalance (approx footprint from Binance aggTrades) ================= */
+let imbalZones=[],imbalFetching=false,imbalKey='';
+const IMBAL_RATIO=3, IMBAL_STACK=3;
+
+function tickSizeFor(price){ // footprint bucket size, ~60 buckets per 1% move, snapped to 1/2/5
+  const p=Math.abs(price)||1;
+  const raw=p/6000;
+  const mag=Math.pow(10,Math.floor(Math.log10(raw)));
+  const n=raw/mag, snap=n<1.5?1:n<3.5?2:n<7.5?5:10;
+  return snap*mag||0.00000001;
+}
+function buildFootprint(trades,tick){
+  const lv={};
+  for(const t of trades){
+    const price=Math.round(t.p/tick)*tick;const key=price.toFixed(10);
+    if(!lv[key])lv[key]={price,bid:0,ask:0};
+    if(t.m)lv[key].bid+=t.q; else lv[key].ask+=t.q;
+  }
+  return Object.values(lv).sort((a,b)=>a.price-b.price);
+}
+function findStacks(levels,ratio,minStack){
+  const buy=[],sell=[];
+  for(let i=1;i<levels.length;i++){
+    const ask=levels[i].ask, bid=levels[i-1].bid;
+    if(bid>0&&ask>=bid*ratio)buy.push(i);
+    else if(ask>0&&bid>=ask*ratio)sell.push(i-1);
+  }
+  const runs=a=>{if(!a.length)return[];const out=[];let r=[a[0]];
+    for(let i=1;i<a.length;i++){if(a[i]===a[i-1]+1)r.push(a[i]);else{if(r.length>=minStack)out.push([...r]);r=[a[i]];}}
+    if(r.length>=minStack)out.push(r);return out;};
+  const zones=[];
+  runs(buy).forEach(r=>zones.push({type:'buy',lo:levels[r[0]].price,hi:levels[r[r.length-1]].price,n:r.length}));
+  runs(sell).forEach(r=>zones.push({type:'sell',lo:levels[r[0]].price,hi:levels[r[r.length-1]].price,n:r.length}));
+  return zones;
+}
+async function loadImbalance(){
+  // only Binance exposes the per-trade maker flag we need
+  if(imbalFetching)return;
+  const key=src+'|'+symbol+'|'+tf;
+  if(src!=='binance'){imbalZones=[{err:'Stacked imbalance needs trade-level data — switch source to Binance.'}];imbalKey=key;return;}
+  imbalFetching=true;
+  try{
+    // pull the most recent aggregated trades (up to 1000) and bucket by price
+    const url=`https://api.binance.com/api/v3/aggTrades?symbol=${symbol}&limit=1000`;
+    const raw=await jfetch(url);
+    if(!Array.isArray(raw)||!raw.length){imbalZones=[{err:'No recent trades returned.'}];imbalKey=key;return;}
+    const trades=raw.map(t=>({p:+t.p,q:+t.q,m:!!t.m}));
+    const mid=trades[trades.length-1].p;
+    const tick=tickSizeFor(mid);
+    const fp=buildFootprint(trades,tick);
+    imbalZones=findStacks(fp,IMBAL_RATIO,IMBAL_STACK);
+    imbalKey=key;
+  }catch(e){imbalZones=[{err:'Could not load trades: '+(e.message||'network')}];}
+  finally{imbalFetching=false;}
+}
+function drawImbalance(){
+  const note=$('#imbalNote');
+  if(!ov('imbal')||isWidget()||isOnchain()||!candleSeries){if(note)note.textContent='';return;}
+  // (re)fetch if symbol/tf/src changed
+  const key=src+'|'+symbol+'|'+tf;
+  if(key!==imbalKey&&!imbalFetching){loadImbalance().then(()=>{if(ov('imbal'))drawImbalance();});return;}
+  const err=imbalZones.find(z=>z.err);
+  const legend=$('#imbalNote');
+  if(err){if(legend)legend.textContent=err.err;return;}
+  if(!candles.length)return;
+  const t0=toLocal(candles[Math.max(0,candles.length-40)].time);
+  const tN=toLocal(candles[candles.length-1].time);
+  for(const z of imbalZones){
+    if(z.err)continue;
+    const col=z.type==='buy'?'rgba(34,171,148,0.9)':'rgba(242,54,69,0.9)';
+    // draw each stacked zone as two price lines (top & bottom of the zone)
+    [z.lo,z.hi].forEach(price=>{
+      const pl=candleSeries.createPriceLine({price,color:col,lineWidth:2,lineStyle:0,axisLabelVisible:true,
+        title:(z.type==='buy'?'▲ stack ':'▼ stack ')+z.n});
+      priceLines.push(pl);
+    });
+  }
+  if(legend)legend.textContent=`${imbalZones.length} stacked zone(s) · Binance trades · approx footprint`;
 }
 
 /* ================= boot ================= */
